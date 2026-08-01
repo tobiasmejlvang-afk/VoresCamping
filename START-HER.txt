@@ -1,0 +1,15 @@
+VORES CAMPING – START HER
+
+1. Upload README.md, START-HER.txt og hele mappen "docs" til roden af din main-branch.
+2. GitHub: Settings > Pages.
+3. Source: Deploy from a branch.
+4. Branch: main.
+5. Folder: /docs.
+6. Tryk Save.
+
+Der skal IKKE oprettes en GitHub Action.
+
+Vigtigt: Filen docs/index.html skal findes på GitHub.
+
+Ved gammel cache:
+https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html

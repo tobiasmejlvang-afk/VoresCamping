@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f5c4c">
+  <link rel="stylesheet" href="styles.css?v=20260802-1">
+  <title>Reparer Vores Camping</title>
+</head>
+<body>
+  <main class="splash">
+    <img src="assets/logo.jpg" alt="Vores Camping">
+    <div class="spinner" id="spinner"></div>
+    <h1 id="title">Rydder gammel web-cache…</h1>
+    <p id="text">Dine gemte campingpladser i browserens lager bliver ikke slettet.</p>
+    <a class="btn primary" id="open" href="./#/overblik" hidden>Åbn appen</a>
+  </main>
+  <script>
+  (async()=>{
+    try{
+      if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
+      if('caches' in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
+      document.getElementById('spinner').hidden=true;
+      document.getElementById('title').textContent='Reparationen er færdig';
+      document.getElementById('text').textContent='Gamle cachefiler og service workers er fjernet. Appens lokale data er bevaret.';
+      document.getElementById('open').hidden=false;
+      setTimeout(()=>location.replace('./?repaired=20260802#/overblik'),900);
+    }catch(error){console.error(error);document.getElementById('spinner').hidden=true;document.getElementById('title').textContent='Åbn appen igen';document.getElementById('open').hidden=false;}
+  })();
+  </script>
+</body>
+</html>
