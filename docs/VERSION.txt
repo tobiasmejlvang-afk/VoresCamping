@@ -1,4 +1,6 @@
-Vores Camping 4.0
+Vores Camping 6.0
 Bygget: 2026-08-02
+Kort: Integreret OpenStreetMap med valgfri Google Maps JavaScript API
+Ruter: Google Routes Library med cykeltransport og sikker fallback
 Udgivelse: GitHub Pages fra main /docs
-Ingen GitHub Action, npm eller service worker.
+Ingen brugeroprettet GitHub Action, npm, build-trin eller service worker.

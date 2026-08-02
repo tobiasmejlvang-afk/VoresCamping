@@ -1,19 +1,23 @@
-VORES CAMPING – UDGIV DIREKTE FRA /docs
+VORES CAMPING 6.0 – INTEGRERET KORT FRA /docs
 
+UDGIVELSE
 1. Upload README.md, START-HER.txt og hele mappen "docs" til roden af main-branchen.
-2. Kontrollér på GitHub, at docs/index.html findes.
-3. Åbn Settings > Pages.
+2. Kontrollér, at docs/index.html, docs/app.js, docs/maps.js og docs/styles.css findes.
+3. Åbn GitHub: Settings > Pages.
 4. Source: Deploy from a branch.
 5. Branch: main.
 6. Folder: /docs.
 7. Tryk Save.
 
-Der skal IKKE laves en GitHub Action, og der er ingen npm/build-kommando.
+Der skal IKKE oprettes en GitHub Action, og der er ingen npm- eller build-kommando.
 
-Din adresse bliver normalt:
-https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/
+KORT
+- OpenStreetMap virker direkte uden nøgle.
+- Google Maps aktiveres valgfrit under Indstillinger > Kort og Google Maps.
+- Til præcise Google-cykelruter skal Maps JavaScript API og Routes API være aktiveret.
+- Begræns API-nøglen til din GitHub Pages-adresse.
 
 Ved gammel cache eller hvid skærm:
 https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html
 
-Version: 4.0 – Google Maps-rutedeling og valg af forsidevisning.
+Version: 6.0 – integreret kort, stedmarkører og cykelruter.

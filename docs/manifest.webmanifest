@@ -1,8 +1,10 @@
 {
   "name": "Vores Camping",
   "short_name": "Camping",
+  "description": "Personlig dansk campingdagbog med vurderinger, billeder, integreret kort og cykelruter.",
   "lang": "da",
   "start_url": "./#/overblik",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f5f4ed",
   "theme_color": "#0f5c4c",

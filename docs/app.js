@@ -2,7 +2,7 @@
 'use strict';
 
 const STORAGE_KEY = 'vores-camping-static-v3';
-const APP_VERSION = 4;
+const APP_VERSION = 6;
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
@@ -34,6 +34,9 @@ const DEFAULT_SETTINGS = {
   welcomeTitle:'Velkommen til vores campingeventyr',
   welcomeText:'Gem minderne, vurder pladserne og find næste stop på turen.',
   dashboardStyle:'cards',
+  mapProvider:'auto',
+  googleMapsApiKey:'',
+  googleMapId:'',
   sections:[
     {id:'stats',label:'Nøgletal',visible:true},
     {id:'recent',label:'Seneste besøg',visible:true},
@@ -45,7 +48,7 @@ const DEFAULT_SETTINGS = {
 
 const DEMO_CAMPSITES = [
   {
-    id:'demo-vestkyst',status:'visited',name:'Vestkyst Camping',country:'Danmark',region:'Vestjylland',city:'Hvide Sande',address:'Fjordvej 18, 6960 Hvide Sande',website:'',phone:'',
+    id:'demo-vestkyst',status:'visited',name:'Vestkyst Camping',country:'Danmark',region:'Vestjylland',city:'Hvide Sande',address:'Fjordvej 18, 6960 Hvide Sande',latitude:56.0048,longitude:8.1294,placeId:'',website:'',phone:'',
     description:'En rolig campingplads tæt på både fjord og Vesterhav. Perfekt til solnedgange, gåture og cykling langs vandet.',
     notes:'Plads 42 havde læ og aftensol. Husk det lange elkabel næste gang.',
     visitDates:['2026-06-12','2025-08-03'],plannedDate:'',tags:['Ved vandet','Natur','Hundevenlig'],
@@ -55,7 +58,7 @@ const DEMO_CAMPSITES = [
     createdAt:'2026-06-14T10:00:00.000Z',updatedAt:'2026-06-14T10:00:00.000Z'
   },
   {
-    id:'demo-mosel',status:'visited',name:'Camping Moselblick',country:'Tyskland',region:'Rheinland-Pfalz',city:'Cochem',address:'Moselpromenade 7, Cochem',website:'',phone:'',
+    id:'demo-mosel',status:'visited',name:'Camping Moselblick',country:'Tyskland',region:'Rheinland-Pfalz',city:'Cochem',address:'Moselpromenade 7, Cochem',latitude:50.1467,longitude:7.1668,placeId:'',website:'',phone:'',
     description:'Hyggelig plads ved Mosel med udsigt til vinmarker. God base til små byer, vinslotte og cykling langs floden.',
     notes:'Book en plads direkte ved vandet. Meget populær i juli.',visitDates:['2025-07-18'],plannedDate:'',tags:['Ved vandet','Cykelruter','Udsigt'],
     ratings:{beliggenhed:5,'pris-kvalitet':4,renlighed:4,service:5,faciliteter:4,hundevenlig:4,cykelmuligheder:5},photos:[],
@@ -63,16 +66,16 @@ const DEMO_CAMPSITES = [
     createdAt:'2025-07-20T10:00:00.000Z',updatedAt:'2025-07-20T10:00:00.000Z'
   },
   {
-    id:'demo-siljan',status:'visited',name:'Siljansbadet Camping',country:'Sverige',region:'Dalarna',city:'Rättvik',address:'Långbryggevägen 20, Rättvik',website:'',phone:'',
+    id:'demo-siljan',status:'visited',name:'Siljansbadet Camping',country:'Sverige',region:'Dalarna',city:'Rättvik',address:'Långbryggevägen 20, Rättvik',latitude:60.8863,longitude:15.1178,placeId:'',website:'',phone:'',
     description:'Grøn og afslappet plads tæt på Siljan-søen. Flot natur og gode muligheder for badning og cykling.',notes:'',visitDates:['2024-08-09'],plannedDate:'',tags:['Sø','Natur','Sommer'],
     ratings:{beliggenhed:5,'pris-kvalitet':5,renlighed:4,service:4,faciliteter:4,hundevenlig:5,cykelmuligheder:4},photos:[],routes:[],createdAt:'2024-08-10T10:00:00.000Z',updatedAt:'2024-08-10T10:00:00.000Z'
   },
   {
-    id:'demo-garda',status:'wishlist',name:'Camping Bella Italia',country:'Italien',region:'Gardasøen',city:'Peschiera del Garda',address:'Via Bell’Italia 2, Peschiera del Garda',website:'',phone:'',
+    id:'demo-garda',status:'wishlist',name:'Camping Bella Italia',country:'Italien',region:'Gardasøen',city:'Peschiera del Garda',address:'Via Bell’Italia 2, Peschiera del Garda',latitude:45.4372,longitude:10.6914,placeId:'',website:'',phone:'',
     description:'Stor plads ved Gardasøen med pool, restauranter og mulighed for cykelture langs søen.',notes:'Se efter en rolig plads lidt væk fra poolområdet.',visitDates:[],plannedDate:'2027-06-15',tags:['Gardasøen','Sommer','Cykling'],ratings:{},photos:[],routes:[],createdAt:'2026-07-02T10:00:00.000Z',updatedAt:'2026-07-02T10:00:00.000Z'
   },
   {
-    id:'demo-normandiet',status:'wishlist',name:'Camping i Normandiet',country:'Frankrig',region:'Normandiet',city:'Étretat',address:'Étretat, Frankrig',website:'',phone:'',
+    id:'demo-normandiet',status:'wishlist',name:'Camping i Normandiet',country:'Frankrig',region:'Normandiet',city:'Étretat',address:'Étretat, Frankrig',latitude:49.7063,longitude:0.2050,placeId:'',website:'',phone:'',
     description:'Kystnatur, klipper og små franske byer. Skal helst være en plads med gode cykelmuligheder.',notes:'',visitDates:[],plannedDate:'',tags:['Kyst','Natur','Cykelruter'],ratings:{},photos:[],routes:[],createdAt:'2026-07-02T10:00:00.000Z',updatedAt:'2026-07-02T10:00:00.000Z'
   }
 ];
@@ -80,11 +83,13 @@ const DEMO_CAMPSITES = [
 const createDefaultState = () => ({version:APP_VERSION,campsites:deepClone(DEMO_CAMPSITES),categories:deepClone(DEFAULT_CATEGORIES),settings:deepClone(DEFAULT_SETTINGS)});
 
 let state = loadState();
-let ui = {search:'',sort:'latest',mapScope:'europa',mapFilter:'all',mapQuery:'Europa',modal:null,toast:null};
+let ui = {search:'',sort:'latest',mapScope:'europa',mapFilter:'all',mapSelectedId:'',modal:null,toast:null};
 let activeDraft = null;
 let activeDraftKey = '';
 let routeDraft = blankRoute();
 let routeEditIndex = -1;
+let activeMapControllers = [];
+let overviewMapController = null;
 
 function normalizeState(raw,{useDemoFallback=true}={}){
   if(!raw || !Array.isArray(raw.campsites)) return useDemoFallback ? createDefaultState() : null;
@@ -92,6 +97,9 @@ function normalizeState(raw,{useDemoFallback=true}={}){
     ...deepClone(DEFAULT_SETTINGS),
     ...(raw.settings||{}),
     dashboardStyle:['cards','compact'].includes(raw.settings?.dashboardStyle)?raw.settings.dashboardStyle:DEFAULT_SETTINGS.dashboardStyle,
+    mapProvider:['auto','google','openstreetmap'].includes(raw.settings?.mapProvider)?raw.settings.mapProvider:DEFAULT_SETTINGS.mapProvider,
+    googleMapsApiKey:typeof raw.settings?.googleMapsApiKey==='string'?raw.settings.googleMapsApiKey:'',
+    googleMapId:typeof raw.settings?.googleMapId==='string'?raw.settings.googleMapId:'',
     sections:Array.isArray(raw.settings?.sections)&&raw.settings.sections.length?raw.settings.sections:deepClone(DEFAULT_SETTINGS.sections)
   };
   const campsites=raw.campsites.map(camp=>({
@@ -101,11 +109,16 @@ function normalizeState(raw,{useDemoFallback=true}={}){
     tags:Array.isArray(camp?.tags)?camp.tags:[],
     photos:Array.isArray(camp?.photos)?camp.photos:[],
     ratings:camp?.ratings&&typeof camp.ratings==='object'?camp.ratings:{},
+    latitude:validCoordinateValue(camp?.latitude,-90,90)?Number(camp.latitude):'',
+    longitude:validCoordinateValue(camp?.longitude,-180,180)?Number(camp.longitude):'',
+    placeId:camp?.placeId||'',
     routes:Array.isArray(camp?.routes)?camp.routes.map(route=>({
       ...blankRoute(),
       ...(route||{}),
       id:route?.id||uid('route'),
-      mapsUrl:route?.mapsUrl||route?.googleMapsUrl||route?.url||''
+      mapsUrl:route?.mapsUrl||route?.googleMapsUrl||route?.url||'',
+      points:Array.isArray(route?.points)?route.points.filter(p=>Number.isFinite(Number(p?.lat))&&Number.isFinite(Number(p?.lng))).map(p=>({lat:Number(p.lat),lng:Number(p.lng),label:p.label||''})):[],
+      path:Array.isArray(route?.path)?route.path.filter(p=>Number.isFinite(Number(p?.lat))&&Number.isFinite(Number(p?.lng))).map(p=>({lat:Number(p.lat),lng:Number(p.lng)})):[]
     })):[]
   }));
   return {
@@ -161,8 +174,15 @@ function latestVisit(camp){return [...(camp.visitDates||[])].sort().reverse()[0]
 function routeCount(){return state.campsites.reduce((sum,c)=>sum+(c.routes?.length||0),0);}
 function countriesCount(){return new Set(state.campsites.filter(c=>c.status==='visited').map(c=>c.country).filter(Boolean)).size;}
 function placeQuery(camp){return [camp.address,camp.city,camp.region,camp.country].filter(Boolean).join(', ')||camp.name;}
+function validCoordinateValue(value,min,max){return value!==''&&value!==null&&value!==undefined&&Number.isFinite(Number(value))&&Number(value)>=min&&Number(value)<=max;}
+function hasCoordinates(value){return validCoordinateValue(value?.latitude??value?.lat,-90,90)&&validCoordinateValue(value?.longitude??value?.lng,-180,180);}
+function campPoint(camp){return hasCoordinates(camp)?{lat:Number(camp.latitude),lng:Number(camp.longitude)}:null;}
+function coordinateText(camp){return hasCoordinates(camp)?`${Number(camp.latitude).toFixed(6)}, ${Number(camp.longitude).toFixed(6)}`:'Placering er ikke valgt endnu';}
 function googleSearchUrl(query){return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;}
-function googleEmbedUrl(query){return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;}
+function googleMapUrlForCamp(camp){const p=campPoint(camp);return p?googleSearchUrl(`${p.lat},${p.lng}`):googleSearchUrl(placeQuery(camp));}
+function formatDistanceMeters(value){const meters=Number(value||0);if(!meters)return'';return meters>=1000?`${(meters/1000).toFixed(1).replace('.',',')} km`:`${Math.round(meters)} m`;}
+function formatDurationSeconds(value){const total=Math.round(Number(value||0));if(!total)return'';const h=Math.floor(total/3600),m=Math.round((total%3600)/60);return h?`${h} t ${m} min`:`${m} min`;}
+function mapMarkerForCamp(camp){const point=campPoint(camp);if(!point)return null;return {...point,id:camp.id,title:camp.name,subtitle:[camp.city,camp.country].filter(Boolean).join(', ')||placeQuery(camp),status:camp.status,rating:average(camp),detailHash:`#/campingplads/${encodeURIComponent(camp.id)}`,googleUrl:googleMapUrlForCamp(camp)};}
 function googleDirectionsUrl(route){
   const base='https://www.google.com/maps/dir/?api=1';
   const parts=['travelmode=bicycling'];
@@ -193,9 +213,9 @@ function googleRouteEmbedUrl(route){
   return `https://www.google.com/maps?output=embed&saddr=${encodeURIComponent(route.origin||'')}&daddr=${encodeURIComponent((route.destination||'')+via)}&dirflg=b`;
 }
 function blankCampsite(status='visited'){
-  return {id:'',status,name:'',country:'Danmark',region:'',city:'',address:'',website:'',phone:'',description:'',notes:'',visitDates:status==='visited'?['']:[],plannedDate:'',tags:[],ratings:{},photos:[],routes:[],createdAt:'',updatedAt:''};
+  return {id:'',status,name:'',country:'Danmark',region:'',city:'',address:'',latitude:'',longitude:'',placeId:'',website:'',phone:'',description:'',notes:'',visitDates:status==='visited'?['']:[],plannedDate:'',tags:[],ratings:{},photos:[],routes:[],createdAt:'',updatedAt:''};
 }
-function blankRoute(){return {id:'',name:'',origin:'',destination:'',waypoints:'',distance:'',difficulty:'Let',description:'',mapsUrl:''};}
+function blankRoute(){return {id:'',name:'',origin:'',destination:'',waypoints:'',distance:'',difficulty:'Let',description:'',mapsUrl:'',points:[],path:[],routeProvider:'',distanceMeters:0,durationSeconds:0};}
 function currentRoute(){
   const raw=location.hash.slice(1)||'/overblik'; const [path,query='']=raw.split('?'); return {path:path.startsWith('/')?path:`/${path}`,params:new URLSearchParams(query)};
 }
@@ -215,7 +235,7 @@ function shell(content,title='Overblik'){
       <div class="sidebar-note"><strong>Gemmer automatisk</strong>Data ligger lokalt på denne enhed. Brug sikkerhedskopi under Indstillinger.</div>
     </aside>
     <div class="main">
-      <header class="topbar"><div><div class="topbar-title">${iconForPage(currentRoute().path)} ${esc(title)}</div><div class="topbar-sub">${esc(s.appName)} · Dansk campingoverblik</div></div><div class="top-actions"><button class="btn secondary small hide-mobile" data-nav="/kort">🗺️ Google Maps</button><button class="btn primary small" data-nav="/ny?status=visited">＋ Tilføj</button></div></header>
+      <header class="topbar"><div><div class="topbar-title">${iconForPage(currentRoute().path)} ${esc(title)}</div><div class="topbar-sub">${esc(s.appName)} · Dansk campingoverblik</div></div><div class="top-actions"><button class="btn secondary small hide-mobile" data-nav="/kort">🗺️ Kort</button><button class="btn primary small" data-nav="/ny?status=visited">＋ Tilføj</button></div></header>
       <main class="content">${content}</main>
       <nav class="mobile-nav">${navs.slice(0,5).map(([p,i,l])=>`<a class="${activeNav(p)?'active':''}" data-nav="${p}"><span>${i}</span>${l.replace('Besøgte','Besøgte').replace('Oversigtskort','Kort').replace('Bedst bedømte','Bedst').replace('Vil besøge','Ønsker')}</a>`).join('')}</nav>
     </div>
@@ -294,11 +314,14 @@ function renderMap(){
   let camps=state.campsites;
   if(ui.mapFilter==='visited')camps=camps.filter(c=>c.status==='visited');
   if(ui.mapFilter==='wishlist')camps=camps.filter(c=>c.status==='wishlist');
-  const selected=ui.mapQuery|| (ui.mapScope==='world'?'Verden':'Europa');
-  return shell(`${pageHeader('Google Maps','Oversigtskort','Skift mellem Europa og verden. Vælg en campingplads i listen for at se den direkte på Google Maps.',`<a class="btn secondary" target="_blank" rel="noopener" href="${attr(googleSearchUrl(selected))}">Åbn i Google Maps ↗</a>`)}
-    <div class="toolbar card"><div class="segmented"><button class="${ui.mapScope==='europa'?'active':''}" data-action="map-scope" data-value="europa">🗺️ Europakort</button><button class="${ui.mapScope==='world'?'active':''}" data-action="map-scope" data-value="world">🌍 Verdenskort</button></div><div class="segmented"><button class="${ui.mapFilter==='all'?'active':''}" data-action="map-filter" data-value="all">Alle</button><button class="${ui.mapFilter==='visited'?'active':''}" data-action="map-filter" data-value="visited">Besøgte</button><button class="${ui.mapFilter==='wishlist'?'active':''}" data-action="map-filter" data-value="wishlist">Vil besøge</button></div></div>
-    <div class="map-layout"><div class="map-card card"><iframe class="map-frame" title="Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen src="${attr(googleEmbedUrl(selected))}"></iframe></div><div class="map-list card">${camps.length?camps.map(c=>{const query=placeQuery(c);return `<button class="map-place ${selected===query?'selected':''}" data-action="map-select" data-query="${attr(query)}" style="width:100%;text-align:left;background-color:transparent"><span class="pin">${c.status==='wishlist'?'💛':'📍'}</span><div><strong>${esc(c.name)}</strong><small>${esc([c.city,c.country].filter(Boolean).join(', '))}</small></div>${average(c)?`<span>★ ${average(c).toFixed(1).replace('.',',')}</span>`:''}</button>`}).join(''):`<div class="empty"><div class="big">🗺️</div><p>Ingen steder i dette filter.</p></div>`}</div></div>
-    <div class="help-box" style="margin-top:14px"><strong>Google Maps uden API-nøgle:</strong> Kortet viser det valgte sted, og knappen åbner den fulde Google Maps-app. Det gør løsningen gratis og langt mindre skrøbelig på GitHub Pages.</div>`,'Oversigtskort');
+  const mapped=camps.filter(hasCoordinates),missing=camps.filter(c=>!hasCoordinates(c));
+  const selected=state.campsites.find(c=>c.id===ui.mapSelectedId);
+  const provider=window.VCMaps?.normalizeProvider(state.settings)==='google'?'Google Maps':'OpenStreetMap';
+  const openQuery=selected?googleMapUrlForCamp(selected):googleSearchUrl(ui.mapScope==='world'?'Verden':'Europa');
+  return shell(`${pageHeader('Integreret kort','Oversigtskort','Se alle besøgte campingpladser og ønsker som markører. Klik på en markør for at åbne pladsen.',`<a class="btn secondary" target="_blank" rel="noopener" href="${attr(openQuery)}">Åbn i Google Maps ↗</a>`)}
+    <div class="toolbar card map-toolbar"><div class="segmented"><button class="${ui.mapScope==='europa'?'active':''}" data-action="map-scope" data-value="europa">🗺️ Europakort</button><button class="${ui.mapScope==='world'?'active':''}" data-action="map-scope" data-value="world">🌍 Verdenskort</button></div><div class="segmented"><button class="${ui.mapFilter==='all'?'active':''}" data-action="map-filter" data-value="all">Alle</button><button class="${ui.mapFilter==='visited'?'active':''}" data-action="map-filter" data-value="visited">Besøgte</button><button class="${ui.mapFilter==='wishlist'?'active':''}" data-action="map-filter" data-value="wishlist">Vil besøge</button></div><div class="map-tool-actions"><button class="btn secondary small" data-action="map-fit">Vis alle</button><button class="btn secondary small" data-action="map-locate">◎ Min placering</button></div></div>
+    <div class="map-layout"><div class="map-card card"><div id="overview-map" class="integrated-map" aria-label="Kort over campingpladser"></div><div class="map-status"><span class="status-dot"></span>${esc(provider)} · ${mapped.length} placeret${missing.length?` · ${missing.length} mangler placering`:''}</div></div><div class="map-list card">${camps.length?camps.map(c=>{const point=campPoint(c);return `<div class="map-place ${ui.mapSelectedId===c.id?'selected':''} ${point?'':'missing'}"><button data-action="map-select" data-id="${attr(c.id)}" ${point?'':'disabled'}><span class="pin">${c.status==='wishlist'?'💛':'📍'}</span><div><strong>${esc(c.name)}</strong><small>${esc([c.city,c.country].filter(Boolean).join(', ')||'Sted ikke angivet')}</small>${point?`<em>${esc(coordinateText(c))}</em>`:'<em>Mangler koordinater</em>'}</div>${average(c)?`<span>★ ${average(c).toFixed(1).replace('.',',')}</span>`:''}</button><div class="map-place-actions">${point?`<a class="btn ghost small" href="#/campingplads/${encodeURIComponent(c.id)}">Se mere</a>`:`<button class="btn secondary small" data-action="map-geocode-camp" data-id="${attr(c.id)}">Find placering</button><a class="btn ghost small" href="#/rediger/${encodeURIComponent(c.id)}">Rediger</a>`}</div></div>`}).join(''):`<div class="empty"><div class="big">🗺️</div><p>Ingen steder i dette filter.</p></div>`}</div></div>
+    <div class="help-box" style="margin-top:14px"><strong>Kortet er integreret i appen:</strong> Det gratis kort virker straks uden API-nøgle. Gemmer du en Google Maps JavaScript API-nøgle under <strong>Indstillinger → Kort og Google Maps</strong>, skifter appen automatisk til Google Maps og kan beregne præcise cykelruter. Google Maps-links kan altid åbnes uden nøgle.</div>`,'Oversigtskort');
 }
 
 function ratingRows(camp){
@@ -310,13 +333,14 @@ function renderDetail(id){
   const score=average(camp),query=placeQuery(camp),photo=camp.photos?.[0]||'assets/camping-landscape.jpg';
   const photos=camp.photos||[],routes=camp.routes||[];
   return shell(`${pageHeader(camp.status==='wishlist'?'Ønskebesøg':'Campingdagbog',camp.name,[camp.city,camp.country].filter(Boolean).join(', '),`<button class="btn secondary" data-nav="/rediger/${encodeURIComponent(camp.id)}">✎ Rediger</button><button class="btn danger" data-action="delete-camp" data-id="${attr(camp.id)}">🗑 Slet</button>`)}
-    <section class="detail-hero"><div class="detail-cover card"><img src="${attr(photo)}" alt="${attr(camp.name)}"><div class="overlay"></div><div class="detail-title"><span class="status-badge ${camp.status==='wishlist'?'wishlist':''}" style="position:static;display:inline-block;margin-bottom:10px">${camp.status==='wishlist'?'Vil besøge':'Besøgt'}</span><h1>${esc(camp.name)}</h1><p>📍 ${esc(query)}</p></div></div><aside class="detail-side card"><div class="detail-score"><strong>${score?score.toFixed(1).replace('.',','):'–'}</strong><span>samlet vurdering ud af 5</span></div><div class="detail-meta"><div><span>📅</span><div><strong>${camp.status==='wishlist'?'Planlagt besøg':'Seneste besøg'}</strong><small>${camp.status==='wishlist'?fmtDate(camp.plannedDate):fmtDate(latestVisit(camp))}</small></div></div><div><span>🚲</span><div><strong>${routes.length} cykelruter</strong><small>Gemte omkring pladsen</small></div></div><div><span>📷</span><div><strong>${photos.length} billeder</strong><small>Campingminder i scrapbogen</small></div></div></div><a class="btn primary" style="width:100%;margin-top:14px" target="_blank" rel="noopener" href="${attr(googleSearchUrl(query))}">🗺️ Vis i Google Maps</a></aside></section>
+    <section class="detail-hero"><div class="detail-cover card"><img src="${attr(photo)}" alt="${attr(camp.name)}"><div class="overlay"></div><div class="detail-title"><span class="status-badge ${camp.status==='wishlist'?'wishlist':''}" style="position:static;display:inline-block;margin-bottom:10px">${camp.status==='wishlist'?'Vil besøge':'Besøgt'}</span><h1>${esc(camp.name)}</h1><p>📍 ${esc(query)}</p></div></div><aside class="detail-side card"><div class="detail-score"><strong>${score?score.toFixed(1).replace('.',','):'–'}</strong><span>samlet vurdering ud af 5</span></div><div class="detail-meta"><div><span>📅</span><div><strong>${camp.status==='wishlist'?'Planlagt besøg':'Seneste besøg'}</strong><small>${camp.status==='wishlist'?fmtDate(camp.plannedDate):fmtDate(latestVisit(camp))}</small></div></div><div><span>🚲</span><div><strong>${routes.length} cykelruter</strong><small>Gemte omkring pladsen</small></div></div><div><span>📷</span><div><strong>${photos.length} billeder</strong><small>Campingminder i scrapbogen</small></div></div></div><a class="btn primary" style="width:100%;margin-top:14px" target="_blank" rel="noopener" href="${attr(googleMapUrlForCamp(camp))}">🗺️ Vis i Google Maps</a></aside></section>
+    <section class="detail-section card location-map-section"><div class="section-head"><div><h2>Placering på kortet</h2><p>${hasCoordinates(camp)?esc(coordinateText(camp)):'Campingpladsen mangler endnu en præcis placering.'}</p></div>${hasCoordinates(camp)?`<button class="btn secondary small" data-action="map-locate">◎ Min placering</button>`:`<button class="btn primary small" data-action="map-geocode-camp" data-id="${attr(camp.id)}">Find placering</button>`}</div>${hasCoordinates(camp)?'<div id="detail-map" class="integrated-map detail-map"></div>':'<div class="map-missing-panel">📍 Tryk på <strong>Find placering</strong>, eller vælg punktet manuelt under Rediger.</div>'}</section>
     <div class="detail-grid"><div>
       <section class="detail-section card"><h2>Beskrivelse</h2><div class="prose">${esc(camp.description||'Der er endnu ikke tilføjet en beskrivelse.')}</div>${(camp.tags||[]).length?`<div class="tag-row" style="margin-top:15px">${camp.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}</section>
       ${camp.notes?`<section class="detail-section card"><h2>Private noter</h2><div class="prose">${esc(camp.notes)}</div></section>`:''}
       <section class="detail-section card"><h2>Vurderinger</h2><div class="ratings-list">${ratingRows(camp)}</div></section>
       ${photos.length?`<section class="detail-section card"><h2>Billeder</h2><div class="gallery">${photos.map((p,i)=>`<button data-action="photo-open" data-id="${attr(camp.id)}" data-index="${i}"><img src="${attr(p)}" alt="Billede ${i+1}"></button>`).join('')}</div></section>`:''}
-      <section class="detail-section card"><div class="section-head"><div><h2>Cykelruter</h2><p>Åbn eller del ruter, der er lavet i appen eller gemt i Google Maps.</p></div><button class="btn secondary small" data-nav="/rediger/${encodeURIComponent(camp.id)}">＋ Tilføj rute</button></div>${routes.length?routes.map(r=>`<article class="route-card card"><div class="route-head"><div><h3 style="margin:0">🚲 ${esc(r.name)}</h3><div class="route-meta">${r.distance?`<span class="pill">${esc(r.distance)}</span>`:''}<span class="pill">${esc(r.difficulty||'Ikke angivet')}</span>${r.mapsUrl?'<span class="pill">Delt Google Maps-rute</span>':''}</div></div><div class="route-actions"><a class="btn primary small" target="_blank" rel="noopener" href="${attr(routeOpenUrl(r))}">Åbn i Google Maps ↗</a><button class="btn secondary small" data-action="share-route" data-camp="${attr(camp.id)}" data-route="${attr(r.id)}">Del rute</button></div></div>${r.description?`<p>${esc(r.description)}</p>`:''}${routeHasPoints(r)?`<iframe class="route-map" title="Cykelrute i Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${attr(googleRouteEmbedUrl(r))}"></iframe>`:r.mapsUrl?'<div class="help-box" style="margin-top:12px">Ruten er gemt som et delt Google Maps-link. Tryk <strong>Åbn i Google Maps</strong> for at se den komplette rute.</div>':''}</article>`).join(''):`<div class="empty"><div class="big">🚲</div><p>Ingen cykelruter endnu.</p></div>`}</section>
+      <section class="detail-section card"><div class="section-head"><div><h2>Cykelruter</h2><p>Ruter vises direkte på kortet og kan åbnes eller deles i Google Maps.</p></div><button class="btn secondary small" data-nav="/rediger/${encodeURIComponent(camp.id)}">＋ Tilføj rute</button></div>${routes.length?routes.map(r=>`<article class="route-card card"><div class="route-head"><div><h3 style="margin:0">🚲 ${esc(r.name)}</h3><div class="route-meta">${r.distance?`<span class="pill">${esc(r.distance)}</span>`:formatDistanceMeters(r.distanceMeters)?`<span class="pill">${esc(formatDistanceMeters(r.distanceMeters))}</span>`:''}${formatDurationSeconds(r.durationSeconds)?`<span class="pill">${esc(formatDurationSeconds(r.durationSeconds))}</span>`:''}<span class="pill">${esc(r.difficulty||'Ikke angivet')}</span>${r.routeProvider==='google'?'<span class="pill">Præcis Google-cykelrute</span>':r.mapsUrl?'<span class="pill">Delt Google Maps-rute</span>':(r.path?.length||r.points?.length)?'<span class="pill">Kortpunkter</span>':''}</div></div><div class="route-actions"><a class="btn primary small" target="_blank" rel="noopener" href="${attr(routeOpenUrl(r))}">Åbn i Google Maps ↗</a><button class="btn secondary small" data-action="share-route" data-camp="${attr(camp.id)}" data-route="${attr(r.id)}">Del rute</button></div></div>${r.description?`<p>${esc(r.description)}</p>`:''}${(r.path?.length||r.points?.length)?`<div class="route-map integrated-map" data-route-map data-camp="${attr(camp.id)}" data-route="${attr(r.id)}" aria-label="Cykelruten ${attr(r.name)}"></div><div class="route-warning">⚠️ Kontrollér altid underlag og trafiksikkerhed. Cykelruter kan indeholde strækninger, der kræver ekstra opmærksomhed.</div>`:r.mapsUrl?'<div class="help-box" style="margin-top:12px">Ruten er gemt som et delt Google Maps-link. Tryk <strong>Åbn i Google Maps</strong> for at se den komplette rute. Tilføj start og slut under Rediger for også at vise den i appen.</div>':`<div class="help-box" style="margin-top:12px">Ruten har start og slut, men mangler endnu kortlinjen. <button class="btn primary small" style="margin-top:10px" data-action="route-calculate-saved" data-camp="${attr(camp.id)}" data-route="${attr(r.id)}">Beregn og vis ruten</button></div>`}</article>`).join(''):`<div class="empty"><div class="big">🚲</div><p>Ingen cykelruter endnu.</p></div>`}</section>
     </div><aside>
       <section class="detail-section card"><h2>Besøg</h2>${camp.status==='visited'?(camp.visitDates||[]).filter(Boolean).length?`<div class="date-list">${camp.visitDates.filter(Boolean).sort().reverse().map(d=>`<div class="date-row">📅 <strong>${fmtDate(d)}</strong></div>`).join('')}</div>`:'<p class="camp-location">Ingen datoer angivet.</p>':`<p>${camp.plannedDate?fmtDate(camp.plannedDate):'Ingen planlagt dato.'}</p>`}</section>
       <section class="detail-section card"><h2>Kontakt og sted</h2><div class="detail-meta"><div><span>📍</span><div><strong>Adresse</strong><small>${esc(query)}</small></div></div>${camp.phone?`<div><span>☎️</span><div><strong>Telefon</strong><small>${esc(camp.phone)}</small></div></div>`:''}${camp.website?`<div><span>🌐</span><div><strong>Hjemmeside</strong><small><a target="_blank" rel="noopener" href="${attr(normalizeUrl(camp.website))}">${esc(camp.website)}</a></small></div></div>`:''}</div></section>
@@ -352,19 +376,22 @@ function formRatingRows(){
 }
 function routeEditorHtml(){
   const canOpen=Boolean((routeDraft.mapsUrl||'').trim()||routeHasPoints(routeDraft));
+  const hasPreview=Boolean(routeDraft.path?.length||routeDraft.points?.length);
+  const providerText=routeDraft.routeProvider==='google'?'Præcis cykelrute beregnet af Google Maps':hasPreview?'Ruten vises som punkter mellem start, stop og mål':'';
   return `<div class="field-grid">
     <div class="field"><label>Rutenavn *</label><input data-route-field="name" value="${attr(routeDraft.name)}" placeholder="F.eks. Fjorden rundt"></div>
     <div class="field"><label>Sværhedsgrad</label><select data-route-field="difficulty"><option ${routeDraft.difficulty==='Let'?'selected':''}>Let</option><option ${routeDraft.difficulty==='Middel'?'selected':''}>Middel</option><option ${routeDraft.difficulty==='Svær'?'selected':''}>Svær</option></select></div>
-    <div class="field full route-link-field"><label>Delt Google Maps-link</label><input data-route-field="mapsUrl" value="${attr(routeDraft.mapsUrl)}" placeholder="Indsæt linket fra Del → Kopiér link i Google Maps"><small>Brug dette felt, når ruten allerede er lavet og gemt i Google Maps. Linket kan bagefter deles direkte fra appen.</small></div>
-    <div class="route-divider full"><span>eller byg ruten med steder</span></div>
+    <div class="field full route-link-field"><label>Delt Google Maps-link</label><input data-route-field="mapsUrl" value="${attr(routeDraft.mapsUrl)}" placeholder="Indsæt linket fra Del → Kopiér link i Google Maps"><small>Et delt link kan åbnes og deles fra appen. For at vise ruten direkte på kortet skal start og slut også udfyldes.</small></div>
+    <div class="route-divider full"><span>byg og vis ruten i appen</span></div>
     <div class="field"><label>Startsted</label><input data-route-field="origin" value="${attr(routeDraft.origin)}" placeholder="Campingpladsens adresse eller navn"></div>
     <div class="field"><label>Slutsted</label><input data-route-field="destination" value="${attr(routeDraft.destination)}" placeholder="By, adresse eller seværdighed"></div>
     <div class="field full"><label>Stop undervejs</label><input data-route-field="waypoints" value="${attr(routeDraft.waypoints)}" placeholder="Adskil flere stop med semikolon"></div>
-    <div class="field"><label>Afstand</label><input data-route-field="distance" value="${attr(routeDraft.distance)}" placeholder="F.eks. 24,6 km"></div>
+    <div class="field"><label>Afstand</label><input data-route-field="distance" value="${attr(routeDraft.distance)}" placeholder="Beregnes automatisk med Google Maps"></div>
     <div class="field full"><label>Beskrivelse</label><textarea data-route-field="description" placeholder="Underlag, seværdigheder, pauser og gode råd…">${esc(routeDraft.description)}</textarea></div>
   </div>
-  ${routeHasPoints(routeDraft)?`<iframe class="route-map" title="Forhåndsvisning af cykelrute" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${attr(googleRouteEmbedUrl(routeDraft))}"></iframe>`:''}
-  <div class="page-actions route-editor-actions" style="margin-top:12px"><a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&travelmode=bicycling">Lav rute i Google Maps ↗</a>${canOpen?`<a class="btn secondary" target="_blank" rel="noopener" href="${attr(routeOpenUrl(routeDraft))}">Forhåndsvis rute ↗</a>`:''}<button type="button" class="btn secondary" data-action="route-clear">Ryd felter</button><button type="button" class="btn primary" data-action="route-save">${routeEditIndex>=0?'Gem ændringer':'Tilføj cykelrute'}</button></div>`;
+  <div class="page-actions route-calc-actions" style="margin-top:12px"><button type="button" class="btn secondary" data-action="route-use-camp-start">📍 Brug campingplads som start</button><button type="button" class="btn primary" data-action="route-calculate">🧭 Beregn og vis rute</button></div>
+  ${hasPreview?`<div id="route-draft-map" class="route-map integrated-map" aria-label="Forhåndsvisning af cykelrute"></div><div class="route-preview-meta">${providerText?`<strong>${esc(providerText)}</strong>`:''}${formatDistanceMeters(routeDraft.distanceMeters)?`<span>${esc(formatDistanceMeters(routeDraft.distanceMeters))}</span>`:''}${formatDurationSeconds(routeDraft.durationSeconds)?`<span>${esc(formatDurationSeconds(routeDraft.durationSeconds))}</span>`:''}</div><div class="route-warning">⚠️ Kontrollér altid ruten og underlaget før afgang. Cykelruter kan mangle fortov, cykelsti eller tydelig skiltning.</div>`:'<div class="map-missing-panel route-empty-preview">Skriv start og slut, og tryk <strong>Beregn og vis rute</strong>. Uden Google API-nøgle vises ruten som forbundne punkter; med nøgle og Routes API får du den præcise cykelrute.</div>'}
+  <div class="page-actions route-editor-actions" style="margin-top:12px"><a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&travelmode=bicycling">Lav rute i Google Maps ↗</a>${canOpen?`<a class="btn secondary" target="_blank" rel="noopener" href="${attr(routeOpenUrl(routeDraft))}">Åbn rute ↗</a>`:''}<button type="button" class="btn secondary" data-action="route-clear">Ryd felter</button><button type="button" class="btn primary" data-action="route-save">${routeEditIndex>=0?'Gem ændringer':'Tilføj cykelrute'}</button></div>`;
 }
 function renderForm(id,status='visited'){
   ensureDraft(id,status);
@@ -372,7 +399,7 @@ function renderForm(id,status='visited'){
   return shell(`${pageHeader(editing?'Rediger campingplads':'Ny campingplads',editing?activeDraft.name:(status==='wishlist'?'Tilføj ønskebesøg':'Tilføj campingplads'),'Alle oplysninger kan ændres senere. Appen gemmer først, når du trykker Gem.',`<button class="btn secondary" data-action="form-cancel">← Annuller</button>`)}
     <form id="camp-form">
       <section class="form-card card"><h2>Status</h2><p class="sub">Er pladsen allerede besøgt, eller står den på ønskelisten?</p><div class="segmented"><button type="button" class="${isVisited?'active':''}" data-action="draft-status" data-value="visited">🏕️ Besøgt</button><button type="button" class="${!isVisited?'active':''}" data-action="draft-status" data-value="wishlist">💛 Vil besøge</button></div></section>
-      <section class="form-card card"><h2>Campingpladsen</h2><p class="sub">Navn, placering og kontaktoplysninger.</p><div class="field-grid">
+      <section class="form-card card"><h2>Campingpladsen og kortplacering</h2><p class="sub">Skriv adressen og find den automatisk, eller klik direkte på kortet for at flytte markøren.</p><div class="field-grid">
         <div class="field full"><label>Navn *</label><input data-draft-field="name" value="${attr(activeDraft.name)}" required placeholder="Campingpladsens navn"></div>
         <div class="field"><label>Land</label><input data-draft-field="country" value="${attr(activeDraft.country)}"></div>
         <div class="field"><label>Region / område</label><input data-draft-field="region" value="${attr(activeDraft.region)}"></div>
@@ -380,7 +407,9 @@ function renderForm(id,status='visited'){
         <div class="field"><label>Adresse</label><input data-draft-field="address" value="${attr(activeDraft.address)}"></div>
         <div class="field"><label>Hjemmeside</label><input data-draft-field="website" value="${attr(activeDraft.website)}" placeholder="www…"></div>
         <div class="field"><label>Telefon</label><input data-draft-field="phone" value="${attr(activeDraft.phone)}"></div>
-      </div>${placeQuery(activeDraft)?`<div class="page-actions" style="justify-content:flex-start;margin-top:12px"><a class="btn secondary small" target="_blank" rel="noopener" href="${attr(googleSearchUrl(placeQuery(activeDraft)))}">🗺️ Find stedet i Google Maps ↗</a></div>`:''}</section>
+        <div class="field"><label>Breddegrad</label><input type="number" step="any" data-draft-field="latitude" value="${attr(activeDraft.latitude)}" placeholder="F.eks. 56.1629"></div>
+        <div class="field"><label>Længdegrad</label><input type="number" step="any" data-draft-field="longitude" value="${attr(activeDraft.longitude)}" placeholder="F.eks. 10.2039"></div>
+      </div><div class="page-actions location-actions" style="justify-content:flex-start;margin-top:12px"><button type="button" class="btn primary small" data-action="camp-geocode-draft">📍 Find ud fra adresse</button><button type="button" class="btn secondary small" data-action="camp-use-location">◎ Brug min placering</button>${hasCoordinates(activeDraft)?'<button type="button" class="btn ghost small" data-action="camp-clear-location">Ryd placering</button>':''}${placeQuery(activeDraft)?`<a class="btn ghost small" target="_blank" rel="noopener" href="${attr(googleMapUrlForCamp(activeDraft))}">Åbn i Google Maps ↗</a>`:''}</div><div class="coordinate-status"><strong>Valgt punkt:</strong> <span id="draft-coordinate-text">${esc(coordinateText(activeDraft))}</span></div><div id="location-picker-map" class="location-picker-map integrated-map" aria-label="Vælg campingpladsens placering"></div><div class="map-help">💡 Klik på kortet for at placere campingpladsen præcist. Markøren gemmes sammen med pladsen og bruges på oversigtskortet.</div></section>
       <section class="form-card card"><h2>${isVisited?'Besøgsdatoer':'Planlagt besøg'}</h2><p class="sub">${isVisited?'Tilføj alle de gange I har besøgt pladsen.':'Datoen kan ændres eller fjernes senere.'}</p>${isVisited?`<div class="date-list" id="draft-date-list">${draftDateRows()}</div><button type="button" class="btn secondary small" style="margin-top:10px" data-action="draft-date-add">＋ Tilføj dato</button>`:`<div class="field" style="max-width:310px"><label>Planlagt dato</label><input type="date" data-draft-field="plannedDate" value="${attr(activeDraft.plannedDate)}"></div>`}</section>
       <section class="form-card card"><h2>Dagbog og beskrivelse</h2><p class="sub">Skriv om pladsen, omgivelserne og de små ting, I gerne vil huske.</p><div class="field-grid">
         <div class="field full"><label>Beskrivelse</label><textarea data-draft-field="description" rows="5" placeholder="Fortæl om campingpladsen…">${esc(activeDraft.description)}</textarea></div>
@@ -415,6 +444,12 @@ function renderSettings(){
 
       <section class="settings-card card"><h2>Forsidens layout</h2><p class="sub">Vælg mellem en luftig scrapbogsvisning og et mere kompakt overblik.</p><div class="layout-choices"><button class="layout-choice ${s.dashboardStyle!=='compact'?'active':''}" data-action="dashboard-style" data-value="cards"><span class="layout-icon">▦</span><strong>Luftig</strong><small>Store billeder og god plads</small></button><button class="layout-choice ${s.dashboardStyle==='compact'?'active':''}" data-action="dashboard-style" data-value="compact"><span class="layout-icon">☷</span><strong>Kompakt</strong><small>Mere indhold på skærmen</small></button></div></section>
 
+      <section class="settings-card card maps-settings" style="grid-column:1/-1"><h2>Kort og Google Maps</h2><p class="sub">Det integrerede OpenStreetMap-kort virker straks. Google Maps kan vælges som ekstra kortmotor med jeres egen API-nøgle.</p><div class="field-grid three">
+        <div class="field"><label>Kortmotor</label><select data-map-setting="mapProvider"><option value="auto" ${s.mapProvider==='auto'?'selected':''}>Automatisk – Google hvis nøgle findes</option><option value="openstreetmap" ${s.mapProvider==='openstreetmap'?'selected':''}>OpenStreetMap – gratis uden nøgle</option><option value="google" ${s.mapProvider==='google'?'selected':''}>Google Maps</option></select></div>
+        <div class="field"><label>Google Maps API-nøgle</label><input type="password" autocomplete="off" data-map-setting="googleMapsApiKey" value="${attr(s.googleMapsApiKey||'')}" placeholder="AIza…"><small>Gemmes lokalt i browseren og udelades fra sikkerhedskopier.</small></div>
+        <div class="field"><label>Google Map ID <span class="optional">valgfrit</span></label><input data-map-setting="googleMapId" value="${attr(s.googleMapId||'')}" placeholder="DEMO_MAP_ID bruges ellers"></div>
+      </div><div class="page-actions" style="justify-content:flex-start;margin-top:12px"><button class="btn primary" data-action="maps-save-test">Gem og test Google Maps</button><button class="btn secondary" data-nav="/kort">Åbn oversigtskort</button></div><div class="map-api-status ${s.googleMapsApiKey?'configured':'free'}"><strong>${s.googleMapsApiKey?'Google-integration er konfigureret':'Gratis kort er aktivt'}</strong><span>${s.googleMapsApiKey?'Aktivér både Maps JavaScript API og Routes API i Google Cloud, og begræns nøglen til jeres GitHub Pages-adresse.':'Campingpladser, markører og rutepunkter virker uden nøgle. Google Maps-links åbnes stadig normalt.'}</span></div></section>
+
       <section class="settings-card card"><h2>Tema og farver</h2><p class="sub">Vælg et færdigt tema eller bland jeres egne farver.</p><div class="theme-presets">${Object.entries(THEME_PRESETS).map(([id,t])=>`<button class="theme-preset ${s.theme===id?'active':''}" data-action="theme-preset" data-value="${id}"><div class="theme-swatch" style="background:${t.swatch}"></div><strong>${esc(t.label)}</strong></button>`).join('')}</div><div class="color-grid" style="margin-top:15px"><div class="field"><label>Primær</label><input type="color" data-color-setting="primary" value="${attr(s.primary)}"></div><div class="field"><label>Accent</label><input type="color" data-color-setting="accent" value="${attr(s.accent)}"></div><div class="field"><label>Baggrund</label><input type="color" data-color-setting="background" value="${attr(s.background)}"></div></div></section>
 
       <section class="settings-card card"><h2>Forsidens indhold</h2><p class="sub">Vis, skjul og flyt sektioner på overblikket.</p><div class="section-list">${s.sections.map((sec,i)=>`<div class="section-row"><input style="width:auto" type="checkbox" data-section-visible="${attr(sec.id)}" ${sec.visible?'checked':''}><div><strong>${esc(sec.label)}</strong></div><button class="btn ghost small" data-action="section-up" data-index="${i}" ${i===0?'disabled':''}>↑</button><button class="btn ghost small" data-action="section-down" data-index="${i}" ${i===s.sections.length-1?'disabled':''}>↓</button></div>`).join('')}</div></section>
@@ -425,6 +460,47 @@ function renderSettings(){
 
       <section class="settings-card card danger-zone"><h2>Ryd eller nulstil appen</h2><p class="sub">Start helt tomt, eller gendan de indbyggede eksempler.</p><div class="page-actions" style="justify-content:flex-start"><button class="btn danger" data-action="clear-campsites">Fjern alle campingdata</button><button class="btn secondary" data-action="reset-app">Gendan demodata</button></div></section>
     </div>`,'Indstillinger');
+}
+
+function destroyActiveMaps(){
+  activeMapControllers.forEach(controller=>{try{controller?.destroy?.();}catch(error){console.warn('Kunne ikke lukke kort:',error);}});
+  activeMapControllers=[];overviewMapController=null;
+}
+async function createMountedMap(container,options){
+  if(!container||!window.VCMaps)return null;
+  try{
+    const controller=await window.VCMaps.create(container,{...options,settings:state.settings});
+    if(!container.isConnected){controller?.destroy?.();return null;}
+    activeMapControllers.push(controller);return controller;
+  }catch(error){console.error(error);container.innerHTML=`<div class="map-load-error"><strong>Kortet kunne ikke indlæses</strong><span>${esc(error.message||'Ukendt kortfejl')}</span><button class="btn secondary small" data-nav="/indstillinger">Åbn kortindstillinger</button></div>`;return null;}
+}
+function setMapListSelection(id){
+  ui.mapSelectedId=id||'';
+  $$('.map-place').forEach(row=>row.classList.toggle('selected',row.querySelector('[data-action="map-select"]')?.dataset.id===ui.mapSelectedId));
+}
+async function mountMaps(path){
+  if(path==='/kort'){
+    let camps=state.campsites;
+    if(ui.mapFilter==='visited')camps=camps.filter(c=>c.status==='visited');
+    if(ui.mapFilter==='wishlist')camps=camps.filter(c=>c.status==='wishlist');
+    const markers=camps.map(mapMarkerForCamp).filter(Boolean);
+    const world=ui.mapScope==='world';
+    overviewMapController=await createMountedMap($('#overview-map'),{center:world?{lat:20,lng:0}:{lat:54.4,lng:12.5},zoom:world?2:4,fit:false,markers,selectedId:ui.mapSelectedId,onMarkerClick:marker=>setMapListSelection(marker.id)});
+    return;
+  }
+  if(path.startsWith('/campingplads/')){
+    const id=decodeURIComponent(path.split('/')[2]||'');const camp=state.campsites.find(c=>c.id===id);
+    if(camp&&hasCoordinates(camp))await createMountedMap($('#detail-map'),{center:campPoint(camp),zoom:14,fit:true,markers:[mapMarkerForCamp(camp)],selectedId:camp.id});
+    for(const host of $$('[data-route-map]')){
+      const routeCamp=state.campsites.find(c=>c.id===host.dataset.camp);const route=routeCamp?.routes?.find(r=>r.id===host.dataset.route);if(route)await createMountedMap(host,{center:route.points?.[0]||route.path?.[0]||campPoint(routeCamp),zoom:12,fit:true,route});
+    }
+    return;
+  }
+  if(path==='/ny'||path.startsWith('/rediger/')){
+    const point=campPoint(activeDraft);const marker=point?{...point,id:'draft-location',title:activeDraft.name||'Campingplads',subtitle:placeQuery(activeDraft),status:activeDraft.status}:null;
+    await createMountedMap($('#location-picker-map'),{center:point||{lat:54.4,lng:12.5},zoom:point?14:4,fit:false,markers:marker?[marker]:[],selectedId:marker?.id||'',onMapClick:clicked=>{activeDraft.latitude=Number(clicked.lat.toFixed(7));activeDraft.longitude=Number(clicked.lng.toFixed(7));activeDraft.placeId='';refreshForm();}});
+    if(routeDraft.path?.length||routeDraft.points?.length)await createMountedMap($('#route-draft-map'),{center:routeDraft.points?.[0]||routeDraft.path?.[0]||point||{lat:54.4,lng:12.5},zoom:12,fit:true,route:routeDraft});
+  }
 }
 
 function render(){
@@ -441,8 +517,10 @@ function render(){
   else if(path.startsWith('/rediger/'))html=renderForm(decodeURIComponent(path.split('/')[2]||''),'visited');
   else if(path.startsWith('/campingplads/'))html=renderDetail(decodeURIComponent(path.split('/')[2]||''));
   else html=shell(emptyState('🧭','Siden findes ikke','Campingvognen er kørt forkert.','Tilbage til overblik','/overblik'),'Ikke fundet');
+  destroyActiveMaps();
   root.innerHTML=html;
   renderModal();renderToast();
+  setTimeout(()=>mountMaps(path),0);
 }
 
 function renderModal(){
@@ -474,6 +552,8 @@ function saveActiveDraft(){
   activeDraft.tags=$('#draft-tags')?.value.split(',').map(x=>x.trim()).filter(Boolean)||[];
   activeDraft.visitDates=(activeDraft.visitDates||[]).filter(Boolean).sort().reverse();
   activeDraft.name=(activeDraft.name||'').trim();
+  if(!hasCoordinates(activeDraft)){activeDraft.latitude='';activeDraft.longitude='';activeDraft.placeId='';}
+  else{activeDraft.latitude=Number(activeDraft.latitude);activeDraft.longitude=Number(activeDraft.longitude);}
   if(!activeDraft.name){showToast('Skriv campingpladsens navn.','danger');$('#camp-form [data-draft-field="name"]')?.focus();return;}
   const now=new Date().toISOString();
   if(activeDraft.id){
@@ -489,9 +569,13 @@ function saveActiveDraft(){
 function updateDraftField(el){
   if(!activeDraft)return;
   const key=el.dataset.draftField;if(!key)return;
-  activeDraft[key]=el.type==='checkbox'?el.checked:el.value;
+  if((key==='latitude'||key==='longitude')&&el.type==='number')activeDraft[key]=el.value===''?'':Number(el.value);
+  else activeDraft[key]=el.type==='checkbox'?el.checked:el.value;
 }
-function updateRouteField(el){const key=el.dataset.routeField;if(key)routeDraft[key]=el.value;}
+function updateRouteField(el){
+  const key=el.dataset.routeField;if(!key)return;routeDraft[key]=el.value;
+  if(['origin','destination','waypoints'].includes(key)){routeDraft.path=[];routeDraft.points=[];routeDraft.routeProvider='';routeDraft.distanceMeters=0;routeDraft.durationSeconds=0;}
+}
 function refreshForm(){render();}
 
 document.addEventListener('click',async(event)=>{
@@ -501,11 +585,24 @@ document.addEventListener('click',async(event)=>{
   const action=el.dataset.action;
 
   if(action==='map-scope'){
-    ui.mapScope=el.dataset.value;ui.mapQuery=ui.mapScope==='world'?'Verden':'Europa';render();
+    ui.mapScope=el.dataset.value;ui.mapSelectedId='';render();
   }else if(action==='map-filter'){
-    ui.mapFilter=el.dataset.value;render();
+    ui.mapFilter=el.dataset.value;ui.mapSelectedId='';render();
   }else if(action==='map-select'){
-    ui.mapQuery=el.dataset.query;render();
+    const id=el.dataset.id;if(!id)return;setMapListSelection(id);overviewMapController?.selectMarker?.(id,true);
+  }else if(action==='map-fit'){
+    overviewMapController?.fitAll?.();
+  }else if(action==='map-locate'){
+    try{showToast('Finder din placering…');const point=await window.VCMaps.locate();if(overviewMapController){overviewMapController.addUserLocation?.(point);}else{const detailController=activeMapControllers[0];detailController?.addUserLocation?.(point);}showToast('Din placering er vist på kortet');}catch(error){showToast(error.message||'Placeringen kunne ikke hentes.','danger');}
+  }else if(action==='map-geocode-camp'){
+    const camp=state.campsites.find(c=>c.id===el.dataset.id);if(!camp)return;
+    try{showToast(`Finder ${camp.name} på kortet…`);const result=await window.VCMaps.geocode(placeQuery(camp),state.settings);camp.latitude=result.lat;camp.longitude=result.lng;camp.placeId=result.placeId||'';camp.updatedAt=new Date().toISOString();saveState();showToast('Placeringen er gemt');render();}catch(error){showToast(error.message||'Placeringen kunne ikke findes.','danger');}
+  }else if(action==='camp-geocode-draft'){
+    try{showToast('Finder campingpladsen på kortet…');const result=await window.VCMaps.geocode(placeQuery(activeDraft),state.settings);activeDraft.latitude=result.lat;activeDraft.longitude=result.lng;activeDraft.placeId=result.placeId||'';showToast(result.fallbackFromGoogle?'Google Maps svarede ikke – stedet blev fundet med reservekortet':'Placeringen er fundet');refreshForm();}catch(error){showToast(error.message||'Placeringen kunne ikke findes.','danger');}
+  }else if(action==='camp-use-location'){
+    try{showToast('Henter din placering…');const point=await window.VCMaps.locate();activeDraft.latitude=Number(point.lat.toFixed(7));activeDraft.longitude=Number(point.lng.toFixed(7));activeDraft.placeId='';showToast('Din placering er valgt');refreshForm();}catch(error){showToast(error.message||'Placeringen kunne ikke hentes.','danger');}
+  }else if(action==='camp-clear-location'){
+    activeDraft.latitude='';activeDraft.longitude='';activeDraft.placeId='';refreshForm();
   }else if(action==='delete-camp'){
     const id=el.dataset.id;const camp=state.campsites.find(c=>c.id===id);if(!camp)return;
     confirmAction('Slet campingplads?',`${camp.name} og alle tilhørende billeder, vurderinger og ruter bliver slettet på denne enhed.`,()=>{state.campsites=state.campsites.filter(c=>c.id!==id);saveState();showToast('Campingpladsen er slettet','danger');nav('/overblik');},'Ja, slet');
@@ -513,6 +610,9 @@ document.addEventListener('click',async(event)=>{
     const camp=state.campsites.find(c=>c.id===el.dataset.id);const src=camp?.photos?.[Number(el.dataset.index)];if(src){ui.modal={type:'photo',src};renderModal();}
   }else if(action==='share-route'){
     const camp=state.campsites.find(c=>c.id===el.dataset.camp);const route=camp?.routes?.find(r=>r.id===el.dataset.route);if(route)await shareRoute(route,camp.name);
+  }else if(action==='route-calculate-saved'){
+    const camp=state.campsites.find(c=>c.id===el.dataset.camp);const route=camp?.routes?.find(r=>r.id===el.dataset.route);if(!camp||!route)return;
+    try{showToast('Beregner cykelruten…');const result=await window.VCMaps.calculateBicycleRoute(route,state.settings);route.path=result.path||[];route.points=result.points||[];route.routeProvider=result.provider||'';route.distanceMeters=result.distanceMeters||0;route.durationSeconds=result.durationSeconds||0;if(!route.distance&&result.distanceMeters)route.distance=formatDistanceMeters(result.distanceMeters);camp.updatedAt=new Date().toISOString();saveState();showToast(result.precise?'Den præcise Google-cykelrute er gemt':'Ruten er gemt som kortpunkter');render();}catch(error){showToast(error.message||'Ruten kunne ikke beregnes.','danger');}
   }else if(action==='modal-close'||action==='modal-backdrop'){
     ui.modal=null;renderModal();
   }else if(action==='confirm-run'){
@@ -535,12 +635,25 @@ document.addEventListener('click',async(event)=>{
     const index=Number(el.dataset.index);activeDraft.routes.splice(index,1);if(routeEditIndex===index){routeEditIndex=-1;routeDraft=blankRoute();}refreshForm();
   }else if(action==='route-clear'){
     routeEditIndex=-1;routeDraft=blankRoute();refreshForm();
+  }else if(action==='route-use-camp-start'){
+    routeDraft.origin=placeQuery(activeDraft);routeDraft.path=[];routeDraft.points=[];routeDraft.routeProvider='';refreshForm();
+  }else if(action==='route-calculate'){
+    try{
+      showToast('Beregner cykelruten…');
+      const result=await window.VCMaps.calculateBicycleRoute(routeDraft,state.settings);
+      routeDraft.path=result.path||[];routeDraft.points=result.points||[];routeDraft.routeProvider=result.provider||'';routeDraft.distanceMeters=result.distanceMeters||0;routeDraft.durationSeconds=result.durationSeconds||0;
+      if(!routeDraft.distance&&result.distanceMeters)routeDraft.distance=formatDistanceMeters(result.distanceMeters);
+      showToast(result.precise?'Den præcise Google-cykelrute er beregnet':'Ruten vises som punkter. Tilføj en Google API-nøgle for en præcis cykelrute.');refreshForm();
+    }catch(error){showToast(error.message||'Ruten kunne ikke beregnes.','danger');}
   }else if(action==='route-save'){
     const hasSharedLink=Boolean((routeDraft.mapsUrl||'').trim());const hasPoints=routeHasPoints(routeDraft);
     if(!routeDraft.name.trim()||(!hasSharedLink&&!hasPoints)){showToast('Skriv et rutenavn og indsæt enten et Google Maps-link eller både start- og slutsted.','danger');return;}
+    if(hasPoints&&!(routeDraft.path?.length||routeDraft.points?.length)){
+      try{showToast('Beregner ruten før den gemmes…');const result=await window.VCMaps.calculateBicycleRoute(routeDraft,state.settings);routeDraft.path=result.path||[];routeDraft.points=result.points||[];routeDraft.routeProvider=result.provider||'';routeDraft.distanceMeters=result.distanceMeters||0;routeDraft.durationSeconds=result.durationSeconds||0;if(!routeDraft.distance&&result.distanceMeters)routeDraft.distance=formatDistanceMeters(result.distanceMeters);}catch(error){if(!hasSharedLink){showToast(error.message||'Ruten kunne ikke beregnes.','danger');return;}}
+    }
     const saved={...deepClone(routeDraft),name:routeDraft.name.trim(),mapsUrl:hasSharedLink?normalizeUrl(routeDraft.mapsUrl.trim()):'',id:routeDraft.id||uid('route')};
     if(routeEditIndex>=0)activeDraft.routes[routeEditIndex]=saved;else activeDraft.routes.push(saved);
-    routeEditIndex=-1;routeDraft=blankRoute();showToast('Cykelruten er tilføjet');refreshForm();
+    routeEditIndex=-1;routeDraft=blankRoute();showToast('Cykelruten er gemt');refreshForm();
   }else if(action==='form-cancel'){
     const fallback=activeDraft?.id?`/campingplads/${encodeURIComponent(activeDraft.id)}`:(activeDraft?.status==='wishlist'?'/onskeliste':'/besogte');activeDraftKey='';activeDraft=null;nav(fallback);
   }else if(action==='theme-preset'){
@@ -549,6 +662,11 @@ document.addEventListener('click',async(event)=>{
     state.settings.dashboardStyle=el.dataset.value==='compact'?'compact':'cards';saveState();showToast('Forsidens layout er ændret');render();
   }else if(action==='settings-save-text'){
     $$('[data-setting]').forEach(input=>state.settings[input.dataset.setting]=input.value.trim());saveState();applyTheme();showToast('Forsidens tekster er gemt');render();
+  }else if(action==='maps-save-test'){
+    $$('[data-map-setting]').forEach(input=>state.settings[input.dataset.mapSetting]=input.value.trim());saveState();
+    if(state.settings.googleMapsApiKey){try{showToast('Tester Google Maps…');await window.VCMaps.loadGoogleMaps(state.settings);showToast('Google Maps er klar');}catch(error){showToast(error.message||'Google Maps kunne ikke godkende nøglen.','danger');}}
+    else showToast('Det gratis OpenStreetMap-kort er valgt');
+    render();
   }else if(action==='cover-reset'){
     state.settings.coverImage='assets/cover.jpg';saveState();showToast('Standardcoveret er gendannet');render();
   }else if(action==='section-up'||action==='section-down'){
@@ -561,7 +679,7 @@ document.addEventListener('click',async(event)=>{
     const id=`kategori-${name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}-${Date.now().toString(36).slice(-4)}`;
     state.categories.push({id,name,icon});saveState();showToast('Kategorien er tilføjet');render();
   }else if(action==='backup-export'){
-    const date=new Date().toISOString().slice(0,10);download(`vores-camping-backup-${date}.json`,JSON.stringify(state,null,2));showToast('Sikkerhedskopien er hentet');
+    const date=new Date().toISOString().slice(0,10);const backup=deepClone(state);backup.settings.googleMapsApiKey='';download(`vores-camping-backup-${date}.json`,JSON.stringify(backup,null,2));showToast('Sikkerhedskopien er hentet uden API-nøglen');
   }else if(action==='clear-campsites'){
     confirmAction('Fjern alle campingdata?','Alle campingpladser, billeder, vurderinger og ruter på denne enhed bliver slettet. Tema, forside og kategorier bevares.',()=>{state.campsites=[];saveState();showToast('Alle campingdata er fjernet','danger');nav('/overblik');},'Ja, fjern alt');
   }else if(action==='reset-app'){
@@ -610,7 +728,8 @@ document.addEventListener('change',async(event)=>{
     try{
       const text=await el.files[0].text();const imported=JSON.parse(text);
       const normalized=normalizeState(imported,{useDemoFallback:false});if(!normalized)throw new Error('Ugyldig backup');
-      confirmAction('Indlæs sikkerhedskopi?','Nuværende data på denne enhed bliver erstattet af indholdet i filen.',()=>{state=normalized;saveState();applyTheme();showToast('Sikkerhedskopien er indlæst');render();},'Indlæs');
+      const localGoogleKey=state.settings.googleMapsApiKey||'';
+      confirmAction('Indlæs sikkerhedskopi?','Nuværende data på denne enhed bliver erstattet af indholdet i filen. Den lokale Google Maps-nøgle bevares.',()=>{normalized.settings.googleMapsApiKey=localGoogleKey;state=normalized;saveState();applyTheme();showToast('Sikkerhedskopien er indlæst');render();},'Indlæs');
     }catch(error){console.error(error);showToast('Filen er ikke en gyldig Vores Camping-sikkerhedskopi.','danger');}
   }
 });
