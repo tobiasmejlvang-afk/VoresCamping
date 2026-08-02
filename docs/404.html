@@ -1,1 +1,9 @@
-<!doctype html><html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vores Camping</title></head><body><script>location.replace('./#/overblik');</script><p>Sender dig tilbage til Vores Camping…</p></body></html>
+<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f5c4c"><title>Vores Camping</title></head>
+<body><script>
+(function(){
+  var path=location.pathname;
+  var base=path.slice(0,path.lastIndexOf('/')+1);
+  location.replace(base+'#/overblik');
+})();
+</script><p>Sender dig tilbage til Vores Camping…</p></body></html>

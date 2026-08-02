@@ -1,36 +1,61 @@
-# Vores Camping – GitHub Pages fra `/docs`
+# Vores Camping 4.0 – GitHub Pages fra `/docs`
 
-Dette projekt er en statisk dansk campingapp, som kan udgives direkte fra `main`-branchens `/docs`-mappe.
+En personlig dansk campingdagbog og scrapbog med besøgte campingpladser, ønskeliste, billeder, stjernevurderinger, oversigtskort og cykelruter med Google Maps.
 
-## Udgivelse på GitHub
+## Klar til GitHub Pages uden egen GitHub Action
 
-1. Opret eller åbn dit GitHub-repository.
-2. Upload **README.md**, **START-HER.txt** og hele mappen **docs** til roden af `main`.
+Projektet er en ren statisk app. Der er ingen npm, ingen build-kommando, ingen backend og ingen brugeroprettet workflow-fil.
+
+1. Upload `README.md`, `START-HER.txt` og hele mappen `docs` til roden af repositoryets `main`-branch.
+2. Kontrollér, at filen `docs/index.html` findes på GitHub.
 3. Åbn **Settings → Pages**.
-4. Under **Build and deployment** vælger du:
-   - Source: **Deploy from a branch**
-   - Branch: **main**
-   - Folder: **/docs**
-5. Tryk **Save** og vent et par minutter.
+4. Vælg **Deploy from a branch**.
+5. Vælg branch **main** og mappe **/docs**.
+6. Tryk **Save** og vent et par minutter.
 
-Der bruges ingen brugeroprettet GitHub Action, ingen npm, ingen build-kommando og ingen service worker.
+GitHub kan vise en automatisk Pages-udgivelse under fanen Actions. Det er GitHubs egen interne udgivelse; projektet indeholder ikke en workflow-fil, som du skal vedligeholde.
 
-## Vigtigt om filer
+## Sider
 
-`docs/index.html` skal ligge præcis i `/docs` på `main`. Upload ikke kun filerne inde i mappen til repository-roden, hvis Pages er sat til `/docs`.
+- Overblik
+- Besøgte campingpladser
+- Oversigtskort med Europa- og verdenskort
+- Bedst bedømte campingpladser
+- Campingpladser vi vil besøge
+- Indstillinger
 
-## Google Maps
+## Funktioner
 
-Appen bruger Google Maps-links og indlejrede kort uden en API-nøgle. Campingpladser findes ud fra navn/adresse, og cykelruter åbnes med `travelmode=bicycling` i Google Maps.
+- Opret, redigér og slet campingpladser og ønskebesøg
+- Flere besøgsdatoer pr. campingplads
+- Billeder med automatisk komprimering
+- Beskrivelse, private noter og tags
+- Stjerner i standardkategorier og egne kategorier
+- Fuld campingpladsvisning med billeder, vurderinger, datoer og ruter
+- Temaer, egne farver, forsidetekster, coverbillede og rækkefølge på forsiden
+- Lokal automatisk lagring
+- JSON-sikkerhedskopi til flytning mellem Windows og Samsung-tablet
 
-## Data og billeder
+## Google Maps og cykelruter
 
-Data gemmes lokalt i browseren på den enkelte enhed. Billeder komprimeres automatisk. Brug **Indstillinger → Hent sikkerhedskopi** for at flytte data mellem Windows og Samsung-tablet.
+Appen virker uden Google Maps API-nøgle:
 
-## Hvis en gammel version sidder fast
+- Gem et direkte Google Maps-link til campingpladsen.
+- Åbn og del campingpladsen direkte fra appen.
+- Byg et cykellink ud fra start, slut og stop.
+- Eller opret/gem ruten i Google Maps, vælg **Del → Kopiér link**, og indsæt linket i appen.
+- Et gemt rutelink kan åbnes og deles fra campingpladsens fulde visning.
+
+Google Maps-kortene kræver internetforbindelse. Resten af appen og de gemte data ligger lokalt i browseren.
+
+## Data
+
+Data gemmes i browserens lokale lager på den enkelte enhed. Det er derfor vigtigt at hente en sikkerhedskopi under **Indstillinger**, især før browserdata ryddes.
+
+## Gammel cache eller tidligere service worker
 
 Åbn én gang:
 
 `https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html`
 
-Siden fjerner gamle cachefiler og service workers, men bevarer appens lokale data.
+Reparationssiden fjerner kun web-cache og tidligere service workers. Den sletter ikke campingdata i appens lokale lager.

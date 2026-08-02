@@ -94,3 +94,11 @@ input,select,textarea{width:100%;border:1px solid #ccd9d3;background:#fff;color:
 }
 @media (max-width:430px){.stats-grid{grid-template-columns:1fr 1fr}.stat-card{padding:13px;gap:9px}.stat-icon{width:39px;height:39px}.stat-card strong{font-size:21px}.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.page-header h1{font-size:31px}.detail-cover{min-height:380px}.modal-backdrop{padding:8px}.modal{border-radius:18px;padding:15px}}
 .map-place{background:transparent;color:var(--text);font:inherit;cursor:pointer}
+
+/* Google Maps- og ruteudvidelser */
+.route-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.google-link-card{display:flex;align-items:center;gap:12px;margin-top:12px;padding:13px;border:1px solid #cfe1d9;border-radius:15px;background:#f3faf7}
+.google-link-card>span{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#e1f1ea;font-size:22px;flex:0 0 auto}
+.google-link-card>div{flex:1;min-width:0}.google-link-card strong,.google-link-card small{display:block}.google-link-card small{color:var(--muted);margin-top:2px}
+.route-editor-card{padding:15px;margin-top:13px}.route-help{margin-top:12px}.inline-test{margin-top:9px}
+@media (max-width:780px){.route-actions{justify-content:flex-start}.google-link-card{align-items:flex-start;flex-wrap:wrap}.google-link-card .btn{width:100%}}

@@ -1,15 +1,22 @@
-VORES CAMPING – START HER
+VORES CAMPING 4.0 – START HER
 
-1. Upload README.md, START-HER.txt og hele mappen "docs" til roden af din main-branch.
-2. GitHub: Settings > Pages.
-3. Source: Deploy from a branch.
-4. Branch: main.
-5. Folder: /docs.
-6. Tryk Save.
+UPLOAD
+1. Åbn dit GitHub-repository.
+2. Upload README.md, START-HER.txt og HELE mappen "docs" til roden af main-branchen.
+3. Kontrollér, at docs/index.html kan ses på GitHub.
 
-Der skal IKKE oprettes en GitHub Action.
+GITHUB PAGES
+4. Gå til Settings > Pages.
+5. Source: Deploy from a branch.
+6. Branch: main.
+7. Folder: /docs.
+8. Tryk Save og vent 2-5 minutter.
 
-Vigtigt: Filen docs/index.html skal findes på GitHub.
+Der skal IKKE oprettes en GitHub Action eller en workflow-fil.
 
-Ved gammel cache:
+VED GAMMEL CACHE
+Åbn én gang:
 https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html
+
+GOOGLE MAPS-RUTE
+Lav eller åbn ruten i Google Maps > Del > Kopiér link > indsæt linket i cykelruten i Vores Camping.
