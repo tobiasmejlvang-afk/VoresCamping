@@ -1,4 +1,4 @@
 Vores Camping 4.0
 Bygget: 2026-08-02
 Udgivelse: GitHub Pages fra main /docs
-Ingen brugeroprettet GitHub Action.
+Ingen GitHub Action, npm eller service worker.

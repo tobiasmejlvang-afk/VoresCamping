@@ -1,22 +1,19 @@
-VORES CAMPING 4.0 – START HER
+VORES CAMPING – UDGIV DIREKTE FRA /docs
 
-UPLOAD
-1. Åbn dit GitHub-repository.
-2. Upload README.md, START-HER.txt og HELE mappen "docs" til roden af main-branchen.
-3. Kontrollér, at docs/index.html kan ses på GitHub.
+1. Upload README.md, START-HER.txt og hele mappen "docs" til roden af main-branchen.
+2. Kontrollér på GitHub, at docs/index.html findes.
+3. Åbn Settings > Pages.
+4. Source: Deploy from a branch.
+5. Branch: main.
+6. Folder: /docs.
+7. Tryk Save.
 
-GITHUB PAGES
-4. Gå til Settings > Pages.
-5. Source: Deploy from a branch.
-6. Branch: main.
-7. Folder: /docs.
-8. Tryk Save og vent 2-5 minutter.
+Der skal IKKE laves en GitHub Action, og der er ingen npm/build-kommando.
 
-Der skal IKKE oprettes en GitHub Action eller en workflow-fil.
+Din adresse bliver normalt:
+https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/
 
-VED GAMMEL CACHE
-Åbn én gang:
+Ved gammel cache eller hvid skærm:
 https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html
 
-GOOGLE MAPS-RUTE
-Lav eller åbn ruten i Google Maps > Del > Kopiér link > indsæt linket i cykelruten i Vores Camping.
+Version: 4.0 – Google Maps-rutedeling og valg af forsidevisning.

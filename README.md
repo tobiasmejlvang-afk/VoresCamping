@@ -1,25 +1,25 @@
-# Vores Camping 4.0 – GitHub Pages fra `/docs`
+# Vores Camping – personlig campingdagbog
 
-En personlig dansk campingdagbog og scrapbog med besøgte campingpladser, ønskeliste, billeder, stjernevurderinger, oversigtskort og cykelruter med Google Maps.
+En færdig, statisk dansk webapp til campingpladser, vurderinger, billeder, ønskeliste og cykelruter.
 
-## Klar til GitHub Pages uden egen GitHub Action
+Projektet er lavet til direkte udgivelse fra **`main`-branchens `/docs`-mappe** på GitHub Pages.
 
-Projektet er en ren statisk app. Der er ingen npm, ingen build-kommando, ingen backend og ingen brugeroprettet workflow-fil.
+## Udgiv på GitHub Pages
 
 1. Upload `README.md`, `START-HER.txt` og hele mappen `docs` til roden af repositoryets `main`-branch.
-2. Kontrollér, at filen `docs/index.html` findes på GitHub.
+2. Kontrollér, at filen `docs/index.html` kan ses på GitHub.
 3. Åbn **Settings → Pages**.
 4. Vælg **Deploy from a branch**.
 5. Vælg branch **main** og mappe **/docs**.
-6. Tryk **Save** og vent et par minutter.
+6. Tryk **Save** og vent nogle minutter.
 
-GitHub kan vise en automatisk Pages-udgivelse under fanen Actions. Det er GitHubs egen interne udgivelse; projektet indeholder ikke en workflow-fil, som du skal vedligeholde.
+Der bruges **ingen brugeroprettet GitHub Action**, ingen npm, intet build-trin og ingen service worker.
 
 ## Sider
 
 - Overblik
 - Besøgte campingpladser
-- Oversigtskort med Europa- og verdenskort
+- Oversigtskort med Europa- og verdensvisning via Google Maps
 - Bedst bedømte campingpladser
 - Campingpladser vi vil besøge
 - Indstillinger
@@ -27,35 +27,37 @@ GitHub kan vise en automatisk Pages-udgivelse under fanen Actions. Det er GitHub
 ## Funktioner
 
 - Opret, redigér og slet campingpladser og ønskebesøg
-- Flere besøgsdatoer pr. campingplads
+- Flere besøgsdatoer på samme campingplads
+- Beskrivelser, private noter og tags
 - Billeder med automatisk komprimering
-- Beskrivelse, private noter og tags
-- Stjerner i standardkategorier og egne kategorier
-- Fuld campingpladsvisning med billeder, vurderinger, datoer og ruter
-- Temaer, egne farver, forsidetekster, coverbillede og rækkefølge på forsiden
-- Lokal automatisk lagring
-- JSON-sikkerhedskopi til flytning mellem Windows og Samsung-tablet
+- Stjernevurdering i standardkategorier og egne kategorier
+- Fuld visning med billeder, vurderinger, datoer og cykelruter
+- Cykelruter med start, slut og stop vist på Google Maps
+- Indsæt et delt link til en rute, der allerede er lavet og gemt i Google Maps
+- Del en gemt rute med telefonens/computerens delingsmenu eller kopiér linket
+- Skift tema, farver, forsidecover, forsidetekst og rækkefølge på sektioner
+- Vælg luftig eller kompakt forside
+- Eksportér og importér en JSON-sikkerhedskopi
 
-## Google Maps og cykelruter
+## Google Maps-ruter
 
-Appen virker uden Google Maps API-nøgle:
+Der er to måder at gemme en cykelrute på:
 
-- Gem et direkte Google Maps-link til campingpladsen.
-- Åbn og del campingpladsen direkte fra appen.
-- Byg et cykellink ud fra start, slut og stop.
-- Eller opret/gem ruten i Google Maps, vælg **Del → Kopiér link**, og indsæt linket i appen.
-- Et gemt rutelink kan åbnes og deles fra campingpladsens fulde visning.
+1. Angiv startsted, slutsted og eventuelle stop. Appen bygger et Google Maps-link med cykeltransport.
+2. Lav ruten i Google Maps, vælg **Del → Kopiér link**, og indsæt linket i feltet **Delt Google Maps-link**.
 
-Google Maps-kortene kræver internetforbindelse. Resten af appen og de gemte data ligger lokalt i browseren.
+Appen kræver ikke en Google Maps API-nøgle. Et delt Google Maps-link åbnes i browseren eller Google Maps-appen.
 
 ## Data
 
-Data gemmes i browserens lokale lager på den enkelte enhed. Det er derfor vigtigt at hente en sikkerhedskopi under **Indstillinger**, især før browserdata ryddes.
+Data gemmes lokalt i browseren på den enkelte enhed. Brug **Indstillinger → Hent sikkerhedskopi** for at flytte data mellem computer og tablet.
+
+Opdateringen bruger samme lokale lagernøgle som den forrige `/docs`-version, så eksisterende data bliver migreret i stedet for overskrevet.
 
 ## Gammel cache eller tidligere service worker
 
-Åbn én gang:
+Åbn denne side én gang:
 
 `https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html`
 
-Reparationssiden fjerner kun web-cache og tidligere service workers. Den sletter ikke campingdata i appens lokale lager.
+Reparationssiden fjerner gamle cachefiler og service workers, men bevarer campingdata i browserens lokale lager.
