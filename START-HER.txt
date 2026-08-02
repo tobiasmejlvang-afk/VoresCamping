@@ -1,23 +1,24 @@
-VORES CAMPING 6.0 – INTEGRERET KORT FRA /docs
+VORES CAMPING 8.0 – KLAR TIL GITHUB PAGES FRA /docs
 
-UDGIVELSE
-1. Upload README.md, START-HER.txt og hele mappen "docs" til roden af main-branchen.
-2. Kontrollér, at docs/index.html, docs/app.js, docs/maps.js og docs/styles.css findes.
+UPLOAD
+1. Upload README.md, START-HER.txt og hele mappen docs til roden af main-branchen.
+2. Kontrollér, at docs/index.html ligger direkte i docs-mappen.
 3. Åbn GitHub: Settings > Pages.
 4. Source: Deploy from a branch.
 5. Branch: main.
 6. Folder: /docs.
 7. Tryk Save.
 
-Der skal IKKE oprettes en GitHub Action, og der er ingen npm- eller build-kommando.
+DER SKAL IKKE OPRETTES EN GITHUB ACTION.
+Der er heller ingen npm- eller build-kommando.
 
-KORT
-- OpenStreetMap virker direkte uden nøgle.
-- Google Maps aktiveres valgfrit under Indstillinger > Kort og Google Maps.
-- Til præcise Google-cykelruter skal Maps JavaScript API og Routes API være aktiveret.
-- Begræns API-nøglen til din GitHub Pages-adresse.
+NYT I VERSION 8
+- Kortet er forsiden og har førsteprioritet.
+- Besøgte og ønskebesøg vises med hver sin markør.
+- Kortet zoomer automatisk, så alle punkter kan ses.
+- Punkter på samme sted spredes, så de ikke skjuler hinanden.
+- Gamle data og koordinater migreres automatisk.
+- Manglende placeringer kan findes samlet.
 
-Ved gammel cache eller hvid skærm:
+Efter udskiftning af en gammel version kan du åbne:
 https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html
-
-Version: 6.0 – integreret kort, stedmarkører og cykelruter.

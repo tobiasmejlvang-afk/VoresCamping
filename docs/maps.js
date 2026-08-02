@@ -4,8 +4,9 @@
 const TILE_SIZE = 256;
 const MAX_LAT = 85.05112878;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-const finite = (value) => Number.isFinite(Number(value));
-const asPoint = (value) => value && finite(value.lat) && finite(value.lng) ? {lat:Number(value.lat), lng:Number(value.lng)} : null;
+const numberValue = (value) => { const normalized = typeof value === 'string' ? value.trim().replace(',', '.') : value; const number = Number(normalized); return Number.isFinite(number) ? number : null; };
+const finite = (value) => numberValue(value) !== null;
+const asPoint = (value) => { if(!value)return null; const lat=numberValue(value.lat ?? value.latitude),lng=numberValue(value.lng ?? value.lon ?? value.longitude); return lat!==null&&lng!==null&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180?{lat,lng}:null; };
 const esc = (value='') => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -232,19 +233,33 @@ class NativeMap {
     const d=points.map((p,i)=>{const s=this.screen(p);return `${i?'L':'M'} ${s.x.toFixed(1)} ${s.y.toFixed(1)}`;}).join(' ');
     this.vectors.innerHTML=`<path class="vc-map-route-shadow" d="${d}"></path><path class="vc-map-route-line" d="${d}"></path>`;
   }
+  layoutMarkers(markers) {
+    const rows=markers.map(marker=>({marker,base:this.screen(marker)}));
+    const buckets=new Map();
+    rows.forEach(row=>{const key=`${Math.round(row.base.x/34)}:${Math.round(row.base.y/34)}`;if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(row);});
+    const placed=new Map();
+    buckets.forEach(group=>{
+      if(group.length===1){placed.set(String(group[0].marker.id),group[0].base);return;}
+      const radius=Math.min(38,20+group.length*2);
+      group.forEach((row,index)=>{const angle=(-Math.PI/2)+(Math.PI*2*index/group.length);placed.set(String(row.marker.id),{x:row.base.x+Math.cos(angle)*radius,y:row.base.y+Math.sin(angle)*radius});});
+    });
+    return placed;
+  }
   renderMarkers() {
     const markers=[...this.markers];
     const routePts=Array.isArray(this.route?.points)?this.route.points.map(asPoint).filter(Boolean):[];
     routePts.forEach((p,i)=>markers.push({id:`__route_${i}`,lat:p.lat,lng:p.lng,title:i===0?'Start':i===routePts.length-1?'Mål':`Stop ${i}`,status:'route',routeMarker:true}));
+    const positions=this.layoutMarkers(markers);
     this.markersPane.innerHTML=markers.map(marker=>{
-      const s=this.screen(marker); const wishlist=marker.status==='wishlist'; const selected=String(marker.id)===String(this.selectedId);
+      const s=positions.get(String(marker.id))||this.screen(marker); const wishlist=marker.status==='wishlist'; const selected=String(marker.id)===String(this.selectedId);
       const user=marker.status==='user';
       const label=marker.routeMarker?(marker.title==='Start'?'A':marker.title==='Mål'?'B':String(marker.title).replace(/\D/g,'')):(user?'●':wishlist?'💛':'🏕️');
-      return `<button type="button" class="vc-map-marker ${wishlist?'wishlist':''} ${user?'user-location':''} ${marker.routeMarker?'route-point':''} ${selected?'selected':''}" data-map-marker="${esc(marker.id)}" aria-label="${esc(marker.title||'Punkt')}" style="transform:translate3d(${Math.round(s.x)}px,${Math.round(s.y)}px,0)"><span>${esc(label)}</span></button>`;
+      const status=wishlist?'Vil besøge':marker.routeMarker?'Rutepunkt':user?'Din placering':'Besøgt';
+      return `<button type="button" class="vc-map-marker ${wishlist?'wishlist':''} ${user?'user-location':''} ${marker.routeMarker?'route-point':''} ${selected?'selected':''}" data-map-marker="${esc(marker.id)}" aria-label="${esc(`${marker.title||'Punkt'} – ${status}`)}" title="${esc(`${marker.title||'Punkt'} – ${status}`)}" style="left:${Math.round(s.x)}px;top:${Math.round(s.y)}px"><span>${esc(label)}</span></button>`;
     }).join('');
     if(this.selectedId){
       const marker=this.markers.find(m=>String(m.id)===String(this.selectedId));
-      if(marker){const s=this.screen(marker);this.popups.innerHTML=`<div class="vc-map-popup" style="transform:translate3d(${Math.round(s.x)}px,${Math.round(s.y)}px,0)">${markerHtml(marker)}</div>`;}
+      if(marker){const s=positions.get(String(marker.id))||this.screen(marker);this.popups.innerHTML=`<div class="vc-map-popup" style="left:${Math.round(s.x)}px;top:${Math.round(s.y)}px">${markerHtml(marker)}</div>`;}
       else this.popups.innerHTML='';
     } else this.popups.innerHTML='';
   }
@@ -300,9 +315,13 @@ async function createGoogleMap(container, options={}) {
   const map=new GoogleMap(container,{center,zoom:Number(options.zoom||4),mapId:options.settings?.googleMapId||'DEMO_MAP_ID',language:'da',region:'DK',streetViewControl:false,fullscreenControl:true,mapTypeControl:true,gestureHandling:'greedy'});
   const markers=[];const byId=new globalThis.Map();const info=new InfoWindow();
   const inputMarkers=(options.markers||[]).filter(m=>asPoint(m));
+  const coordinateGroups=new Map();
+  inputMarkers.forEach(item=>{const p=asPoint(item);const key=`${p.lat.toFixed(6)}:${p.lng.toFixed(6)}`;if(!coordinateGroups.has(key))coordinateGroups.set(key,[]);coordinateGroups.get(key).push(item);});
   for(const item of inputMarkers){
-    const pin=new PinElement({background:item.status==='wishlist'?'#f5a623':'#0f5c4c',borderColor:'#ffffff',glyphColor:'#ffffff',glyph:item.status==='wishlist'?'♥':'●',scale:1.1});
-    const marker=new AdvancedMarkerElement({map,position:{lat:Number(item.lat),lng:Number(item.lng)},title:item.title||'',content:pin.element});
+    const point=asPoint(item);const key=`${point.lat.toFixed(6)}:${point.lng.toFixed(6)}`;const group=coordinateGroups.get(key)||[item];const index=group.indexOf(item);
+    const angle=group.length>1?Math.PI*2*index/group.length:0;const radius=group.length>1?0.00022:0;const position={lat:point.lat+Math.sin(angle)*radius,lng:point.lng+Math.cos(angle)*radius};
+    const pin=new PinElement({background:item.status==='wishlist'?'#f5a623':'#0f5c4c',borderColor:'#ffffff',glyphColor:'#ffffff',glyph:item.status==='wishlist'?'♥':'●',scale:1.12});
+    const marker=new AdvancedMarkerElement({map,position,title:item.title||'',content:pin.element,gmpClickable:true,zIndex:item.status==='wishlist'?20:10});
     marker.addListener('click',()=>{info.setContent(markerHtml(item));info.open({anchor:marker,map});if(typeof options.onMarkerClick==='function')options.onMarkerClick(item);});
     markers.push(marker);byId.set(String(item.id),{marker,item});
   }

@@ -2,7 +2,7 @@
 'use strict';
 
 const STORAGE_KEY = 'vores-camping-static-v3';
-const APP_VERSION = 6;
+const APP_VERSION = 8;
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
@@ -83,54 +83,111 @@ const DEMO_CAMPSITES = [
 const createDefaultState = () => ({version:APP_VERSION,campsites:deepClone(DEMO_CAMPSITES),categories:deepClone(DEFAULT_CATEGORIES),settings:deepClone(DEFAULT_SETTINGS)});
 
 let state = loadState();
-let ui = {search:'',sort:'latest',mapScope:'europa',mapFilter:'all',mapSelectedId:'',modal:null,toast:null};
+let ui = {search:'',sort:'latest',mapScope:'europa',mapFilter:'all',mapSelectedId:'',homeMapFilter:'all',homeMapSelectedId:'',modal:null,toast:null};
 let activeDraft = null;
 let activeDraftKey = '';
 let routeDraft = blankRoute();
 let routeEditIndex = -1;
 let activeMapControllers = [];
 let overviewMapController = null;
+let mapGeocodeRunning = false;
+let automaticMapBackfillDone = false;
 
-function normalizeState(raw,{useDemoFallback=true}={}){
+function firstArray(...values){return values.find(Array.isArray)||[];}
+function coerceLegacyRoot(raw){
+  if(!raw||typeof raw!=='object')return null;
+  if(Array.isArray(raw))return {campsites:raw};
+  if(Array.isArray(raw.campsites))return raw;
+  const visited=firstArray(raw.visited,raw.visitedCampsites,raw.besogte,raw.besogteCampingpladser).map(item=>({...item,status:'visited'}));
+  const wishlist=firstArray(raw.wishlist,raw.wishes,raw.wanted,raw.wishlistCampsites,raw.onskeliste,raw.onskeBesog).map(item=>({...item,status:'wishlist'}));
+  const generic=firstArray(raw.places,raw.locations,raw.campingpladser,raw.items,raw.entries);
+  if(visited.length||wishlist.length||generic.length)return {...raw,campsites:[...visited,...wishlist,...generic]};
+  return null;
+}
+function coordinateNumber(value){
+  if(value===''||value===null||value===undefined)return null;
+  const normalized=typeof value==='string'?value.trim().replace(',','.'):value;
+  const number=Number(normalized);
+  return Number.isFinite(number)?number:null;
+}
+function normalizeState(input,{useDemoFallback=true}={}){
+  const raw=coerceLegacyRoot(input);
   if(!raw || !Array.isArray(raw.campsites)) return useDemoFallback ? createDefaultState() : null;
   const settings={
     ...deepClone(DEFAULT_SETTINGS),
-    ...(raw.settings||{}),
+    ...(raw.settings||raw.config||{}),
     dashboardStyle:['cards','compact'].includes(raw.settings?.dashboardStyle)?raw.settings.dashboardStyle:DEFAULT_SETTINGS.dashboardStyle,
     mapProvider:['auto','google','openstreetmap'].includes(raw.settings?.mapProvider)?raw.settings.mapProvider:DEFAULT_SETTINGS.mapProvider,
     googleMapsApiKey:typeof raw.settings?.googleMapsApiKey==='string'?raw.settings.googleMapsApiKey:'',
     googleMapId:typeof raw.settings?.googleMapId==='string'?raw.settings.googleMapId:'',
     sections:Array.isArray(raw.settings?.sections)&&raw.settings.sections.length?raw.settings.sections:deepClone(DEFAULT_SETTINGS.sections)
   };
-  const campsites=raw.campsites.map(camp=>({
-    ...blankCampsite(camp?.status==='wishlist'?'wishlist':'visited'),
-    ...(camp||{}),
-    visitDates:Array.isArray(camp?.visitDates)?camp.visitDates:[],
-    tags:Array.isArray(camp?.tags)?camp.tags:[],
-    photos:Array.isArray(camp?.photos)?camp.photos:[],
-    ratings:camp?.ratings&&typeof camp.ratings==='object'?camp.ratings:{},
-    latitude:validCoordinateValue(camp?.latitude,-90,90)?Number(camp.latitude):'',
-    longitude:validCoordinateValue(camp?.longitude,-180,180)?Number(camp.longitude):'',
-    placeId:camp?.placeId||'',
-    routes:Array.isArray(camp?.routes)?camp.routes.map(route=>({
-      ...blankRoute(),
-      ...(route||{}),
-      id:route?.id||uid('route'),
-      mapsUrl:route?.mapsUrl||route?.googleMapsUrl||route?.url||'',
-      points:Array.isArray(route?.points)?route.points.filter(p=>Number.isFinite(Number(p?.lat))&&Number.isFinite(Number(p?.lng))).map(p=>({lat:Number(p.lat),lng:Number(p.lng),label:p.label||''})):[],
-      path:Array.isArray(route?.path)?route.path.filter(p=>Number.isFinite(Number(p?.lat))&&Number.isFinite(Number(p?.lng))).map(p=>({lat:Number(p.lat),lng:Number(p.lng)})):[]
-    })):[]
-  }));
+  const seenIds=new Set();
+  const campsites=raw.campsites.filter(Boolean).map((camp,index)=>{
+    const status=normalizeCampStatus(camp);
+    const latitude=legacyCoordinate(camp,'latitude');
+    const longitude=legacyCoordinate(camp,'longitude');
+    let id=String(camp?.id||camp?.uuid||camp?.key||uid('camp'));
+    if(seenIds.has(id))id=`${id}-${index+1}`;
+    seenIds.add(id);
+    const rawDates=firstArray(camp?.visitDates,camp?.dates,camp?.visits,camp?.besogsDatoer);
+    const visitDates=rawDates.map(value=>typeof value==='string'?value:(value?.date||value?.visitDate||'')).filter(Boolean);
+    const tags=firstArray(camp?.tags,camp?.categories,camp?.labels).map(String).filter(Boolean);
+    const photos=firstArray(camp?.photos,camp?.images,camp?.pictures).filter(value=>typeof value==='string');
+    const ratings=camp?.ratings&&typeof camp.ratings==='object'?camp.ratings:(camp?.scores&&typeof camp.scores==='object'?camp.scores:{});
+    return ({
+      ...blankCampsite(status),
+      ...(camp||{}),
+      id,status,
+      name:String(camp?.name||camp?.title||camp?.campName||camp?.navn||'Campingplads uden navn'),
+      country:String(camp?.country||camp?.land||'Danmark'),
+      region:String(camp?.region||camp?.area||camp?.omrade||''),
+      city:String(camp?.city||camp?.town||camp?.by||''),
+      address:String(camp?.address||camp?.adresse||''),
+      description:String(camp?.description||camp?.beskrivelse||''),
+      notes:String(camp?.notes||camp?.note||camp?.noter||''),
+      plannedDate:String(camp?.plannedDate||camp?.wishDate||camp?.onskeDato||''),
+      visitDates,tags,photos,ratings,
+      latitude:validCoordinateValue(latitude,-90,90)?coordinateNumber(latitude):'',
+      longitude:validCoordinateValue(longitude,-180,180)?coordinateNumber(longitude):'',
+      placeId:camp?.placeId||camp?.googlePlaceId||'',
+      routes:firstArray(camp?.routes,camp?.bikeRoutes,camp?.cykelruter).map(route=>({
+        ...blankRoute(),
+        ...(route||{}),
+        id:route?.id||uid('route'),
+        name:route?.name||route?.title||route?.navn||'Cykelrute',
+        mapsUrl:route?.mapsUrl||route?.googleMapsUrl||route?.sharedUrl||route?.url||'',
+        points:Array.isArray(route?.points)?route.points.map(asRoutePoint).filter(Boolean):[],
+        path:Array.isArray(route?.path)?route.path.map(asRoutePoint).filter(Boolean):[]
+      }))
+    });
+  });
+  const categories=firstArray(raw.categories,raw.ratingCategories,raw.vurderingsKategorier);
   return {
     version:APP_VERSION,
     campsites,
-    categories:Array.isArray(raw.categories)&&raw.categories.length?raw.categories:deepClone(DEFAULT_CATEGORIES),
+    categories:categories.length?categories.map((cat,index)=>({id:String(cat.id||`kategori-${index+1}`),name:String(cat.name||cat.label||`Kategori ${index+1}`),icon:String(cat.icon||'⭐')})):deepClone(DEFAULT_CATEGORIES),
     settings
   };
 }
-function loadState(){
-  return normalizeState(safeJson(localStorage.getItem(STORAGE_KEY))) || createDefaultState();
+function asRoutePoint(point){
+  if(!point)return null;
+  if(Array.isArray(point)&&point.length>=2){const lat=coordinateNumber(point[0]),lng=coordinateNumber(point[1]);return validCoordinateValue(lat,-90,90)&&validCoordinateValue(lng,-180,180)?{lat,lng}:null;}
+  const lat=coordinateNumber(point.lat??point.latitude),lng=coordinateNumber(point.lng??point.lon??point.longitude);
+  return validCoordinateValue(lat,-90,90)&&validCoordinateValue(lng,-180,180)?{lat,lng,label:point.label||''}:null;
 }
+function discoverSavedState(){
+  const priority=[STORAGE_KEY,'vores-camping-static-v2','vores-camping-static-v1','vores-camping','voresCamping','camping-app-state'];
+  const keys=[...priority,...Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(Boolean).filter(key=>/camping/i.test(key))];
+  const unique=[...new Set(keys)];
+  for(const key of unique){
+    const parsed=safeJson(localStorage.getItem(key));
+    const normalized=normalizeState(parsed,{useDemoFallback:false});
+    if(normalized){if(key!==STORAGE_KEY)try{localStorage.setItem(STORAGE_KEY,JSON.stringify(normalized));}catch{}return normalized;}
+  }
+  return null;
+}
+function loadState(){return discoverSavedState()||createDefaultState();}
 function saveState(){
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
   catch(error){showToast('Browseren kunne ikke gemme flere billeder. Hent en sikkerhedskopi og fjern nogle store fotos.','danger');console.error(error);}
@@ -174,10 +231,31 @@ function latestVisit(camp){return [...(camp.visitDates||[])].sort().reverse()[0]
 function routeCount(){return state.campsites.reduce((sum,c)=>sum+(c.routes?.length||0),0);}
 function countriesCount(){return new Set(state.campsites.filter(c=>c.status==='visited').map(c=>c.country).filter(Boolean)).size;}
 function placeQuery(camp){return [camp.address,camp.city,camp.region,camp.country].filter(Boolean).join(', ')||camp.name;}
-function validCoordinateValue(value,min,max){return value!==''&&value!==null&&value!==undefined&&Number.isFinite(Number(value))&&Number(value)>=min&&Number(value)<=max;}
-function hasCoordinates(value){return validCoordinateValue(value?.latitude??value?.lat,-90,90)&&validCoordinateValue(value?.longitude??value?.lng,-180,180);}
-function campPoint(camp){return hasCoordinates(camp)?{lat:Number(camp.latitude),lng:Number(camp.longitude)}:null;}
-function coordinateText(camp){return hasCoordinates(camp)?`${Number(camp.latitude).toFixed(6)}, ${Number(camp.longitude).toFixed(6)}`:'Placering er ikke valgt endnu';}
+function geocodeQueryForCamp(camp){
+  const values=[camp?.name,camp?.address,camp?.city,camp?.region,camp?.country].map(value=>String(value||'').trim()).filter(Boolean);
+  return [...new Set(values.map(value=>value.toLowerCase()))].map(lower=>values.find(value=>value.toLowerCase()===lower)).join(', ');
+}
+function normalizeCampStatus(camp){
+  const raw=String(camp?.status??camp?.type??camp?.list??'').trim().toLowerCase();
+  const wishlistWords=['wishlist','wish','wanted','want','to-visit','to_visit','planned','planlagt','ønske','onske','ønskeliste','onskeliste','vil besøge','vil besoeg'];
+  if(camp?.wishlist===true||camp?.wish===true||wishlistWords.some(word=>raw===word||raw.includes(word)))return'wishlist';
+  return'visited';
+}
+function legacyCoordinate(camp,axis){
+  const isLat=axis==='latitude';
+  const pair=camp?.coordinates||camp?.coordinate||camp?.coords;
+  const arrayValue=Array.isArray(pair)?(isLat?pair[0]:pair[1]):undefined;
+  const geo=camp?.geometry?.coordinates;
+  const geoValue=Array.isArray(geo)?(isLat?geo[1]:geo[0]):undefined;
+  const candidates=isLat
+    ?[camp?.latitude,camp?.lat,camp?.location?.latitude,camp?.location?.lat,camp?.position?.lat,camp?.mapPosition?.lat,arrayValue,geoValue]
+    :[camp?.longitude,camp?.lng,camp?.lon,camp?.location?.longitude,camp?.location?.lng,camp?.location?.lon,camp?.position?.lng,camp?.mapPosition?.lng,arrayValue,geoValue];
+  return candidates.find(value=>value!==''&&value!==null&&value!==undefined)??'';
+}
+function validCoordinateValue(value,min,max){const number=coordinateNumber(value);return number!==null&&number>=min&&number<=max;}
+function hasCoordinates(value){return validCoordinateValue(value?.latitude??value?.lat,-90,90)&&validCoordinateValue(value?.longitude??value?.lng??value?.lon,-180,180);}
+function campPoint(camp){return hasCoordinates(camp)?{lat:coordinateNumber(camp.latitude??camp.lat),lng:coordinateNumber(camp.longitude??camp.lng??camp.lon)}:null;}
+function coordinateText(camp){const point=campPoint(camp);return point?`${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`:'Placering er ikke valgt endnu';}
 function googleSearchUrl(query){return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;}
 function googleMapUrlForCamp(camp){const p=campPoint(camp);return p?googleSearchUrl(`${p.lat},${p.lng}`):googleSearchUrl(placeQuery(camp));}
 function formatDistanceMeters(value){const meters=Number(value||0);if(!meters)return'';return meters>=1000?`${(meters/1000).toFixed(1).replace('.',',')} km`:`${Math.round(meters)} m`;}
@@ -257,28 +335,44 @@ function campCard(camp){
   </article>`;
 }
 
+function homeMapCamps(){
+  let camps=[...state.campsites];
+  if(ui.homeMapFilter==='visited')camps=camps.filter(c=>c.status==='visited');
+  if(ui.homeMapFilter==='wishlist')camps=camps.filter(c=>c.status==='wishlist');
+  return camps;
+}
+function miniMapPlace(camp){
+  const point=campPoint(camp),wish=camp.status==='wishlist';
+  return `<button class="home-map-place ${ui.homeMapSelectedId===camp.id?'selected':''}" data-action="home-map-select" data-id="${attr(camp.id)}" ${point?'':'disabled'}><span class="home-place-icon ${wish?'wishlist':''}">${wish?'💛':'🏕️'}</span><span><strong>${esc(camp.name)}</strong><small>${esc([camp.city,camp.country].filter(Boolean).join(', ')||'Sted ikke angivet')}</small></span>${average(camp)?`<b>★ ${average(camp).toFixed(1).replace('.',',')}</b>`:''}</button>`;
+}
 function renderDashboard(){
   const visited=state.campsites.filter(c=>c.status==='visited');
   const wishlist=state.campsites.filter(c=>c.status==='wishlist');
+  const allMapped=state.campsites.filter(hasCoordinates);
+  const missing=state.campsites.filter(c=>!hasCoordinates(c));
+  const mapCamps=homeMapCamps();
+  const mapList=[...mapCamps].sort((a,b)=>{const aDate=latestVisit(a)||a.plannedDate||'',bDate=latestVisit(b)||b.plannedDate||'';return bDate.localeCompare(aDate);}).slice(0,7);
   const recent=[...visited].sort((a,b)=>latestVisit(b).localeCompare(latestVisit(a))).slice(0,3);
   const top=[...visited].filter(c=>average(c)>0).sort((a,b)=>average(b)-average(a)).slice(0,3);
   const routes=visited.flatMap(c=>(c.routes||[]).map(r=>({...r,campId:c.id,campName:c.name}))).slice(0,4);
+  const cover=state.settings.coverImage||'assets/cover.jpg';
+  const mapLead=`<section class="home-map-lead">
+    <div class="home-map-title"><div><div class="eyebrow">Jeres campingverden</div><h1>Alle ture og campingdrømme på ét kort</h1><p>Grønne markører er besøgte pladser. Gule markører er steder, I vil besøge.</p></div><div class="page-actions"><button class="btn primary" data-nav="/ny?status=visited">＋ Tilføj besøg</button><button class="btn secondary" data-nav="/ny?status=wishlist">💛 Tilføj ønske</button></div></div>
+    <div class="home-map-toolbar card"><div class="segmented home-map-filter"><button class="${ui.homeMapFilter==='all'?'active':''}" data-action="home-map-filter" data-value="all">Alle <span>${state.campsites.length}</span></button><button class="${ui.homeMapFilter==='visited'?'active':''}" data-action="home-map-filter" data-value="visited">Besøgte <span>${visited.length}</span></button><button class="${ui.homeMapFilter==='wishlist'?'active':''}" data-action="home-map-filter" data-value="wishlist">Vil besøge <span>${wishlist.length}</span></button></div><div class="map-tool-actions"><button class="btn secondary small" data-action="home-map-fit">Vis alle</button><button class="btn secondary small" data-action="home-map-locate">◎ Min placering</button>${missing.length?`<button class="btn primary small" data-action="map-geocode-all">📍 Placér manglende (${missing.length})</button>`:''}<button class="btn ghost small" data-nav="/kort">Stort kort →</button></div></div>
+    <div class="home-map-grid">
+      <div class="home-map-card card"><div id="dashboard-map" class="integrated-map dashboard-map" aria-label="Oversigtskort med besøgte pladser og ønsker"></div><div class="map-legend"><span><i class="visited"></i>${allMapped.filter(c=>c.status==='visited').length} besøgte</span><span><i class="wishlist"></i>${allMapped.filter(c=>c.status==='wishlist').length} ønsker</span><span><i class="missing"></i>${missing.length} uden placering</span></div></div>
+      <aside class="home-map-side"><div class="home-cover-card card" style="background-image:linear-gradient(180deg,rgba(5,43,36,.1),rgba(5,43,36,.88)),url('${attr(cover)}')"><div><span>☀️ Vores personlige campingdagbog</span><h2>${esc(state.settings.welcomeTitle)}</h2><p>${esc(state.settings.welcomeText)}</p></div></div><div class="home-map-list card"><div class="home-map-list-head"><strong>Steder på kortet</strong><span>${mapCamps.filter(hasCoordinates).length} vist</span></div>${mapList.length?mapList.map(miniMapPlace).join(''):`<div class="empty-inline">Ingen steder i dette filter.</div>`}${missing.length?`<button class="missing-map-link" data-action="map-geocode-all">${missing.length} sted${missing.length===1?'':'er'} mangler placering – find dem nu</button>`:''}</div></aside>
+    </div>
+  </section>`;
   const sections={
-    stats:`<section class="stats-grid">
-      <div class="stat-card card"><span class="stat-icon">🏕️</span><div><strong>${visited.length}</strong><span>besøgte pladser</span></div></div>
-      <div class="stat-card card"><span class="stat-icon">💛</span><div><strong>${wishlist.length}</strong><span>på ønskelisten</span></div></div>
-      <div class="stat-card card"><span class="stat-icon">🌍</span><div><strong>${countriesCount()}</strong><span>lande besøgt</span></div></div>
-      <div class="stat-card card"><span class="stat-icon">🚲</span><div><strong>${routeCount()}</strong><span>gemte cykelruter</span></div></div>
-    </section>`,
+    stats:`<section class="stats-grid"><div class="stat-card card"><span class="stat-icon">🏕️</span><div><strong>${visited.length}</strong><span>besøgte pladser</span></div></div><div class="stat-card card"><span class="stat-icon">💛</span><div><strong>${wishlist.length}</strong><span>på ønskelisten</span></div></div><div class="stat-card card"><span class="stat-icon">🌍</span><div><strong>${countriesCount()}</strong><span>lande besøgt</span></div></div><div class="stat-card card"><span class="stat-icon">🚲</span><div><strong>${routeCount()}</strong><span>gemte cykelruter</span></div></div></section>`,
     recent:`<section class="section"><div class="section-head"><div><h2>Seneste besøg</h2><p>De nyeste kapitler i campingdagbogen.</p></div><button class="btn secondary small" data-nav="/besogte">Se alle</button></div>${recent.length?`<div class="grid">${recent.map(campCard).join('')}</div>`:emptyState('🏕️','Ingen besøg endnu','Tilføj den første campingplads og start dagbogen.','Tilføj campingplads','/ny?status=visited')}</section>`,
     top:`<section class="section"><div class="section-head"><div><h2>Bedst bedømte</h2><p>Favoritterne målt på jeres egne kategorier.</p></div><button class="btn secondary small" data-nav="/bedst">Se rangliste</button></div>${top.length?`<div class="grid">${top.map(campCard).join('')}</div>`:emptyState('⭐','Ingen vurderinger endnu','Giv stjerner til en besøgt campingplads.')}</section>`,
     wishlist:`<section class="section"><div class="section-head"><div><h2>Næste campingdrømme</h2><p>Steder campingvognen stadig mangler at opleve.</p></div><button class="btn secondary small" data-nav="/onskeliste">Se ønskeliste</button></div>${wishlist.length?`<div class="grid">${wishlist.slice(0,3).map(campCard).join('')}</div>`:emptyState('💛','Ønskelisten er tom','Gem et sted, I drømmer om at besøge.','Tilføj ønske','/ny?status=wishlist')}</section>`,
     routes:`<section class="section"><div class="section-head"><div><h2>Cykelruter</h2><p>Gemte ture omkring campingpladserne.</p></div></div>${routes.length?`<div class="grid two">${routes.map(r=>`<article class="route-card card"><div class="route-head"><div><strong>🚲 ${esc(r.name)}</strong><div class="camp-location">${esc(r.campName)}</div></div><div class="route-actions"><a class="btn primary small" target="_blank" rel="noopener" href="${attr(routeOpenUrl(r))}">Åbn ↗</a><button class="btn secondary small" data-action="share-route" data-camp="${attr(r.campId)}" data-route="${attr(r.id)}">Del</button></div></div><div class="route-meta">${r.distance?`<span class="pill">${esc(r.distance)}</span>`:''}<span class="pill">${esc(r.difficulty||'Ikke angivet')}</span>${r.mapsUrl?'<span class="pill">Google Maps-link</span>':''}</div><p>${esc(r.description||'Ingen beskrivelse.')}</p><button class="btn ghost small" data-nav="/campingplads/${encodeURIComponent(r.campId)}">Se campingplads</button></article>`).join('')}</div>`:emptyState('🚲','Ingen cykelruter endnu','Tilføj en rute under en campingplads.')}</section>`
   };
   const ordered=(state.settings.sections||DEFAULT_SETTINGS.sections).filter(s=>s.visible).map(s=>sections[s.id]||'').join('');
-  const cover=state.settings.coverImage||'assets/cover.jpg';
-  const style=['cards','compact'].includes(state.settings.dashboardStyle)?state.settings.dashboardStyle:'cards';
-  return shell(`<div class="dashboard dashboard-${style}"><section class="hero" style="background-image:url('${attr(cover)}')"><div class="hero-content"><span class="hero-kicker">☀️ Vores personlige campingdagbog</span><h1>${esc(state.settings.welcomeTitle)}</h1><p>${esc(state.settings.welcomeText)}</p><div class="hero-buttons"><button class="btn primary" data-nav="/ny?status=visited">＋ Tilføj campingplads</button><button class="btn secondary" data-nav="/kort">🗺️ Åbn oversigtskort</button></div></div></section>${ordered}</div>`,'Overblik');
+  return shell(`<div class="dashboard">${mapLead}${ordered}</div>`,'Overblik');
 }
 
 function renderList(status){
@@ -310,18 +404,26 @@ function renderTopRated(){
     ${winners.length?`<section class="section"><div class="section-head"><div><h2>Kategorivindere</h2><p>Bedste plads i hver af jeres kategorier.</p></div></div><div class="grid">${winners.map(w=>`<article class="settings-card card"><div style="font-size:30px">${esc(w.cat.icon||'⭐')}</div><h3>${esc(w.cat.name)}</h3><p><strong>${esc(w.camp.name)}</strong><br><span class="camp-location">${esc([w.camp.city,w.camp.country].filter(Boolean).join(', '))}</span></p><div class="rank-score">${w.score} / 5 ★</div></article>`).join('')}</div></section>`:''}`,'Bedst bedømte');
 }
 
+function mapFilteredCamps(filter=ui.mapFilter){
+  let camps=[...state.campsites];
+  if(filter==='visited')camps=camps.filter(c=>c.status==='visited');
+  if(filter==='wishlist')camps=camps.filter(c=>c.status==='wishlist');
+  return camps;
+}
 function renderMap(){
-  let camps=state.campsites;
-  if(ui.mapFilter==='visited')camps=camps.filter(c=>c.status==='visited');
-  if(ui.mapFilter==='wishlist')camps=camps.filter(c=>c.status==='wishlist');
+  const camps=mapFilteredCamps();
   const mapped=camps.filter(hasCoordinates),missing=camps.filter(c=>!hasCoordinates(c));
+  const visitedMapped=mapped.filter(c=>c.status==='visited').length;
+  const wishlistMapped=mapped.filter(c=>c.status==='wishlist').length;
   const selected=state.campsites.find(c=>c.id===ui.mapSelectedId);
   const provider=window.VCMaps?.normalizeProvider(state.settings)==='google'?'Google Maps':'OpenStreetMap';
   const openQuery=selected?googleMapUrlForCamp(selected):googleSearchUrl(ui.mapScope==='world'?'Verden':'Europa');
-  return shell(`${pageHeader('Integreret kort','Oversigtskort','Se alle besøgte campingpladser og ønsker som markører. Klik på en markør for at åbne pladsen.',`<a class="btn secondary" target="_blank" rel="noopener" href="${attr(openQuery)}">Åbn i Google Maps ↗</a>`)}
-    <div class="toolbar card map-toolbar"><div class="segmented"><button class="${ui.mapScope==='europa'?'active':''}" data-action="map-scope" data-value="europa">🗺️ Europakort</button><button class="${ui.mapScope==='world'?'active':''}" data-action="map-scope" data-value="world">🌍 Verdenskort</button></div><div class="segmented"><button class="${ui.mapFilter==='all'?'active':''}" data-action="map-filter" data-value="all">Alle</button><button class="${ui.mapFilter==='visited'?'active':''}" data-action="map-filter" data-value="visited">Besøgte</button><button class="${ui.mapFilter==='wishlist'?'active':''}" data-action="map-filter" data-value="wishlist">Vil besøge</button></div><div class="map-tool-actions"><button class="btn secondary small" data-action="map-fit">Vis alle</button><button class="btn secondary small" data-action="map-locate">◎ Min placering</button></div></div>
-    <div class="map-layout"><div class="map-card card"><div id="overview-map" class="integrated-map" aria-label="Kort over campingpladser"></div><div class="map-status"><span class="status-dot"></span>${esc(provider)} · ${mapped.length} placeret${missing.length?` · ${missing.length} mangler placering`:''}</div></div><div class="map-list card">${camps.length?camps.map(c=>{const point=campPoint(c);return `<div class="map-place ${ui.mapSelectedId===c.id?'selected':''} ${point?'':'missing'}"><button data-action="map-select" data-id="${attr(c.id)}" ${point?'':'disabled'}><span class="pin">${c.status==='wishlist'?'💛':'📍'}</span><div><strong>${esc(c.name)}</strong><small>${esc([c.city,c.country].filter(Boolean).join(', ')||'Sted ikke angivet')}</small>${point?`<em>${esc(coordinateText(c))}</em>`:'<em>Mangler koordinater</em>'}</div>${average(c)?`<span>★ ${average(c).toFixed(1).replace('.',',')}</span>`:''}</button><div class="map-place-actions">${point?`<a class="btn ghost small" href="#/campingplads/${encodeURIComponent(c.id)}">Se mere</a>`:`<button class="btn secondary small" data-action="map-geocode-camp" data-id="${attr(c.id)}">Find placering</button><a class="btn ghost small" href="#/rediger/${encodeURIComponent(c.id)}">Rediger</a>`}</div></div>`}).join(''):`<div class="empty"><div class="big">🗺️</div><p>Ingen steder i dette filter.</p></div>`}</div></div>
-    <div class="help-box" style="margin-top:14px"><strong>Kortet er integreret i appen:</strong> Det gratis kort virker straks uden API-nøgle. Gemmer du en Google Maps JavaScript API-nøgle under <strong>Indstillinger → Kort og Google Maps</strong>, skifter appen automatisk til Google Maps og kan beregne præcise cykelruter. Google Maps-links kan altid åbnes uden nøgle.</div>`,'Oversigtskort');
+  const progressText=mapGeocodeRunning?'Finder manglende placeringer…':missing.length?`${missing.length} sted${missing.length===1?'':'er'} mangler en kortplacering.`:'Alle steder har en placering.';
+  return shell(`${pageHeader('Integreret kort','Oversigtskort','Besøgte pladser og ønsker vises med hver sin markør. Klik på en markør eller et sted i listen.',`<a class="btn secondary" target="_blank" rel="noopener" href="${attr(openQuery)}">Åbn i Google Maps ↗</a>`)}
+    <div class="toolbar card map-toolbar"><div class="segmented"><button class="${ui.mapScope==='europa'?'active':''}" data-action="map-scope" data-value="europa">🗺️ Europakort</button><button class="${ui.mapScope==='world'?'active':''}" data-action="map-scope" data-value="world">🌍 Verdenskort</button></div><div class="segmented"><button class="${ui.mapFilter==='all'?'active':''}" data-action="map-filter" data-value="all">Alle <span>${state.campsites.length}</span></button><button class="${ui.mapFilter==='visited'?'active':''}" data-action="map-filter" data-value="visited">Besøgte <span>${state.campsites.filter(c=>c.status==='visited').length}</span></button><button class="${ui.mapFilter==='wishlist'?'active':''}" data-action="map-filter" data-value="wishlist">Vil besøge <span>${state.campsites.filter(c=>c.status==='wishlist').length}</span></button></div><div class="map-tool-actions"><button class="btn secondary small" data-action="map-fit">Vis alle markører</button><button class="btn secondary small" data-action="map-locate">◎ Min placering</button>${missing.length?`<button class="btn primary small" data-action="map-geocode-all" ${mapGeocodeRunning?'disabled':''}>📍 Placér manglende (${missing.length})</button>`:''}</div></div>
+    <div class="map-summary card"><div class="map-legend"><span><i class="visited"></i><strong>${visitedMapped}</strong> besøgte på kortet</span><span><i class="wishlist"></i><strong>${wishlistMapped}</strong> ønsker på kortet</span><span><i class="missing"></i><strong>${missing.length}</strong> uden placering</span></div><div id="map-geocode-progress" class="map-geocode-progress ${mapGeocodeRunning?'running':''}">${esc(progressText)}</div></div>
+    <div class="map-layout"><div class="map-card card"><div id="overview-map" class="integrated-map" aria-label="Kort over campingpladser"></div><div class="map-status"><span class="status-dot"></span>${esc(provider)} · ${mapped.length} markør${mapped.length===1?'':'er'}${missing.length?` · ${missing.length} mangler placering`:''}</div></div><div class="map-list card">${camps.length?camps.map(c=>{const point=campPoint(c);const isWish=c.status==='wishlist';return `<div class="map-place ${ui.mapSelectedId===c.id?'selected':''} ${point?'':'missing'} ${isWish?'wishlist':'visited'}"><button data-action="map-select" data-id="${attr(c.id)}" ${point?'':'disabled'}><span class="pin">${isWish?'💛':'🏕️'}</span><div><strong>${esc(c.name)}</strong><small>${esc([c.city,c.country].filter(Boolean).join(', ')||'Sted ikke angivet')}</small><span class="map-list-status ${isWish?'wishlist':''}">${isWish?'Vil besøge':'Besøgt'}</span>${point?`<em>${esc(coordinateText(c))}</em>`:'<em>Mangler koordinater og vises derfor ikke som markør</em>'}</div>${average(c)?`<span>★ ${average(c).toFixed(1).replace('.',',')}</span>`:''}</button><div class="map-place-actions">${point?`<a class="btn ghost small" href="#/campingplads/${encodeURIComponent(c.id)}">Se mere</a><a class="btn ghost small" target="_blank" rel="noopener" href="${attr(googleMapUrlForCamp(c))}">Google Maps ↗</a>`:`<button class="btn primary small" data-action="map-geocode-camp" data-id="${attr(c.id)}">Find placering</button><a class="btn ghost small" href="#/rediger/${encodeURIComponent(c.id)}">Rediger</a>`}</div></div>`}).join(''):`<div class="empty"><div class="big">🗺️</div><p>Ingen steder i dette filter.</p></div>`}</div></div>
+    <div class="help-box" style="margin-top:14px"><strong>Sådan kommer gamle campingpladser på kortet:</strong> Tidligere versioner gemte ikke koordinater. Denne version finder dem automatisk ud fra navn og adresse. Brug <strong>Placér manglende</strong>, hvis et sted stadig ikke får en markør.</div>`,'Oversigtskort');
 }
 
 function ratingRows(camp){
@@ -462,6 +564,50 @@ function renderSettings(){
     </div>`,'Indstillinger');
 }
 
+function setMapGeocodeProgress(text,running=false){
+  const node=$('#map-geocode-progress');
+  if(node){node.textContent=text||'';node.classList.toggle('running',Boolean(running));}
+}
+async function geocodeMissingCampsites({automatic=false,ids=null}={}){
+  if(mapGeocodeRunning)return {success:0,failed:0,total:0};
+  const idSet=Array.isArray(ids)?new Set(ids.map(String)):null;
+  let candidates=state.campsites.filter(c=>!hasCoordinates(c)&&(!idSet||idSet.has(String(c.id)))&&geocodeQueryForCamp(c));
+  if(automatic){
+    const retryAfter=6*60*60*1000;
+    candidates=candidates.filter(c=>!c.geocodeFailedAt||Date.now()-new Date(c.geocodeFailedAt).getTime()>retryAfter).slice(0,12);
+  }
+  if(!candidates.length){
+    if(!automatic)showToast('Der er ingen manglende placeringer at finde.');
+    return {success:0,failed:0,total:0};
+  }
+  mapGeocodeRunning=true;
+  let success=0,failed=0;
+  try{
+    for(let index=0;index<candidates.length;index++){
+      const camp=candidates[index];
+      setMapGeocodeProgress(`Finder ${index+1} af ${candidates.length}: ${camp.name}…`,true);
+      try{
+        const result=await window.VCMaps.geocode(geocodeQueryForCamp(camp),state.settings);
+        camp.latitude=Number(result.lat);camp.longitude=Number(result.lng);camp.placeId=result.placeId||'';
+        camp.updatedAt=new Date().toISOString();delete camp.geocodeFailedAt;success++;
+      }catch(error){
+        console.warn(`Kunne ikke placere ${camp.name}:`,error);
+        camp.geocodeFailedAt=new Date().toISOString();failed++;
+      }
+    }
+    saveState();
+  }finally{
+    mapGeocodeRunning=false;
+  }
+  const resultText=success?`${success} sted${success===1?'':'er'} blev placeret på kortet${failed?` · ${failed} kunne ikke findes`:''}.`:`Ingen af de manglende steder kunne findes automatisk.`;
+  if(['/kort','/overblik'].includes(currentRoute().path)){
+    setMapGeocodeProgress(resultText,false);
+    if(success)setTimeout(()=>render(),80);
+  }
+  if(!automatic||failed)showToast(resultText,success?'success':'danger');
+  return {success,failed,total:candidates.length};
+}
+
 function destroyActiveMaps(){
   activeMapControllers.forEach(controller=>{try{controller?.destroy?.();}catch(error){console.warn('Kunne ikke lukke kort:',error);}});
   activeMapControllers=[];overviewMapController=null;
@@ -479,13 +625,17 @@ function setMapListSelection(id){
   $$('.map-place').forEach(row=>row.classList.toggle('selected',row.querySelector('[data-action="map-select"]')?.dataset.id===ui.mapSelectedId));
 }
 async function mountMaps(path){
+  if(path==='/overblik'){
+    const camps=homeMapCamps();
+    const markers=camps.map(mapMarkerForCamp).filter(Boolean);
+    overviewMapController=await createMountedMap($('#dashboard-map'),{center:{lat:54.4,lng:12.5},zoom:4,fit:true,markers,selectedId:ui.homeMapSelectedId,onMarkerClick:marker=>{ui.homeMapSelectedId=marker.id||'';$$('.home-map-place').forEach(row=>row.classList.toggle('selected',row.dataset.id===ui.homeMapSelectedId));}});
+    return;
+  }
   if(path==='/kort'){
-    let camps=state.campsites;
-    if(ui.mapFilter==='visited')camps=camps.filter(c=>c.status==='visited');
-    if(ui.mapFilter==='wishlist')camps=camps.filter(c=>c.status==='wishlist');
+    const camps=mapFilteredCamps();
     const markers=camps.map(mapMarkerForCamp).filter(Boolean);
     const world=ui.mapScope==='world';
-    overviewMapController=await createMountedMap($('#overview-map'),{center:world?{lat:20,lng:0}:{lat:54.4,lng:12.5},zoom:world?2:4,fit:false,markers,selectedId:ui.mapSelectedId,onMarkerClick:marker=>setMapListSelection(marker.id)});
+    overviewMapController=await createMountedMap($('#overview-map'),{center:world?{lat:20,lng:0}:{lat:54.4,lng:12.5},zoom:world?2:4,fit:markers.length>0,markers,selectedId:ui.mapSelectedId,onMarkerClick:marker=>setMapListSelection(marker.id)});
     return;
   }
   if(path.startsWith('/campingplads/')){
@@ -520,7 +670,7 @@ function render(){
   destroyActiveMaps();
   root.innerHTML=html;
   renderModal();renderToast();
-  setTimeout(()=>mountMaps(path),0);
+  setTimeout(async()=>{await mountMaps(path);if((path==='/overblik'||path==='/kort')&&!automaticMapBackfillDone){automaticMapBackfillDone=true;const missing=state.campsites.filter(c=>!hasCoordinates(c));if(missing.length)geocodeMissingCampsites({automatic:true});}},0);
 }
 
 function renderModal(){
@@ -548,21 +698,27 @@ async function compressImage(file,maxSide=1600,quality=.78){
 function download(filename,text,type='application/json'){
   const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);
 }
-function saveActiveDraft(){
+async function saveActiveDraft(){
   activeDraft.tags=$('#draft-tags')?.value.split(',').map(x=>x.trim()).filter(Boolean)||[];
   activeDraft.visitDates=(activeDraft.visitDates||[]).filter(Boolean).sort().reverse();
   activeDraft.name=(activeDraft.name||'').trim();
-  if(!hasCoordinates(activeDraft)){activeDraft.latitude='';activeDraft.longitude='';activeDraft.placeId='';}
-  else{activeDraft.latitude=Number(activeDraft.latitude);activeDraft.longitude=Number(activeDraft.longitude);}
   if(!activeDraft.name){showToast('Skriv campingpladsens navn.','danger');$('#camp-form [data-draft-field="name"]')?.focus();return;}
+  if(!hasCoordinates(activeDraft)){
+    const query=geocodeQueryForCamp(activeDraft);
+    if(query&&window.VCMaps){
+      try{
+        showToast('Finder campingpladsen på kortet…');
+        const result=await window.VCMaps.geocode(query,state.settings);
+        activeDraft.latitude=Number(result.lat);activeDraft.longitude=Number(result.lng);activeDraft.placeId=result.placeId||'';
+      }catch(error){
+        activeDraft.latitude='';activeDraft.longitude='';activeDraft.placeId='';
+        showToast('Campingpladsen gemmes, men kortplaceringen kunne ikke findes. Du kan placere den senere.','danger');
+      }
+    }
+  }else{activeDraft.latitude=Number(activeDraft.latitude);activeDraft.longitude=Number(activeDraft.longitude);}
   const now=new Date().toISOString();
-  if(activeDraft.id){
-    activeDraft.updatedAt=now;
-    state.campsites=state.campsites.map(c=>c.id===activeDraft.id?deepClone(activeDraft):c);
-  }else{
-    activeDraft.id=uid('camp');activeDraft.createdAt=now;activeDraft.updatedAt=now;
-    state.campsites.unshift(deepClone(activeDraft));
-  }
+  if(activeDraft.id){activeDraft.updatedAt=now;state.campsites=state.campsites.map(c=>c.id===activeDraft.id?deepClone(activeDraft):c);}
+  else{activeDraft.id=uid('camp');activeDraft.createdAt=now;activeDraft.updatedAt=now;state.campsites.unshift(deepClone(activeDraft));}
   saveState();const id=activeDraft.id;activeDraftKey='';activeDraft=null;showToast('Campingpladsen er gemt');nav(`/campingplads/${encodeURIComponent(id)}`);
 }
 
@@ -584,7 +740,17 @@ document.addEventListener('click',async(event)=>{
   const el=event.target.closest('[data-action]');if(!el)return;
   const action=el.dataset.action;
 
-  if(action==='map-scope'){
+  if(action==='home-map-filter'){
+    ui.homeMapFilter=el.dataset.value;ui.homeMapSelectedId='';render();
+  }else if(action==='home-map-select'){
+    const id=el.dataset.id;if(!id)return;ui.homeMapSelectedId=id;$$('.home-map-place').forEach(row=>row.classList.toggle('selected',row.dataset.id===id));overviewMapController?.selectMarker?.(id,true);
+  }else if(action==='home-map-fit'){
+    overviewMapController?.fitAll?.();
+  }else if(action==='home-map-locate'){
+    try{showToast('Finder din placering…');const point=await window.VCMaps.locate();overviewMapController?.addUserLocation?.(point);showToast('Din placering er vist på kortet');}catch(error){showToast(error.message||'Placeringen kunne ikke hentes.','danger');}
+  }else if(action==='map-geocode-all'){
+    await geocodeMissingCampsites({automatic:false});
+  }else if(action==='map-scope'){
     ui.mapScope=el.dataset.value;ui.mapSelectedId='';render();
   }else if(action==='map-filter'){
     ui.mapFilter=el.dataset.value;ui.mapSelectedId='';render();
@@ -596,9 +762,9 @@ document.addEventListener('click',async(event)=>{
     try{showToast('Finder din placering…');const point=await window.VCMaps.locate();if(overviewMapController){overviewMapController.addUserLocation?.(point);}else{const detailController=activeMapControllers[0];detailController?.addUserLocation?.(point);}showToast('Din placering er vist på kortet');}catch(error){showToast(error.message||'Placeringen kunne ikke hentes.','danger');}
   }else if(action==='map-geocode-camp'){
     const camp=state.campsites.find(c=>c.id===el.dataset.id);if(!camp)return;
-    try{showToast(`Finder ${camp.name} på kortet…`);const result=await window.VCMaps.geocode(placeQuery(camp),state.settings);camp.latitude=result.lat;camp.longitude=result.lng;camp.placeId=result.placeId||'';camp.updatedAt=new Date().toISOString();saveState();showToast('Placeringen er gemt');render();}catch(error){showToast(error.message||'Placeringen kunne ikke findes.','danger');}
+    try{showToast(`Finder ${camp.name} på kortet…`);const result=await window.VCMaps.geocode(geocodeQueryForCamp(camp),state.settings);camp.latitude=result.lat;camp.longitude=result.lng;camp.placeId=result.placeId||'';camp.updatedAt=new Date().toISOString();saveState();showToast('Placeringen er gemt');render();}catch(error){showToast(error.message||'Placeringen kunne ikke findes.','danger');}
   }else if(action==='camp-geocode-draft'){
-    try{showToast('Finder campingpladsen på kortet…');const result=await window.VCMaps.geocode(placeQuery(activeDraft),state.settings);activeDraft.latitude=result.lat;activeDraft.longitude=result.lng;activeDraft.placeId=result.placeId||'';showToast(result.fallbackFromGoogle?'Google Maps svarede ikke – stedet blev fundet med reservekortet':'Placeringen er fundet');refreshForm();}catch(error){showToast(error.message||'Placeringen kunne ikke findes.','danger');}
+    try{showToast('Finder campingpladsen på kortet…');const result=await window.VCMaps.geocode(geocodeQueryForCamp(activeDraft),state.settings);activeDraft.latitude=result.lat;activeDraft.longitude=result.lng;activeDraft.placeId=result.placeId||'';showToast(result.fallbackFromGoogle?'Google Maps svarede ikke – stedet blev fundet med reservekortet':'Placeringen er fundet');refreshForm();}catch(error){showToast(error.message||'Placeringen kunne ikke findes.','danger');}
   }else if(action==='camp-use-location'){
     try{showToast('Henter din placering…');const point=await window.VCMaps.locate();activeDraft.latitude=Number(point.lat.toFixed(7));activeDraft.longitude=Number(point.lng.toFixed(7));activeDraft.placeId='';showToast('Din placering er valgt');refreshForm();}catch(error){showToast(error.message||'Placeringen kunne ikke hentes.','danger');}
   }else if(action==='camp-clear-location'){
@@ -687,8 +853,8 @@ document.addEventListener('click',async(event)=>{
   }
 });
 
-document.addEventListener('submit',(event)=>{
-  if(event.target.id==='camp-form'){event.preventDefault();saveActiveDraft();}
+document.addEventListener('submit',async(event)=>{
+  if(event.target.id==='camp-form'){event.preventDefault();await saveActiveDraft();}
 });
 
 document.addEventListener('input',(event)=>{
@@ -744,6 +910,6 @@ async function cleanupOldCaches(){
 }
 
 if(!location.hash)history.replaceState(null,'','#/overblik');
-applyTheme();render();cleanupOldCaches();
+saveState();applyTheme();render();cleanupOldCaches();
 window.__VC_STARTED__=true;
 })();
