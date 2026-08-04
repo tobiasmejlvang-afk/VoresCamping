@@ -1,105 +1,163 @@
-# Vores Camping 8.0 – kortet er nu appens centrum
+# Vores Camping 9.0
 
-En personlig dansk campingdagbog og scrapbog, klar til direkte udgivelse fra **`main`-branchens `/docs`-mappe** på GitHub Pages.
+En personlig dansk campingdagbog og scrapbog, bygget som en ren statisk webapp og klar til direkte udgivelse fra **`main`-branchens `/docs`-mappe** på GitHub Pages.
 
-Der er ingen brugeroprettet GitHub Action, ingen npm, intet build-trin og ingen service worker.
+Der er ingen npm, intet build-trin, ingen database og ingen brugeroprettet GitHub Action. Appen kan derfor uploades direkte til GitHub og udgives fra `/docs`.
 
-## Det vigtigste i version 8
+## Det vigtigste i version 9
 
-- Oversigtskortet er nu det første og største element på forsiden.
-- Besøgte pladser og ønskebesøg har hver sin tydelige markør og tæller.
-- Filtrene **Alle**, **Besøgte** og **Vil besøge** opdaterer både kort og liste.
-- Kortet tilpasser automatisk zoom og centrum, så alle relevante markører kommer med.
-- Flere pladser på samme koordinat bliver spredt visuelt, så ingen markør skjuler en anden.
-- Gamle data migreres fra flere tidligere dataformater, danske statusnavne og koordinatfelter.
-- Manglende koordinater kan findes samlet fra navn og adresse.
-- Nye campingpladser forsøges placeret automatisk på kortet ved gemning.
-- Kortfejl lukker ikke resten af appen; det gratis kort er altid reserve.
+- Nyt lyst og kompakt campingdesign med kortet som appens centrum.
+- Hurtige handlinger øverst på forsiden: find og tilføj, nyt besøg, nyt ønske, stort kort og indstillinger.
+- Stort oversigtskort på forsiden med alle besøgte campingpladser og ønskebesøg.
+- Tydelige, separate markører og filtre for **Alle**, **Besøgte** og **Vil besøge**.
+- Søgning efter gemte campingpladser direkte på kortet.
+- Manuel online-søgning efter campingpladsens navn med udfyldning af navn, adresse, by, land og koordinater.
+- Seværdigheder omkring hver campingplads med beskrivelse og valgfrit Google Maps-link.
+- Billeder, besøgsdatoer, beskrivelser, vurderinger, cykelruter og fuld detaljevisning.
+- Gamle data fra tidligere versioner migreres automatisk.
 
 ## Udgiv direkte fra `/docs`
 
-1. Upload `README.md`, `START-HER.txt` og hele mappen `docs` til roden af repositoryets `main`-branch.
-2. Kontrollér, at `docs/index.html`, `docs/app.js`, `docs/maps.js` og `docs/styles.css` findes.
-3. Åbn **Settings → Pages** på GitHub.
-4. Vælg **Deploy from a branch**.
-5. Vælg **main** og **/docs**.
-6. Tryk **Save**.
+1. Pak ZIP-filen ud.
+2. Upload `README.md`, `START-HER.txt` og hele mappen `docs` til roden af repositoryets `main`-branch.
+3. Kontrollér, at filen `docs/index.html` ligger direkte i `docs`-mappen.
+4. Åbn **Settings → Pages** på GitHub.
+5. Under **Build and deployment** vælger du **Deploy from a branch**.
+6. Vælg **Branch: main** og **Folder: /docs**.
+7. Tryk **Save**.
 
-Siden ligger derefter normalt på:
+Siden bliver normalt tilgængelig på:
 
 `https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/`
 
-## Kort og placeringer
+## Sider
 
-Det indbyggede OpenStreetMap-kort virker uden API-nøgle og understøtter:
+- **Overblik** – hurtige handlinger, stort kort, seneste besøg, ønsker og statistik.
+- **Besøgte campingpladser** – søgning, sortering og kompakt oversigt over alle besøg.
+- **Oversigtskort** – Europa- eller verdenskort med filtrering, søgning og online fund af campingpladser.
+- **Bedst bedømte campingpladser** – rangliste baseret på gennemsnittet af vurderingerne.
+- **Campingpladser vi vil besøge** – ønskeliste med planlagt dato og redigering.
+- **Indstillinger** – tema, farver, kortudbyder, forside, cover, kategorier og sikkerhedskopi.
 
-- Interaktivt Europa- og verdenskort
-- Separate markører for besøgte pladser og ønsker
-- Automatisk visning af alle punkter
-- Zoom, panorering og brugerens placering
-- Klik på kortet for præcis placering
-- Adresseopslag
-- Kort på campingpladsens detaljeside
-- Cykelruter som punkter eller rutelinje
+## Campingpladser
 
-Google Maps er valgfrit under **Indstillinger → Kort og Google Maps**. Uden Google-nøgle kan appen stadig åbne campingpladser og delte cykelruter i Google Maps via almindelige Maps-links.
+En campingplads kan indeholde:
 
-## Cykelruter og delte Google Maps-ruter
+- Navn, adresse, by, region og land
+- Præcis placering på kortet
+- Status som besøgt eller ønskebesøg
+- En eller flere besøgsdatoer
+- Planlagt besøgsdato
+- Beskrivelse, private noter og tags
+- Flere billeder med automatisk komprimering
+- Seværdigheder i området
+- Hjemmeside og telefonnummer
+- Stjernevurderinger
+- Cykelruter og delte Google Maps-links
+
+Alle oprettelser kan efterfølgende redigeres eller slettes.
+
+## Søg efter en campingplads
+
+På siden **Tilføj campingplads** kan du søge efter campingpladsens navn. Vælg et søgeresultat, og appen udfylder de tilgængelige oplysninger og kortplaceringen. Oplysningerne kan altid rettes manuelt før gemning.
+
+På **Oversigtskort** kan du:
+
+- Filtrere allerede gemte pladser efter navn, by eller land
+- Søge online efter nye campingpladser
+- Tilføje et fund direkte som besøgt eller som ønskebesøg
+- Skifte mellem Europa og verden
+- Vise alle relevante punkter på én gang
+- Bruge enhedens aktuelle placering
+
+Online-søgning kræver internet. Den starter kun, når du trykker på søgeknappen; appen laver ikke løbende autocomplete-kald.
+
+## Kort
+
+Det indbyggede kort virker uden API-nøgle og bruger OpenStreetMap-kortfliser. Kortet understøtter:
+
+- Zoom og panorering
+- Automatisk tilpasning til de viste punkter
+- Separate markører for besøgte og ønsker
+- Punkter på samme koordinat, som spredes visuelt, så begge kan vælges
+- Klik på markører for at åbne campingpladsen
+- Klik på kortet ved redigering for at vælge en præcis placering
+- Kort på detaljesider
+- Cykelruter som punkter eller rutelinjer
+
+Google Maps kan vælges under **Indstillinger → Kort og Google Maps**. En Google Maps API-nøgle er kun nødvendig, når selve Google-kortmotoren eller Googles præcise ruteberegning skal køre inde i appen. Almindelige Google Maps-links kan åbnes uden API-nøgle.
+
+## Cykelruter
 
 Under en campingplads kan du:
 
-- Oprette rute med start, slut og stop
-- Beregne og vise ruten i appen
-- Indsætte et link fra **Google Maps → Del → Kopiér link**
-- Åbne og dele den gemte rute
+- Oprette en cykelrute med start, slut og mellempunkter
+- Vise rutens punkter eller beregnede linje på kortet
 - Gemme afstand, sværhedsgrad og beskrivelse
+- Indsætte et link fra en rute, der allerede er lavet i Google Maps
+- Åbne og dele det gemte Google Maps-link
 
-Google Maps-links bruger den officielle webadresseform og kræver ikke API-nøgle. En API-nøgle er kun nødvendig, når selve Google-kortmotoren eller Googles præcise ruteberegning skal bruges inde i appen.
+Sådan gemmer du en eksisterende Google Maps-rute:
 
-## Sider
+1. Opret ruten i Google Maps.
+2. Vælg **Del**.
+3. Vælg **Kopiér link**.
+4. Indsæt linket i cykelruten i Vores Camping.
 
-- Overblik med kortet i fokus
-- Besøgte campingpladser
-- Oversigtskort – Europa eller verden
-- Bedst bedømte campingpladser
-- Campingpladser vi vil besøge
-- Indstillinger
+## Vurderinger
 
-## Øvrige funktioner
+Standardkategorierne er:
 
-- Opret, redigér og slet campingpladser
-- Besøgt eller ønskebesøg
-- Flere besøgsdatoer
-- Beskrivelse, private noter og tags
-- Billeder med automatisk komprimering
-- Stjernevurdering i standardkategorier og egne kategorier
-- Fuld visning med billeder, vurderinger, datoer, kort og ruter
-- Temaer, egne farver, forsidetekst og coverbillede
-- Tilpasning af forsidens sektioner
-- Eksport og import af JSON-sikkerhedskopi
+- Beliggenhed
+- Pris & kvalitet
+- Renlighed
+- Service
+- Faciliteter
+- Hundevenlig
+- Cykelmuligheder
+
+Under **Indstillinger** kan kategorier omdøbes, flyttes, slettes og suppleres med egne kategorier.
+
+## Tilpasning
+
+Under **Indstillinger** kan du blandt andet ændre:
+
+- Appnavn og forsidetekster
+- Lyst tema og accentfarver
+- Kompakt eller luftig forside
+- Coverbillede
+- Synlige sektioner og deres rækkefølge
+- Kortudbyder
+- Vurderingskategorier
 
 ## Data og sikkerhedskopi
 
-Data gemmes lokalt i browseren på den enkelte enhed. Brug **Indstillinger → Hent sikkerhedskopi** for at flytte data mellem Windows-computer og Samsung-tablet.
+Campingdata gemmes lokalt i browseren på den enkelte enhed. Brug **Indstillinger → Hent sikkerhedskopi** og **Indlæs sikkerhedskopi** for at flytte data mellem eksempelvis Windows-computer og Samsung-tablet.
 
-Google Maps API-nøglen udelades fra sikkerhedskopier.
+Google Maps API-nøglen bliver ikke inkluderet i sikkerhedskopien.
 
-## Gammel cache
+## Opgradering fra en ældre version
 
-Åbn denne side én gang efter udskiftning af en gammel version:
+Appen forsøger automatisk at migrere tidligere campingpladser, ønsker, danske statusnavne, koordinater med dansk decimalkomma og ældre feltnavne.
+
+Efter upload kan denne adresse åbnes én gang, hvis browseren stadig viser en gammel udgave:
 
 `https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html`
 
-Den fjerner gamle cachefiler og service workers, men beholder campingdata i browserens lokale lager.
+Reparationssiden fjerner gamle cachefiler og tidligere service workers, men beholder campingdata i browserens lokale lager.
 
-## Gennemført test
+## Gennemført kontrol
 
-Version 8 er testet i Chromium i computer- og mobilstørrelse med:
+Version 9 er kontrolleret med blandt andet:
 
-- 3 besøgte og 2 ønskebesøg på samme kort
-- Filtrering af begge statustyper
-- Tilføjelse og lagring af en ny plads med koordinater
-- Detaljeside og redigeringsside med kort
-- Migration fra ældre danske datafelter og kommatal
-- To forskellige statusser på præcis samme koordinat
-- Alle hovedsider uden JavaScript-fejl
+- Opstart uden JavaScript-fejl
+- 3 besøgte og 2 ønskebesøg samtidigt på kortet
+- Filtrering til kun besøgte, kun ønsker og alle punkter
+- Søgning blandt gemte campingpladser
+- Online søgeresultat med automatisk udfyldning af oplysninger og koordinater
+- Oprettelse af campingplads med seværdighed og delt Google Maps-cykelrute
+- Fuld detaljevisning efter lagring
+- Migration af ældre data og danske koordinater
+- Besøgt og ønskebesøg på nøjagtig samme koordinat
+- Computer- og mobilvisning
+- JavaScript-syntakskontrol af `app.js` og `maps.js`

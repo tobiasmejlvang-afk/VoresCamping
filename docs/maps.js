@@ -269,15 +269,19 @@ class NativeMap {
   fitPoints(points,padding=60) {
     const pts=points.map(asPoint).filter(Boolean);if(!pts.length)return;
     if(pts.length===1){this.setView(pts[0],Math.max(this.zoom,13));return;}
+    const normalLngs=pts.map(p=>p.lng), shiftedLngs=pts.map(p=>p.lng<0?p.lng+360:p.lng);
+    const normalSpan=Math.max(...normalLngs)-Math.min(...normalLngs),shiftedSpan=Math.max(...shiftedLngs)-Math.min(...shiftedLngs);
+    const fitted=shiftedSpan<normalSpan?pts.map(p=>({...p,lng:p.lng<0?p.lng+360:p.lng})):pts;
     const {width,height}=this.viewport();
     for(let z=18;z>=2;z--){
-      const px=pts.map(p=>project(p,z));const xs=px.map(p=>p.x),ys=px.map(p=>p.y);
+      const px=fitted.map(p=>project(p,z));const xs=px.map(p=>p.x),ys=px.map(p=>p.y);
       if(Math.max(...xs)-Math.min(...xs)<=Math.max(1,width-padding*2)&&Math.max(...ys)-Math.min(...ys)<=Math.max(1,height-padding*2)){
         this.zoom=z;
         this.center=unproject({x:(Math.min(...xs)+Math.max(...xs))/2,y:(Math.min(...ys)+Math.max(...ys))/2},z);
         this.render();return;
       }
     }
+    this.zoom=2;this.center={lat:18,lng:0};this.render();
   }
   fitAll() { this.fitPoints([...this.markers,...this.routePoints()],70); }
   selectMarker(id,pan=true) {
@@ -367,16 +371,57 @@ async function geocodeGoogle(query,settings) {
   const location=result.geometry.location;
   return {lat:location.lat(),lng:location.lng(),label:result.formatted_address||query,placeId:result.place_id||'',provider:'google'};
 }
-async function geocodeNominatim(query) {
-  const wait=Math.max(0,1000-(Date.now()-nominatimLastRequest));if(wait)await delay(wait);
+async function nominatimRequest(params) {
+  const wait=Math.max(0,1050-(Date.now()-nominatimLastRequest));if(wait)await delay(wait);
   nominatimLastRequest=Date.now();
   const url=new URL('https://nominatim.openstreetmap.org/search');
-  url.search=new URLSearchParams({q:query,format:'jsonv2',limit:'1','accept-language':'da',addressdetails:'1'});
-  const response=await fetch(url,{headers:{Accept:'application/json'}});
-  if(!response.ok)throw new Error('Korttjenesten kunne ikke finde stedet lige nu.');
-  const rows=await response.json();const row=rows?.[0];if(!row)throw new Error('Stedet blev ikke fundet. Prøv en mere præcis adresse.');
-  return {lat:Number(row.lat),lng:Number(row.lon),label:row.display_name||query,placeId:String(row.place_id||''),provider:'openstreetmap'};
+  url.search=new URLSearchParams({...params,format:'jsonv2','accept-language':'da',addressdetails:'1',extratags:'1',namedetails:'1',dedupe:'1'});
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
+  try{
+    const response=await fetch(url,{headers:{Accept:'application/json'},signal:controller.signal});
+    if(!response.ok)throw new Error(`Kortsøgningen svarede med fejl ${response.status}.`);
+    const rows=await response.json();return Array.isArray(rows)?rows:[];
+  }catch(error){
+    if(error?.name==='AbortError')throw new Error('Kortsøgningen tog for lang tid. Prøv igen.');
+    if(error instanceof TypeError)throw new Error('Korttjenesten kunne ikke kontaktes. Kontrollér internetforbindelsen.');
+    throw error;
+  }finally{clearTimeout(timer);}
 }
+function normalizeSearchRow(row,index=0){
+  const address=row?.address||{};const extras=row?.extratags||{};const names=row?.namedetails||{};
+  const city=address.city||address.town||address.village||address.municipality||address.hamlet||'';
+  const region=address.state||address.region||address.county||'';
+  const road=[address.road||address.pedestrian||address.path||'',address.house_number||''].filter(Boolean).join(' ');
+  const postcode=address.postcode||'';
+  const name=names.name||names['name:da']||row?.name||address.camp_site||address.tourism||String(row?.display_name||'').split(',')[0]||'Campingplads';
+  const rawType=String(row?.type||row?.addresstype||row?.class||'sted').replace(/_/g,' ');
+  const typeLabel=rawType==='camp site'||rawType==='camp_site'?'Campingplads':rawType.charAt(0).toUpperCase()+rawType.slice(1);
+  return {
+    id:`osm-${row?.osm_type||'x'}-${row?.osm_id||row?.place_id||index}`,
+    placeId:String(row?.place_id||''),
+    name:String(name),
+    displayName:String(row?.display_name||''),
+    address:[road,[postcode,city].filter(Boolean).join(' ')].filter(Boolean).join(', '),
+    postcode:String(postcode),city:String(city),region:String(region),country:String(address.country||''),countryCode:String(address.country_code||'').toUpperCase(),
+    lat:Number(row?.lat),lng:Number(row?.lon),website:String(extras.website||extras['contact:website']||''),phone:String(extras.phone||extras['contact:phone']||''),
+    type:String(row?.type||''),category:String(row?.class||''),typeLabel,provider:'openstreetmap'
+  };
+}
+async function searchPlaces(query,{limit=7}={}){
+  const clean=String(query||'').trim();if(!clean)throw new Error('Skriv campingpladsens navn eller område først.');
+  const safeLimit=Math.max(1,Math.min(10,Number(limit)||7));
+  const rows=await nominatimRequest({q:clean,limit:String(safeLimit)});
+  const normalized=rows.map(normalizeSearchRow).filter(row=>finite(row.lat)&&finite(row.lng));
+  const preferred=normalized.filter(row=>row.type==='camp_site'||row.category==='tourism'||/camp|camping|feriepark|holiday park/i.test(`${row.name} ${row.displayName}`));
+  const rest=normalized.filter(row=>!preferred.includes(row));
+  return [...preferred,...rest].slice(0,safeLimit);
+}
+async function geocodeNominatim(query) {
+  const rows=await searchPlaces(query,{limit:1});const row=rows[0];
+  if(!row)throw new Error('Stedet blev ikke fundet. Prøv en mere præcis adresse.');
+  return {lat:row.lat,lng:row.lng,label:row.displayName||query,placeId:row.placeId||'',provider:'openstreetmap',...row};
+}
+
 async function geocode(query,settings={}) {
   const clean=String(query||'').trim();if(!clean)throw new Error('Skriv et sted eller en adresse først.');
   const cacheKey=`${normalizeProvider(settings)}:${clean.toLowerCase()}`;if(geocodeCache.has(cacheKey))return {...geocodeCache.get(cacheKey)};
@@ -416,5 +461,5 @@ async function calculateBicycleRoute(route,settings={}) {
   return {points:points.map(p=>({lat:p.lat,lng:p.lng,label:p.label})),path:points.map(p=>({lat:p.lat,lng:p.lng})),distanceMeters:0,durationSeconds:0,provider:'points',precise:false};
 }
 
-window.VCMaps={create,geocode,locate,calculateBicycleRoute,loadGoogleMaps,normalizeProvider};
+window.VCMaps={create,geocode,searchPlaces,locate,calculateBicycleRoute,loadGoogleMaps,normalizeProvider};
 })();

@@ -1,24 +1,31 @@
-VORES CAMPING 8.0 – KLAR TIL GITHUB PAGES FRA /docs
+VORES CAMPING 9.0 – KLAR TIL GITHUB PAGES FRA /docs
 
 UPLOAD
-1. Upload README.md, START-HER.txt og hele mappen docs til roden af main-branchen.
-2. Kontrollér, at docs/index.html ligger direkte i docs-mappen.
-3. Åbn GitHub: Settings > Pages.
-4. Source: Deploy from a branch.
-5. Branch: main.
-6. Folder: /docs.
-7. Tryk Save.
+1. Pak ZIP-filen ud.
+2. Upload README.md, START-HER.txt og hele mappen docs til roden af main-branchen.
+3. Kontrollér, at docs/index.html ligger direkte i docs-mappen.
+4. Åbn GitHub: Settings > Pages.
+5. Source: Deploy from a branch.
+6. Branch: main.
+7. Folder: /docs.
+8. Tryk Save.
 
-DER SKAL IKKE OPRETTES EN GITHUB ACTION.
-Der er heller ingen npm- eller build-kommando.
+DER SKAL IKKE OPRETTES EN EGEN GITHUB ACTION.
+Der er heller ingen npm-, terminal- eller build-kommando.
 
-NYT I VERSION 8
-- Kortet er forsiden og har førsteprioritet.
-- Besøgte og ønskebesøg vises med hver sin markør.
-- Kortet zoomer automatisk, så alle punkter kan ses.
-- Punkter på samme sted spredes, så de ikke skjuler hinanden.
-- Gamle data og koordinater migreres automatisk.
-- Manglende placeringer kan findes samlet.
+NYT I VERSION 9
+- Lyst og kompakt campingdesign.
+- Hurtige handlinger øverst på forsiden.
+- Stort kort med besøgte og ønskebesøg i fokus.
+- Søgning blandt gemte campingpladser.
+- Online søgning efter campingpladsens navn.
+- Automatisk udfyldning af adresse, by, land og koordinater.
+- Seværdigheder med beskrivelse og Google Maps-link.
+- Billeder, datoer, vurderinger, cykelruter og fuld detaljevisning.
+- Gamle data migreres automatisk.
 
-Efter udskiftning af en gammel version kan du åbne:
+HVIS EN GAMMEL VERSION HÆNGER FAST
+Åbn én gang:
 https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html
+
+Dine gemte campingdata bliver ikke slettet af reparationssiden.

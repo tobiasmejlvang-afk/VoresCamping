@@ -1,4 +1,4 @@
-Vores Camping 8.0
-Bygget: 2026-08-02
-Kortet er nu forsiden, og besøgte/ønsker vises med separate markører.
-Udgivelse: GitHub Pages fra main /docs
+Vores Camping 9.0
+Bygget: 2026-08-04
+Lyst og kompakt kort-først design med hurtige handlinger, søgning efter campingpladser, seværdigheder, billeder, vurderinger og cykelruter.
+Udgivelse: GitHub Pages direkte fra main /docs – uden egen GitHub Action.

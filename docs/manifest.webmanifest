@@ -1,15 +1,23 @@
 {
+  "id": "./",
   "name": "Vores Camping",
   "short_name": "Camping",
-  "description": "Personlig dansk campingdagbog med vurderinger, billeder, integreret kort og cykelruter.",
+  "description": "Personlig dansk campingdagbog med kort, billeder, vurderinger, seværdigheder og cykelruter.",
   "lang": "da",
   "start_url": "./#/overblik",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f5f4ed",
+  "orientation": "any",
+  "background_color": "#f7f6ef",
   "theme_color": "#0f5c4c",
+  "categories": ["travel", "lifestyle"],
   "icons": [
-    {"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"},
-    {"src":"assets/icon-512.png","sizes":"512x512","type":"image/png"}
+    {"src":"assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"assets/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ],
+  "shortcuts": [
+    {"name":"Overblik","short_name":"Overblik","url":"./#/overblik"},
+    {"name":"Tilføj besøg","short_name":"Nyt besøg","url":"./#/ny?status=visited"},
+    {"name":"Oversigtskort","short_name":"Kort","url":"./#/kort"}
   ]
 }
