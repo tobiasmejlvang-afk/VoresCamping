@@ -10,19 +10,42 @@ const asPoint = (value) => { if(!value)return null; const lat=numberValue(value.
 const esc = (value='') => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+let mapLibreLoader = null;
 let googleLoader = null;
 let googleLoaderKey = '';
 let googleAuthFailed = false;
 let nominatimLastRequest = 0;
 const geocodeCache = new Map();
+const OPENFREEMAP_STYLES = new Set(['liberty','bright','positron','fiord']);
+function openFreeMapStyle(settings={}){const style=OPENFREEMAP_STYLES.has(settings.mapStyle)?settings.mapStyle:'liberty';return `https://tiles.openfreemap.org/styles/${style}`;}
+
+
+
+function loadMapLibre(){
+  if(window.maplibregl?.Map)return Promise.resolve(window.maplibregl);
+  if(mapLibreLoader)return mapLibreLoader;
+  mapLibreLoader=new Promise((resolve,reject)=>{
+    if(!document.querySelector('link[data-vc-maplibre]')){const link=document.createElement('link');link.rel='stylesheet';link.href='https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css';link.dataset.vcMaplibre='1';document.head.appendChild(link);}
+    const script=document.createElement('script');script.src='https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js';script.async=true;script.dataset.vcMaplibre='1';
+    let done=false;const finish=(ok,value)=>{if(done)return;done=true;clearTimeout(timer);ok?resolve(value):reject(value instanceof Error?value:new Error(String(value||'MapLibre kunne ikke indlæses.')));};
+    script.onload=()=>window.maplibregl?.Map?finish(true,window.maplibregl):finish(false,new Error('MapLibre blev hentet, men startede ikke.'));
+    script.onerror=()=>finish(false,new Error('MapLibre-programfilen kunne ikke hentes.'));
+    document.head.appendChild(script);
+    const timer=setTimeout(()=>finish(false,new Error('MapLibre svarede ikke i tide.')),6500);
+  }).catch(error=>{mapLibreLoader=null;throw error;});
+  return mapLibreLoader;
+}
 
 function normalizeProvider(settings={}) {
-  const selected = ['auto','google','openstreetmap'].includes(settings.mapProvider) ? settings.mapProvider : 'auto';
-  const key = String(settings.googleMapsApiKey || '').trim();
-  if (selected === 'google') return key ? 'google' : 'openstreetmap';
-  if (selected === 'auto') return key ? 'google' : 'openstreetmap';
+  const selected = ['auto','google','openstreetmap','openrouteservice'].includes(settings.mapProvider) ? settings.mapProvider : 'auto';
+  const googleKey = String(settings.googleMapsApiKey || '').trim();
+  const ors = String(settings.orsApiKey || '').trim();
+  if (selected === 'google') return googleKey ? 'google' : (ors ? 'openrouteservice' : 'openstreetmap');
+  if (selected === 'openrouteservice') return ors ? 'openrouteservice' : 'openstreetmap';
+  if (selected === 'auto') return ors ? 'openrouteservice' : (googleKey ? 'google' : 'openstreetmap');
   return 'openstreetmap';
 }
+
 
 function loadGoogleMaps(settings={}) {
   const key = String(settings.googleMapsApiKey || '').trim();
@@ -129,8 +152,8 @@ class NativeMap {
       <div class="vc-map-markers"></div>
       <div class="vc-map-popups"></div>
       <div class="vc-map-controls"><button type="button" data-map-control="zoom-in" aria-label="Zoom ind">＋</button><button type="button" data-map-control="zoom-out" aria-label="Zoom ud">−</button><button type="button" data-map-control="fit" aria-label="Vis alle punkter">⌂</button></div>
-      <div class="vc-map-provider">OpenStreetMap</div>
-      <div class="vc-map-attribution">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-bidragsydere</a></div>
+      <div class="vc-map-provider">OpenFreeMap</div>
+      <div class="vc-map-attribution">Kortbaggrund i OpenFreeMap-stil · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-bidragsydere</a></div>
     </div>`;
     this.root = this.container.firstElementChild;
     this.tiles = this.root.querySelector('.vc-map-tiles');
@@ -221,7 +244,7 @@ class NativeMap {
     const fragments=[];
     for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++) {
       const wrapped=((x%n)+n)%n;
-      fragments.push(`<img alt="" draggable="false" src="https://tile.openstreetmap.org/${this.zoom}/${wrapped}/${y}.png" style="transform:translate3d(${Math.round(x*TILE_SIZE-tl.x)}px,${Math.round(y*TILE_SIZE-tl.y)}px,0)">`);
+      fragments.push(`<img alt="" draggable="false" src="https://tile.openstreetmap.org/${this.zoom}/${wrapped}/${y}.png" onerror="this.style.visibility=\'hidden\'" style="transform:translate3d(${Math.round(x*TILE_SIZE-tl.x)}px,${Math.round(y*TILE_SIZE-tl.y)}px,0)">`);
     }
     this.tiles.innerHTML=fragments.join('');
   }
@@ -308,6 +331,87 @@ class NativeMap {
   }
 }
 
+
+async function createMapLibreMap(container, options={}) {
+  await loadMapLibre();
+  if(!window.maplibregl?.Map)throw new Error('MapLibre kunne ikke indlæses.');
+  const center=asPoint(options.center)||{lat:54.5,lng:12};
+  const map=new window.maplibregl.Map({
+    container,
+    style:openFreeMapStyle(options.settings||{}),
+    center:[center.lng,center.lat],
+    zoom:Number(options.zoom||4),
+    pitch:0,
+    bearing:0,
+    attributionControl:false,
+    cooperativeGestures:true,
+    locale:{'CooperativeGesturesHandler.WindowsHelpText':'Brug Ctrl + rul for at zoome kortet','CooperativeGesturesHandler.MacHelpText':'Brug ⌘ + rul for at zoome kortet','CooperativeGesturesHandler.MobileHelpText':'Brug to fingre for at flytte kortet'}
+  });
+  map.addControl(new window.maplibregl.NavigationControl({showCompass:false,visualizePitch:false}),'top-left');
+  map.addControl(new window.maplibregl.FullscreenControl(),'top-left');
+  map.addControl(new window.maplibregl.AttributionControl({compact:true,customAttribution:'OpenFreeMap · OpenStreetMap'}));
+  const loaded=await new Promise((resolve,reject)=>{
+    let done=false;
+    const finish=(ok,value)=>{if(done)return;done=true;clearTimeout(timer);ok?resolve(value):reject(value instanceof Error?value:new Error(String(value||'Kortet kunne ikke indlæses.')));};
+    map.once('load',()=>finish(true,true));
+    map.once('error',event=>{if(!map.isStyleLoaded())finish(false,event?.error||new Error('OpenFreeMap-stilen kunne ikke indlæses.'));});
+    const timer=setTimeout(()=>finish(false,new Error('OpenFreeMap svarede ikke i tide.')),14000);
+  }).catch(error=>{try{map.remove();}catch{}throw error;});
+  void loaded;
+  const inputMarkers=(options.markers||[]).filter(m=>asPoint(m));
+  const markers=[];
+  const byId=new globalThis.Map();
+  const coordinateGroups=new Map();
+  inputMarkers.forEach(item=>{const p=asPoint(item);const key=`${p.lat.toFixed(6)}:${p.lng.toFixed(6)}`;if(!coordinateGroups.has(key))coordinateGroups.set(key,[]);coordinateGroups.get(key).push(item);});
+  const addMarker=(item,position,{routeMarker=false,user=false,label=''}={})=>{
+    const element=document.createElement('button');
+    element.type='button';
+    element.className=`ofm-marker ${item?.status==='wishlist'?'wishlist':''} ${routeMarker?'route-point':''} ${user?'user-location':''}`;
+    element.innerHTML=`<span>${esc(label||(item?.status==='wishlist'?'♥':'●'))}</span>`;
+    element.setAttribute('aria-label',item?.title||'Punkt på kortet');
+    const popup=item&&!routeMarker&&!user?new window.maplibregl.Popup({offset:32,closeButton:true,maxWidth:'280px'}).setHTML(markerHtml(item)):null;
+    const marker=new window.maplibregl.Marker({element,anchor:'bottom'}).setLngLat([position.lng,position.lat]);
+    if(popup)marker.setPopup(popup);
+    marker.addTo(map);
+    element.addEventListener('click',event=>{event.stopPropagation();if(item&&typeof options.onMarkerClick==='function')options.onMarkerClick(item);});
+    markers.push(marker);
+    return {marker,popup,element,item};
+  };
+  for(const item of inputMarkers){
+    const point=asPoint(item);const key=`${point.lat.toFixed(6)}:${point.lng.toFixed(6)}`;const group=coordinateGroups.get(key)||[item];const index=group.indexOf(item);
+    const angle=group.length>1?Math.PI*2*index/group.length:0;const radius=group.length>1?0.00024:0;const position={lat:point.lat+Math.sin(angle)*radius,lng:point.lng+Math.cos(angle)*radius};
+    const entry=addMarker(item,position);
+    byId.set(String(item.id),entry);
+  }
+  const routePath=(Array.isArray(options.route?.path)&&options.route.path.length?options.route.path:options.route?.points||[]).map(asPoint).filter(Boolean);
+  if(routePath.length>1){
+    map.addSource('vc-route',{type:'geojson',data:{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:routePath.map(p=>[p.lng,p.lat])}}});
+    map.addLayer({id:'vc-route-shadow',type:'line',source:'vc-route',paint:{'line-color':'#ffffff','line-width':9,'line-opacity':.82}});
+    map.addLayer({id:'vc-route-line',type:'line',source:'vc-route',paint:{'line-color':'#2373c9','line-width':5,'line-opacity':.95}});
+  }
+  const routePoints=Array.isArray(options.route?.points)?options.route.points.map(asPoint).filter(Boolean):[];
+  routePoints.forEach((p,i)=>addMarker({title:i===0?'Start':i===routePoints.length-1?'Mål':`Stop ${i}`,status:'route'},p,{routeMarker:true,label:i===0?'A':i===routePoints.length-1?'B':String(i)}));
+  const all=[...inputMarkers.map(asPoint).filter(Boolean),...routePath];
+  const fitAll=()=>{
+    if(!all.length)return;
+    const bounds=new window.maplibregl.LngLatBounds();
+    all.forEach(p=>bounds.extend([p.lng,p.lat]));
+    map.fitBounds(bounds,{padding:70,maxZoom:all.length===1?14:13,duration:550});
+  };
+  if(options.fit!==false&&all.length)fitAll();
+  if(typeof options.onMapClick==='function')map.on('click',event=>options.onMapClick({lat:event.lngLat.lat,lng:event.lngLat.lng}));
+  const controller={
+    provider:'openfreemap',map,
+    selectMarker(id,pan=true){const found=byId.get(String(id));if(!found)return;if(pan)map.flyTo({center:found.marker.getLngLat(),zoom:Math.max(map.getZoom(),12),essential:true});found.marker.togglePopup();if(typeof options.onMarkerClick==='function')options.onMarkerClick(found.item);},
+    fitAll,
+    setView(point,zoom){const p=asPoint(point);if(!p)return;map.flyTo({center:[p.lng,p.lat],zoom:zoom||map.getZoom(),essential:true});},
+    addUserLocation(point){const p=asPoint(point);if(!p)return;addMarker({title:'Din placering',status:'user'},p,{user:true,label:'●'});map.flyTo({center:[p.lng,p.lat],zoom:14,essential:true});},
+    destroy(){markers.forEach(entry=>{try{entry.remove();}catch{}});try{map.remove();}catch{}container.innerHTML='';}
+  };
+  if(options.selectedId)controller.selectMarker(options.selectedId,false);
+  return controller;
+}
+
 async function createGoogleMap(container, options={}) {
   await loadGoogleMaps(options.settings || {});
   const [{Map:GoogleMap,InfoWindow,Polyline},{LatLngBounds},{AdvancedMarkerElement,PinElement}] = await Promise.all([
@@ -351,15 +455,20 @@ async function createGoogleMap(container, options={}) {
   return controller;
 }
 
+
 async function create(container, options={}) {
   if(!container)throw new Error('Kortets beholder mangler.');
   const provider=normalizeProvider(options.settings||{});
   container.classList.add('vc-map-host');
   if(provider==='google'){
-    try{return await createGoogleMap(container,options);}catch(error){console.warn('Google Maps fejlede, bruger OpenStreetMap i stedet:',error);container.innerHTML='';const native=new NativeMap(container,options);native.provider='openstreetmap';native.fallbackError=error;return native;}
+    try{return await createGoogleMap(container,options);}catch(error){console.warn('Google Maps fejlede, bruger OpenFreeMap i stedet:',error);container.innerHTML='';}
   }
-  const native=new NativeMap(container,options);native.provider='openstreetmap';return native;
+  try{return await createMapLibreMap(container,options);}catch(error){
+    console.warn('OpenFreeMap/MapLibre fejlede, bruger reservekortet:',error);
+    container.innerHTML='';const native=new NativeMap(container,options);native.provider='openstreetmap';native.fallbackError=error;return native;
+  }
 }
+
 
 async function geocodeGoogle(query,settings) {
   await loadGoogleMaps(settings);
@@ -370,6 +479,58 @@ async function geocodeGoogle(query,settings) {
   if(!result)throw new Error('Google Maps fandt ikke stedet.');
   const location=result.geometry.location;
   return {lat:location.lat(),lng:location.lng(),label:result.formatted_address||query,placeId:result.place_id||'',provider:'google'};
+}
+
+function orsKey(settings={}){return String(settings.orsApiKey||'').trim();}
+async function orsRequest(url,{method='GET',body=null,settings={}}={}){
+  const key=orsKey(settings); if(!key) throw new Error('openrouteservice API-nøglen mangler.');
+  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),15000);
+  try{
+    const response=await fetch(url,{method,headers:{'Accept':'application/json','Authorization':key,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):null,signal:controller.signal});
+    if(!response.ok) throw new Error(`openrouteservice svarede med fejl ${response.status}.`);
+    return await response.json();
+  }catch(error){
+    if(error?.name==='AbortError') throw new Error('openrouteservice svarede ikke i tide.');
+    if(error instanceof TypeError) throw new Error('openrouteservice kunne ikke kontaktes. Kontrollér internetforbindelsen.');
+    throw error;
+  }finally{clearTimeout(timer);}
+}
+function normalizeOrsFeature(feature,index=0){
+  const coords=feature?.geometry?.coordinates||[]; const props=feature?.properties||{};
+  const street=[props.street||'',props.housenumber||''].filter(Boolean).join(' ');
+  return {
+    id:`ors-${props.id||props.gid||index}`,
+    placeId:String(props.id||props.gid||''),
+    name:String(props.name||props.label||'Campingplads').split(',')[0],
+    displayName:String(props.label||props.name||''),
+    address:[street,props.postalcode||props.locality||''].filter(Boolean).join(', '),
+    postcode:String(props.postalcode||''), city:String(props.locality||props.localadmin||''), region:String(props.region||props.county||''), country:String(props.country||''), countryCode:String(props.country_a||'').toUpperCase(),
+    lat:Number(coords[1]), lng:Number(coords[0]), website:'', phone:'', type:String(props.layer||''), category:String(props.layer||''), typeLabel:'Campingplads', provider:'openrouteservice'
+  };
+}
+async function searchPlacesOpenRouteService(query,{limit=7,settings={}}={}){
+  const clean=String(query||'').trim(); if(!clean) throw new Error('Skriv campingpladsens navn eller område først.');
+  const url=new URL('https://api.heigit.org/pelias/v1/search');
+  url.search=new URLSearchParams({text:clean,size:String(Math.max(1,Math.min(10,Number(limit)||7))),lang:'da'});
+  const data=await orsRequest(url.toString(),{settings});
+  const features=Array.isArray(data?.features)?data.features:[];
+  const normalized=features.map(normalizeOrsFeature).filter(row=>finite(row.lat)&&finite(row.lng));
+  const preferred=normalized.filter(row=>/camp|camping|feriepark|holiday park/i.test(`${row.name} ${row.displayName}`));
+  const rest=normalized.filter(row=>!preferred.includes(row));
+  return [...preferred,...rest].slice(0,Math.max(1,Math.min(10,Number(limit)||7)));
+}
+async function geocodeOpenRouteService(query,settings={}){
+  const rows=await searchPlacesOpenRouteService(query,{limit:1,settings}); const row=rows[0];
+  if(!row) throw new Error('Stedet blev ikke fundet via openrouteservice.');
+  return {lat:row.lat,lng:row.lng,label:row.displayName||query,placeId:row.placeId||'',provider:'openrouteservice',...row};
+}
+
+async function testOpenRouteService(settings={}){
+  const url=new URL('https://api.heigit.org/pelias/v1/search');
+  url.search=new URLSearchParams({text:'camping Holstebro',size:'1',lang:'da'});
+  const data=await orsRequest(url.toString(),{settings});
+  if(!Array.isArray(data?.features))throw new Error('openrouteservice returnerede et uventet svar.');
+  return true;
 }
 async function nominatimRequest(params) {
   const wait=Math.max(0,1050-(Date.now()-nominatimLastRequest));if(wait)await delay(wait);
@@ -407,8 +568,12 @@ function normalizeSearchRow(row,index=0){
     type:String(row?.type||''),category:String(row?.class||''),typeLabel,provider:'openstreetmap'
   };
 }
-async function searchPlaces(query,{limit=7}={}){
+
+async function searchPlaces(query,{limit=7,settings={}}={}){
   const clean=String(query||'').trim();if(!clean)throw new Error('Skriv campingpladsens navn eller område først.');
+  if((normalizeProvider(settings)==='openrouteservice' || orsKey(settings)) && !settings.forceNominatim){
+    try{return await searchPlacesOpenRouteService(clean,{limit,settings});}catch(error){console.warn('openrouteservice-søgning fejlede, falder tilbage til OpenStreetMap:',error);}
+  }
   const safeLimit=Math.max(1,Math.min(10,Number(limit)||7));
   const rows=await nominatimRequest({q:clean,limit:String(safeLimit)});
   const normalized=rows.map(normalizeSearchRow).filter(row=>finite(row.lat)&&finite(row.lng));
@@ -416,21 +581,27 @@ async function searchPlaces(query,{limit=7}={}){
   const rest=normalized.filter(row=>!preferred.includes(row));
   return [...preferred,...rest].slice(0,safeLimit);
 }
+
 async function geocodeNominatim(query) {
-  const rows=await searchPlaces(query,{limit:1});const row=rows[0];
+  const rows=await searchPlaces(query,{limit:1,settings:{forceNominatim:true}});const row=rows[0];
   if(!row)throw new Error('Stedet blev ikke fundet. Prøv en mere præcis adresse.');
   return {lat:row.lat,lng:row.lng,label:row.displayName||query,placeId:row.placeId||'',provider:'openstreetmap',...row};
 }
 
+
 async function geocode(query,settings={}) {
   const clean=String(query||'').trim();if(!clean)throw new Error('Skriv et sted eller en adresse først.');
-  const cacheKey=`${normalizeProvider(settings)}:${clean.toLowerCase()}`;if(geocodeCache.has(cacheKey))return {...geocodeCache.get(cacheKey)};
+  const provider=normalizeProvider(settings);
+  const cacheKey=`${provider}:${clean.toLowerCase()}`;if(geocodeCache.has(cacheKey))return {...geocodeCache.get(cacheKey)};
   let result;
-  if(normalizeProvider(settings)==='google'){
-    try{result=await geocodeGoogle(clean,settings);}catch(error){console.warn(error);result=await geocodeNominatim(clean);result.fallbackFromGoogle=true;}
+  if(provider==='google'){
+    try{result=await geocodeGoogle(clean,settings);}catch(error){console.warn(error);result=orsKey(settings)?await geocodeOpenRouteService(clean,settings):await geocodeNominatim(clean);result.fallbackFromGoogle=true;}
+  }else if(provider==='openrouteservice'){
+    try{result=await geocodeOpenRouteService(clean,settings);}catch(error){console.warn(error);result=await geocodeNominatim(clean);result.fallbackFromORS=true;}
   }else result=await geocodeNominatim(clean);
   geocodeCache.set(cacheKey,result);return {...result};
 }
+
 
 function locate() {
   return new Promise((resolve,reject)=>{
@@ -438,6 +609,7 @@ function locate() {
     navigator.geolocation.getCurrentPosition(pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy}),error=>reject(new Error(error.code===1?'Adgang til placering blev afvist.':'Placeringen kunne ikke hentes.')),{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
   });
 }
+
 
 async function calculateBicycleRoute(route,settings={}) {
   const origin=String(route?.origin||'').trim();const destination=String(route?.destination||'').trim();
@@ -456,10 +628,21 @@ async function calculateBicycleRoute(route,settings={}) {
       return {path,points,distanceMeters:Number(best.distanceMeters||0),durationSeconds:Math.round(Number(best.durationMillis||0)/1000),provider:'google',precise:true};
     }catch(error){console.warn('Præcis Google-cykelrute fejlede:',error);}
   }
-  const labels=[origin,...waypoints,destination];const points=[];
-  for(const label of labels)points.push(await geocode(label,{...settings,mapProvider:'openstreetmap'}));
-  return {points:points.map(p=>({lat:p.lat,lng:p.lng,label:p.label})),path:points.map(p=>({lat:p.lat,lng:p.lng})),distanceMeters:0,durationSeconds:0,provider:'points',precise:false};
+  const labels=[origin,...waypoints,destination];const geo=[];
+  for(const label of labels)geo.push(await geocode(label,settings));
+  if((normalizeProvider(settings)==='openrouteservice' || orsKey(settings)) && orsKey(settings)){
+    try{
+      const coordinates=geo.map(p=>[Number(p.lng),Number(p.lat)]);
+      const data=await orsRequest('https://api.heigit.org/openrouteservice/v2/directions/cycling-regular/geojson',{method:'POST',settings,body:{coordinates,instructions:false,units:'m'}});
+      const feature=data?.features?.[0];
+      const path=(feature?.geometry?.coordinates||[]).map(pair=>({lng:Number(pair[0]),lat:Number(pair[1])}));
+      const summary=feature?.properties?.summary||{};
+      return {points:geo.map(p=>({lat:p.lat,lng:p.lng,label:p.label||p.displayName||''})),path,distanceMeters:Number(summary.distance||0),durationSeconds:Number(summary.duration||0),provider:'openrouteservice',precise:Boolean(path.length)};
+    }catch(error){console.warn('openrouteservice-ruteberegning fejlede, falder tilbage til punkter:',error);}
+  }
+  return {points:geo.map(p=>({lat:p.lat,lng:p.lng,label:p.label||p.displayName||''})),path:geo.map(p=>({lat:p.lat,lng:p.lng})),distanceMeters:0,durationSeconds:0,provider:'points',precise:false};
 }
 
-window.VCMaps={create,geocode,searchPlaces,locate,calculateBicycleRoute,loadGoogleMaps,normalizeProvider};
+
+window.VCMaps={create,geocode,searchPlaces,locate,calculateBicycleRoute,loadGoogleMaps,testOpenRouteService,normalizeProvider};
 })();

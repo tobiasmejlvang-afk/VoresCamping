@@ -1,4 +1,1 @@
-Vores Camping 9.0
-Bygget: 2026-08-04
-Lyst og kompakt kort-først design med hurtige handlinger, søgning efter campingpladser, seværdigheder, billeder, vurderinger og cykelruter.
-Udgivelse: GitHub Pages direkte fra main /docs – uden egen GitHub Action.
+Vores Camping 11.0 – personlig forside, OpenFreeMap/MapLibre, openrouteservice og flere illustrationer

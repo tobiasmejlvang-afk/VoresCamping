@@ -1,31 +1,26 @@
-VORES CAMPING 9.0 – KLAR TIL GITHUB PAGES FRA /docs
+VORES CAMPING 11.0 – DIREKTE FRA MAIN /docs
 
-UPLOAD
 1. Pak ZIP-filen ud.
-2. Upload README.md, START-HER.txt og hele mappen docs til roden af main-branchen.
-3. Kontrollér, at docs/index.html ligger direkte i docs-mappen.
-4. Åbn GitHub: Settings > Pages.
+2. Upload README.md, START-HER.txt, API-GUIDE.md og hele docs-mappen til roden af main.
+3. Kontrollér, at docs/index.html ligger direkte i docs.
+4. GitHub: Settings > Pages.
 5. Source: Deploy from a branch.
 6. Branch: main.
 7. Folder: /docs.
 8. Tryk Save.
 
-DER SKAL IKKE OPRETTES EN EGEN GITHUB ACTION.
-Der er heller ingen npm-, terminal- eller build-kommando.
+API-NØGLE
+Læs API-GUIDE.md.
+Indsæt aldrig nøglen i GitHub-filerne. Den skal indsættes inde i appen under Indstillinger.
 
-NYT I VERSION 9
-- Lyst og kompakt campingdesign.
-- Hurtige handlinger øverst på forsiden.
-- Stort kort med besøgte og ønskebesøg i fokus.
-- Søgning blandt gemte campingpladser.
-- Online søgning efter campingpladsens navn.
-- Automatisk udfyldning af adresse, by, land og koordinater.
-- Seværdigheder med beskrivelse og Google Maps-link.
-- Billeder, datoer, vurderinger, cykelruter og fuld detaljevisning.
-- Gamle data migreres automatisk.
+NYT I VERSION 11
+- Mere personlig forside.
+- Flottere OpenFreeMap/MapLibre-kort.
+- Fire kortstile.
+- Flere illustrationer.
+- Nedtælling til næste tur.
+- openrouteservice-søgning og cykelruter via de nye HeiGIT-adresser.
 
-HVIS EN GAMMEL VERSION HÆNGER FAST
+VED GAMMEL CACHE
 Åbn én gang:
 https://DIT-BRUGERNAVN.github.io/DIT-REPOSITORY/repair.html
-
-Dine gemte campingdata bliver ikke slettet af reparationssiden.
