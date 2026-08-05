@@ -66,7 +66,7 @@
     migrateState();
     renderNav();
     renderBottomNav();
-    renderQuickDock();
+    try { renderQuickDock(); } catch (err) { console.error('Hurtighandlinger kunne ikke vises', err); }
     renderRoute();
     window.setInterval(updateLiveInfoDisplays, 1000);
     refreshWeather();
@@ -427,6 +427,13 @@ function renderBottomNav(){
     qs('#bottom-nav').innerHTML = NAV_ITEMS.map(([key,label,icon]) => `<button class="${current===key?'active':''}" data-nav="${key}">${icon} ${label}</button>`).join('');
   }
 
+  function renderQuickDock(){
+    const dock = qs('#quick-dock');
+    if (!dock) return;
+    const actions = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+    dock.innerHTML = actions.map(action => quickDockButton(action)).join('');
+  }
+
   function navigate(hash){ location.hash = '#' + hash; }
   function currentRoute(){
     const raw = (location.hash || '#overview').slice(1);
@@ -464,7 +471,7 @@ function renderBottomNav(){
       else if (route.name === 'route') renderRouteDetail(view, route.id);
       else if (route.name === 'route-edit') renderAdvancedRouteEditor(view, route.id, route.params.siteId || '');
       else renderOverview(view);
-      renderQuickDock();
+      try { renderQuickDock(); } catch (dockError) { console.error('Hurtighandlinger kunne ikke opdateres', dockError); }
       window.requestAnimationFrame(updateLiveInfoDisplays);
     } catch (err) {
       console.error(err);
@@ -588,6 +595,17 @@ function countdownMood(days){
 
   function countdownCells(info, prefix='main'){
     return [['Dage','days'],['Timer','hours'],['Min','minutes'],['Sek','seconds']].map(([label,key]) => `<div class="count-cell"><strong data-countdown-${key}>${pad(info[key])}</strong><span>${label}</span></div>`).join('');
+  }
+
+  function quickActionIsActive(action){
+    const route = currentRoute();
+    if (action === 'search') return route.name === 'search';
+    if (action === 'addVisited') return route.name === 'add' && (route.params.status || 'visited') === 'visited';
+    if (action === 'addWish') return (route.name === 'add' && route.params.status === 'wish') || route.name === 'wishlist';
+    if (action === 'addRoute') return route.name === 'route-edit';
+    if (action === 'bigMap') return route.name === 'map';
+    if (action === 'settings') return route.name === 'settings';
+    return false;
   }
 
   function quickDockButton(action){
