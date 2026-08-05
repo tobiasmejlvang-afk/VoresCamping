@@ -1,61 +1,64 @@
-# Vores Camping – version 14
+# Vores Camping – version 16
 
-En statisk, dansk campingdagbog til Windows-computer og Samsung-tablet. Appen kan udgives direkte fra `main`-branchens `/docs`-mappe uden npm, build-trin eller GitHub Actions.
+En personlig dansk campingdagbog til Windows-computer og Samsung-tablet. Appen er en statisk webapp, som kan udgives direkte fra `main`-branchens `/docs`-mappe.
 
-## Hvad version 14 indeholder
+## Nyheder i version 16
 
-- Ny finpudset, lys campingforside med personligt cover, logo og kompakt dashboard.
-- Sisis nedtællingsur er fastgjort i hjørnet, opdateres hvert sekund og kan minimeres.
-- OpenFreeMap/MapLibre-kort med flere udseender, reservekort og små statusmarkører.
-- Kortfiltrering, lokal søgning, online søgning, automatisk zoom og enhedens placering.
-- Manuel flytning af campingpladsens markør direkte på kortet.
-- Ny avanceret cykelruteeditor med klikbare og flytbare punkter.
-- Openrouteservice/HeiGIT-funktioner til geokodning, ruteberegning, snap, isokroner, POI-søgning og højdedata.
-- Automatisk migrering af data fra tidligere appversioner.
-- API-nøgler gemmes separat fra campingdata og fjernes fra backupfiler.
-- Automatisk billedkomprimering før lagring i browseren.
-- Fejlvisning i stedet for en tom hvid skærm.
+- Finpudset og mere personligt forside-layout med en kompakt **Campingpuls**.
+- Nyt hovedlogo og nye visuelle hurtig-handlingsknapper.
+- Sisis ur vises som standard kun på forsiden.
+- Sisi og uret kan låses, låses op, flyttes og placeres i alle fire hjørner.
+- Størrelse, afstand fra kanter, gennemsigtighed, taleboble og turtekst kan tilpasses.
+- Sisi har rolige, glade og ekstra utålmodige animationer.
+- Animationen kan automatisk blive mere ivrig, når campingturen nærmer sig.
+- Klik på Sisi kan udløse et lille jubelhop.
+- Udvidet cykelruteeditor med rutetype, profil, underlag, pausetid, højdepunkter og ekstra noter.
+- GPX-eksport, ruteduplikering, deling, højdedata, isokroner og POI-søgning.
+- Flere indstillinger til kort, layout, billeder, ruter og forside-widget.
+- Indbygget trin-for-trin guide til GitHub Pages.
 
-## Installation på GitHub Pages
+## Teknisk opbygning
 
-1. Pak `Vores-Camping-v14.zip` ud.
-2. Kopiér hele `docs`-mappen til roden af dit GitHub-repository.
-3. Commit filerne til `main`-branchen.
-4. Gå til **Settings → Pages** i GitHub.
-5. Vælg **Deploy from a branch**.
-6. Vælg branchen **main** og mappen **/docs**.
-7. Gem opsætningen.
-
-Appen bruger hash-navigation, så sider som `#map`, `#settings` og `#route-edit/r1` virker uden 404-fejl på GitHub Pages.
-
-## Opsætning af Openrouteservice
-
-1. Opret en API-nøgle hos Openrouteservice.
-2. Åbn appens side **Indstillinger**.
-3. Find boksen **Kort og API-nøgler**.
-4. Indsæt nøglen i feltet **Openrouteservice API-nøgle**.
-5. Tryk **Test Openrouteservice**.
-6. Når forbindelsen virker, tryk **Gem kort og nøgler**.
-
-Nøglen bliver kun gemt lokalt på den aktuelle enhed. Den medtages ikke i eksporterede sikkerhedskopier.
-
-Version 14 bruger de nye `api.heigit.org`-adresser som primær forbindelse. Den gamle `api.openrouteservice.org`-adresse bruges kun som midlertidig reserve ved netværks- eller serverfejl, fordi den gamle adresse er varslet lukket den 24. august 2026.
+- Ingen database eller server.
+- Ingen npm-installation.
+- Intet build-trin.
+- Ingen brugeroprettet GitHub Action.
+- Data gemmes lokalt i browseren.
+- API-nøgler gemmes separat og udelades fra backupfiler.
+- Hash-navigation forebygger 404-fejl ved navigation i appen.
+- Tidligere appdata forsøges automatisk migreret til version 16.
 
 ## Centrale filer
 
-- `docs/index.html` – appens grundstruktur og scriptindlæsning.
-- `docs/styles.css` – layout, tema, responsivt design og komponenter.
-- `docs/app.js` – data, navigation, sider, formularer, backup og automatiske funktioner.
-- `docs/maps.js` – MapLibre, kortstile, markører, pop-ups, rutelinjer og korteditorer.
-- `docs/ors.js` – samlet HeiGIT/Openrouteservice-klient med nye tjenesteadresser, midlertidig reserve, fejl- og timeout-håndtering.
+- `docs/index.html` – appens indgangspunkt.
+- `docs/app.js` – sider, data, navigation, formularer og funktioner.
+- `docs/maps.js` – MapLibre, markører, kort og ruteeditor.
+- `docs/ors.js` – Openrouteservice/HeiGIT-integration.
+- `docs/styles.css` – layout, tema, responsivitet og Sisi-animationer.
 - `docs/manifest.webmanifest` – installation som webapp.
-- `docs/assets/` – logoer, illustrationer, coverbilleder og appikoner.
-- `openrouteservice.zip` – de vedhæftede ORS-eksempler bevaret som reference.
+- `docs/assets/` – logo, ur, Sisi, ikoner og illustrationer.
+- `docs/github-guide.html` – guide, der også kan åbnes fra Indstillinger.
+- `GITHUB-GUIDE.md` – samme guide i tekstformat.
 
-## Lokal lagring og backup
+## Udgivelse
 
-Campingpladser, vurderinger, ruter og indstillinger gemmes i browserens lokale lager. Billeder komprimeres automatisk, men mange store billeder kan stadig fylde browserens lager. Eksportér derfor jævnligt en JSON-backup fra **Indstillinger**.
+Læs [GITHUB-GUIDE.md](GITHUB-GUIDE.md). Den korte opskrift er:
+
+1. Læg projektets `docs`-mappe i roden af repositoryet.
+2. Gem ændringerne på `main`-branchen.
+3. Åbn **Settings → Pages**.
+4. Vælg **Deploy from a branch**.
+5. Vælg **main** og **/docs**.
+6. Tryk **Save**.
+
+## Openrouteservice
+
+Indsæt din egen nøgle under **Indstillinger → Kort og API-nøgler**. Test forbindelsen med knappen **Test Openrouteservice**. Nøglen gemmes kun lokalt på den enhed, hvor den indtastes.
+
+## Backup
+
+Eksportér jævnligt en JSON-sikkerhedskopi fra Indstillinger. Billeder komprimeres automatisk, men browserens lokale lager er ikke uendeligt – den campingvogn kan også blive overpakket.
 
 ## Test
 
-Se [TEST-RAPPORT.md](TEST-RAPPORT.md) for den gennemførte fil-, side-, responsivitets- og funktionstest.
+Se [TEST-RAPPORT.md](TEST-RAPPORT.md) for den gennemførte fil- og funktionstest.

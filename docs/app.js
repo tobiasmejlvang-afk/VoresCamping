@@ -1,19 +1,27 @@
 
 (() => {
-  const STORAGE_KEY = 'voresCampingState_v14';
-  const LEGACY_STORAGE_KEYS = ['voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
-  const CURRENT_VERSION = 14;
+  const STORAGE_KEY = 'voresCampingState_v16';
+  const LEGACY_STORAGE_KEYS = ['voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
+  const CURRENT_VERSION = 16;
   const PRESET_IMAGES = {
-    logo: 'assets/logo-main.png',
-    logoLarge: 'assets/logo-badge-large.png',
+    logo: 'assets/logo-main-v16.png',
+    logoLarge: 'assets/logo-main-v16.png',
     cover: 'assets/cover-main.png',
     corner: 'assets/corner-mood.png',
     scene: 'assets/sisi-clock-scene.png',
     clockPreview: 'assets/sisi-clock-preview.png',
+    clockFace: 'assets/sisi-clock-face.png',
+    dogCutout: 'assets/sisi-dog.png',
     campHero: 'assets/camp-hero.png',
     campCutout: 'assets/camp-cutout.png',
     style: 'assets/style-guide.png',
-    stickers: 'assets/stickers.png'
+    stickers: 'assets/stickers.png',
+    quickVisited: 'assets/quick-visited.png',
+    quickWish: 'assets/quick-wish.png',
+    quickBike: 'assets/quick-bike.png',
+    quickPhotos: 'assets/quick-photos.png',
+    quickFavorite: 'assets/quick-favorite.png',
+    quickRating: 'assets/quick-rating.png'
   };
   const DEFAULT_CATEGORIES = [
     { id: 'beliggenhed', name: 'Beliggenhed', icon: '📍' },
@@ -36,7 +44,16 @@
     addVisited: 'add?status=visited',
     addWish: 'add?status=wish',
     bigMap: 'map',
-    settings: 'settings'
+    settings: 'settings',
+    addRoute: 'route-edit/new'
+  };
+  const QUICK_ACTION_META = {
+    search: { label: 'Find campingplads', icon: '⌕', image: '' },
+    addVisited: { label: 'Tilføj besøg', icon: '', image: PRESET_IMAGES.quickVisited },
+    addWish: { label: 'Tilføj ønske', icon: '', image: PRESET_IMAGES.quickWish },
+    bigMap: { label: 'Åbn stort kort', icon: '🗺️', image: '' },
+    settings: { label: 'Indstillinger', icon: '⚙️', image: '' },
+    addRoute: { label: 'Ny cykelrute', icon: '', image: PRESET_IMAGES.quickBike }
   };
 
   let state = loadState();
@@ -76,7 +93,7 @@
 
   function loadSecrets(){
     try {
-      return JSON.parse(localStorage.getItem('voresCampingSecrets_v14') || '{}');
+      return JSON.parse(localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
     } catch (_) {
       return {};
     }
@@ -84,7 +101,7 @@
 
   function saveSecrets(){
     try {
-      localStorage.setItem('voresCampingSecrets_v14', JSON.stringify(secrets));
+      localStorage.setItem('voresCampingSecrets_v16', JSON.stringify(secrets));
     } catch (err) {
       console.warn('API-nøgler kunne ikke gemmes lokalt.', err);
     }
@@ -112,13 +129,38 @@
         countdownMinimized: false,
         nextTripName: 'Norge 2026',
         nextTripDate: `${nowYear+1}-07-15T08:00:00`,
-        countdownScene: PRESET_IMAGES.scene,
+        countdownScene: PRESET_IMAGES.cover,
         coverImage: PRESET_IMAGES.cover,
         cornerImage: PRESET_IMAGES.corner,
-        logo: PRESET_IMAGES.logoLarge,
+        logo: PRESET_IMAGES.logo,
         heroImage: PRESET_IMAGES.cover,
         clockTheme: 'wood',
         clockBridgeImage: PRESET_IMAGES.corner,
+        countdownWidget: {
+          overviewOnly: true,
+          locked: true,
+          anchor: 'bottom-right',
+          offsetX: 18,
+          offsetY: 14,
+          scale: 1,
+          opacity: 1,
+          showBubble: true,
+          showTripText: true,
+          animationMode: 'happy',
+          animationSpeed: 1,
+          autoExcitement: true,
+          clickCheer: true,
+          clockImage: PRESET_IMAGES.clockFace,
+          dogImage: PRESET_IMAGES.dogCutout,
+        },
+        routeDefaults: {
+          profile: 'cycling-regular',
+          surface: 'Blandet',
+          routeType: 'Rundtur',
+          pauseMin: 20,
+          avoidTraffic: false,
+          preferScenic: true,
+        },
         sections: [
           'map','stats','latest','top','wishlist','routes'
         ],
@@ -180,7 +222,13 @@
     if (!state || typeof state !== 'object') state = defaults;
     state.settings = { ...defaults.settings, ...(state.settings || {}) };
     state.settings.api = { ...defaults.settings.api, ...(state.settings.api || {}) };
+    state.settings.countdownWidget = { ...defaults.settings.countdownWidget, ...(state.settings.countdownWidget || {}) };
+    state.settings.routeDefaults = { ...defaults.settings.routeDefaults, ...(state.settings.routeDefaults || {}) };
     if (!window.VCMaps.styles[state.settings.mapStyle]) state.settings.mapStyle = 'liberty';
+    if (!state.version || state.version < CURRENT_VERSION || /logo-badge-large|logo-main\.png/.test(String(state.settings.logo || ''))) state.settings.logo = PRESET_IMAGES.logo;
+    if (/sisi-clock-scene/.test(String(state.settings.countdownScene || ''))) state.settings.countdownScene = PRESET_IMAGES.cover;
+    if (!state.settings.countdownWidget.clockImage) state.settings.countdownWidget.clockImage = PRESET_IMAGES.clockFace;
+    if (!state.settings.countdownWidget.dogImage) state.settings.countdownWidget.dogImage = PRESET_IMAGES.dogCutout;
     if (!Array.isArray(state.settings.sections)) state.settings.sections = [...defaults.settings.sections];
     if (!Array.isArray(state.categories) || !state.categories.length) state.categories = structuredClone(DEFAULT_CATEGORIES);
     if (!Array.isArray(state.campsites)) state.campsites = Array.isArray(state.campgrounds) ? state.campgrounds : Array.isArray(state.places) ? state.places : [];
@@ -189,10 +237,13 @@
     state.routes = state.routes.map(route => ({
       id: route.id || uid(), siteId: route.siteId || '', name: route.name || 'Ny cykelrute',
       start: route.start || '', end: route.end || '', waypoints: Array.isArray(route.waypoints) ? route.waypoints : [],
-      points: Array.isArray(route.points) ? route.points : [], profile: route.profile || 'cycling-regular',
+      points: Array.isArray(route.points) ? route.points : [], profile: route.profile || state.settings.routeDefaults?.profile || 'cycling-regular',
       difficulty: route.difficulty || 'Let', description: route.description || '', distanceKm: route.distanceKm || '',
       durationMin: route.durationMin || '', ascentM: route.ascentM || '', descentM: route.descentM || '',
       googleMapsUrl: route.googleMapsUrl || '', geojson: route.geojson || null, isochrone: route.isochrone || null,
+      surface: route.surface || state.settings.routeDefaults?.surface || 'Blandet', routeType: route.routeType || state.settings.routeDefaults?.routeType || 'Rundtur',
+      pauseMin: Number(route.pauseMin ?? state.settings.routeDefaults?.pauseMin ?? 20), roundTrip: route.roundTrip ?? true, preferScenic: route.preferScenic ?? state.settings.routeDefaults?.preferScenic ?? true,
+      avoidTraffic: route.avoidTraffic ?? state.settings.routeDefaults?.avoidTraffic ?? false, notes: route.notes || '', highlights: Array.isArray(route.highlights) ? route.highlights : [],
     }));
     state.ui = { ...defaults.ui, ...(state.ui || {}) };
     if (state.settings.api?.orsKey && !secrets.orsKey) secrets.orsKey = state.settings.api.orsKey;
@@ -360,6 +411,7 @@
       else if (route.name === 'route') renderRouteDetail(view, route.id);
       else if (route.name === 'route-edit') renderAdvancedRouteEditor(view, route.id, route.params.siteId || '');
       else renderOverview(view);
+      renderFloatingCountdown();
       window.requestAnimationFrame(updateCountdownDisplays);
     } catch (err) {
       console.error(err);
@@ -387,6 +439,10 @@
     const routes = state.routes.slice(0,4);
     const sections = new Set(state.settings.sections || []);
     const count = countdownInfo();
+    const nextWish = getWishlist().slice().sort((a,b) => String(a.plannedDate||'9999').localeCompare(String(b.plannedDate||'9999')))[0];
+    const bestPlace = best[0];
+    const recentRoute = routes[0];
+    const sisiMood = countdownMood(count.days);
     view.innerHTML = `
       <div class="view-grid overview-page ${state.settings.compact ? 'is-compact' : 'is-airy'}">
         <section class="dashboard-hero card">
@@ -399,6 +455,7 @@
                 <button class="primary-btn warm" data-quick="addVisited">＋ Nyt besøg</button>
                 <button class="glass-btn" data-quick="addWish">♡ Nyt ønske</button>
                 <button class="glass-btn" data-quick="bigMap">⌖ Åbn kort</button>
+                <button class="glass-btn" data-quick="addRoute">🚴 Ny cykelrute</button>
               </div>
             </div>
             <div class="hero-trip-card">
@@ -411,12 +468,20 @@
             </div>
           </div>
           <div class="hero-actions refined-actions">
-            ${quickTile('search','⌕','Find campingplads')}
-            ${quickTile('addVisited','＋','Tilføj besøg')}
-            ${quickTile('addWish','♥','Tilføj ønske')}
-            ${quickTile('bigMap','⌖','Stort kort')}
-            ${quickTile('settings','⚙','Indstillinger')}
+            ${quickTile('search')}
+            ${quickTile('addVisited')}
+            ${quickTile('addWish')}
+            ${quickTile('bigMap')}
+            ${quickTile('addRoute')}
+            ${quickTile('settings')}
           </div>
+        </section>
+
+        <section class="overview-pulse card">
+          <div class="pulse-intro"><span class="eyebrow dark">Campingpulsen</span><strong>${esc(sisiMood.title)}</strong><span>${esc(sisiMood.text)}</span></div>
+          <button class="pulse-item" data-nav="${nextWish ? 'detail/'+nextWish.id : 'wishlist'}"><span class="pulse-icon">💛</span><div><small>Næste ønskemål</small><strong>${esc(nextWish?.name || 'Tilføj et nyt ønske')}</strong><span>${nextWish?.plannedDate ? formatDate(nextWish.plannedDate) : 'Ingen dato valgt endnu'}</span></div></button>
+          <button class="pulse-item" data-nav="${bestPlace ? 'detail/'+bestPlace.id : 'top'}"><span class="pulse-icon">🏆</span><div><small>Jeres bedst bedømte</small><strong>${esc(bestPlace?.name || 'Bedøm jeres besøg')}</strong><span>${bestPlace?.average ? `${bestPlace.average.toFixed(1).replace('.',',')} stjerner` : 'Ingen vurdering endnu'}</span></div></button>
+          <button class="pulse-item" data-nav="${recentRoute ? 'route/'+recentRoute.id : 'route-edit/new'}"><span class="pulse-icon">🚴</span><div><small>Seneste cykelrute</small><strong>${esc(recentRoute?.name || 'Opret første rute')}</strong><span>${recentRoute?.distanceKm ? `${recentRoute.distanceKm} km · ${esc(recentRoute.difficulty)}` : 'Klar til et nyt eventyr'}</span></div></button>
         </section>
 
         ${sections.has('stats') ? `<section class="stats-row refined-stats">
@@ -446,11 +511,18 @@
     if (sections.has('map')) initMapOnce('overview-map', state.campsites.map(siteWithComputed), { fitAll:true });
   }
 
+  function countdownMood(days){
+    if (days <= 0) return { title:'Sisi er klar til afgang!', text:'Nedtællingen er slut – nu skal campinglivet leves.' };
+    if (days <= 3) return { title:'Sisi er helt oppe at køre', text:`Kun ${days} dage tilbage. Halen er allerede på overarbejde.` };
+    if (days <= 14) return { title:'Eventyret nærmer sig', text:`${days} dage tilbage – god tid til den sidste pakkeliste.` };
+    return { title:'Sisi holder skarpt øje', text:`${days} dage til næste campingtur. Ventetiden er officielt i gang.` };
+  }
+
   function countdownCells(info, prefix='main'){
     return [['Dage','days'],['Timer','hours'],['Min','minutes'],['Sek','seconds']].map(([label,key]) => `<div class="count-cell"><strong data-countdown-${key}>${pad(info[key])}</strong><span>${label}</span></div>`).join('');
   }
 
-  function quickTile(action, icon, label){ return `<button class="quick-tile" data-quick="${action}"><div class="big-icon">${icon}</div><div>${label}</div></button>`; }
+  function quickTile(action){ const meta=QUICK_ACTION_META[action]||{label:action,icon:'•',image:''}; return `<button class="quick-tile quick-tile--${action}" data-quick="${action}">${meta.image ? `<img class="quick-tile-image" src="${meta.image}" alt="${esc(meta.label)}">` : `<div class="big-icon">${meta.icon || '•'}</div>`}<div>${esc(meta.label)}</div></button>`; }
   function statCard(value, label, icon, cls=''){ return `<div class="stat-card card ${cls}"><div class="value">${value}</div><div>${label}</div><div class="big-icon">${icon}</div></div>`; }
   function stars(avg){ const r = Math.round(avg||0); return `<span class="rating">${'★'.repeat(r)}${'☆'.repeat(Math.max(0,5-r))}</span>`; }
   function compactList(items, showRank=false){
@@ -647,6 +719,8 @@
   function renderSettings(view){
     setHeader('Indstillinger', 'Tilpas appen, så den passer perfekt til jeres campingoplevelser');
     const next = countdownInfo();
+    const widget = state.settings.countdownWidget;
+    const routeDefaults = state.settings.routeDefaults;
     view.innerHTML = `
       <div class="view-grid">
         <section class="settings-grid">
@@ -672,6 +746,37 @@
           </div>
 
           <div class="form-section card">
+            <h3>Sisi & uret på forsiden</h3>
+            <div class="field-row two">
+              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-overview-only" ${widget.overviewOnly?'checked':''}> Kun på forsiden</label>
+              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-locked" ${widget.locked?'checked':''}> Lås placering</label>
+            </div>
+            <div class="field-row two">
+              <label><span class="field-label">Placering</span><select id="set-widget-anchor" class="field"><option value="top-left" ${widget.anchor==='top-left'?'selected':''}>Øverst til venstre</option><option value="top-right" ${widget.anchor==='top-right'?'selected':''}>Øverst til højre</option><option value="bottom-left" ${widget.anchor==='bottom-left'?'selected':''}>Nederst til venstre</option><option value="bottom-right" ${widget.anchor==='bottom-right'?'selected':''}>Nederst til højre</option></select></label>
+              <label><span class="field-label">Størrelse</span><input type="range" min="0.72" max="1.28" step="0.02" value="${widget.scale}" id="set-widget-scale"></label>
+            </div>
+            <div class="field-row two">
+              <label><span class="field-label">Vandret afstand</span><input type="range" min="0" max="80" step="1" value="${widget.offsetX}" id="set-widget-offset-x"></label>
+              <label><span class="field-label">Lodret afstand</span><input type="range" min="0" max="80" step="1" value="${widget.offsetY}" id="set-widget-offset-y"></label>
+            </div>
+            <div class="field-row two">
+              <label><span class="field-label">Gennemsigtighed</span><input type="range" min="0.65" max="1" step="0.01" value="${widget.opacity}" id="set-widget-opacity"></label>
+              <div class="stack"><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-bubble" ${widget.showBubble?'checked':''}> Vis taleboble</label><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-triptext" ${widget.showTripText?'checked':''}> Vis tur-tekst</label></div>
+            </div>
+            <div class="field-row two">
+              <label><span class="field-label">Sisis animation</span><select id="set-widget-animation" class="field"><option value="off" ${widget.animationMode==='off'?'selected':''}>Slået fra</option><option value="calm" ${widget.animationMode==='calm'?'selected':''}>Rolig</option><option value="happy" ${widget.animationMode==='happy'?'selected':''}>Glad og utålmodig</option><option value="excited" ${widget.animationMode==='excited'?'selected':''}>Fuld eventyr-mode</option></select></label>
+              <label><span class="field-label">Animationshastighed</span><input type="range" min="0.65" max="1.65" step="0.05" value="${widget.animationSpeed || 1}" id="set-widget-animation-speed"></label>
+            </div>
+            <div class="field-row two">
+              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-auto-excitement" ${widget.autoExcitement?'checked':''}> Bliv automatisk mere utålmodig tæt på turen</label>
+              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-click-cheer" ${widget.clickCheer?'checked':''}> Klik på Sisi giver et lille jubelhop</label>
+            </div>
+            <div class="action-row"><button class="ghost-btn" id="upload-clock-face-btn">Skift urbillede</button><input type="file" class="hidden-file" id="upload-clock-face" accept="image/*"><button class="ghost-btn" id="upload-dog-btn">Skift Sisi-billede</button><input type="file" class="hidden-file" id="upload-dog" accept="image/*"></div>
+            <div class="panel">Tip: Når placeringen er låst op, kan widgeten flyttes direkte på forsiden med mus eller finger.</div>
+            <button class="primary-btn" id="save-widget-settings">Gem Sisi & ur</button>
+          </div>
+
+          <div class="form-section card">
             <h3>Billeder og cover</h3>
             <div class="stack"><label><span class="field-label">Coverbillede</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.coverImage}" id="cover-preview"></div></label><button class="ghost-btn" id="upload-cover-btn">Skift coverbillede</button><input type="file" class="hidden-file" id="upload-cover" accept="image/*"></div>
             <div class="stack"><label><span class="field-label">Hjørnebillede / stemning</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.cornerImage}" id="corner-preview"></div></label><button class="ghost-btn" id="upload-corner-btn">Skift hjørnebillede</button><input type="file" class="hidden-file" id="upload-corner" accept="image/*"></div>
@@ -680,7 +785,7 @@
 
           <div class="form-section card">
             <h3>Layout, tema og størrelsesskalering</h3>
-            <label><span class="field-label">Størrelsesskalering</span><input type="range" min="0.9" max="1.15" step="0.01" value="${state.settings.fontScale}" id="set-scale"></label>
+            <label><span class="field-label">Størrelsesskalering</span><input type="range" min="0.9" max="1.18" step="0.01" value="${state.settings.fontScale}" id="set-scale"></label>
             <label><span class="field-label">Farvepalette</span><select id="set-accent" class="field"><option value="#1f5f3c" ${state.settings.accent==='#1f5f3c'?'selected':''}>Skovgrøn</option><option value="#4e6b3a" ${state.settings.accent==='#4e6b3a'?'selected':''}>Olivengrøn</option><option value="#b6782d" ${state.settings.accent==='#b6782d'?'selected':''}>Dæmpet orange</option><option value="#7d6b3f" ${state.settings.accent==='#7d6b3f'?'selected':''}>Sandbrun</option></select></label>
             <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-compact" ${state.settings.compact?'checked':''}> Kompakt forside</label>
             <button class="primary-btn" id="save-style-settings">Gem layout og farver</button>
@@ -700,8 +805,24 @@
           </div>
 
           <div class="form-section card">
-            <h3>Kort og API-nøgler</h3>
+            <h3>Kort og markører</h3>
             <label><span class="field-label">Kortstil</span><select id="set-map-style" class="field">${Object.entries(window.VCMaps.styles).map(([k,v]) => `<option value="${k}" ${state.settings.mapStyle===k?'selected':''}>${esc(v.label)}</option>`).join('')}</select></label>
+            <label><span class="field-label">Startkort</span><select id="set-map-scope" class="field"><option value="europe" ${state.settings.mapScope==='europe'?'selected':''}>Europakort</option><option value="world" ${state.settings.mapScope==='world'?'selected':''}>Verdenskort</option></select></label>
+            <div class="panel">OpenFreeMap og MapLibre bruges som primært kort. Hvis noget fejler, falder appen tilbage til et gratis reservekort.</div>
+            <button class="primary-btn" id="save-map-prefs">Gem kortvalg</button>
+          </div>
+
+          <div class="form-section card">
+            <h3>Cykelruter – standarder og ekstra funktioner</h3>
+            <div class="field-row two"><label><span class="field-label">Standardprofil</span><select id="set-route-profile" class="field"><option value="cycling-regular" ${routeDefaults.profile==='cycling-regular'?'selected':''}>Almindelig cykel</option><option value="cycling-road" ${routeDefaults.profile==='cycling-road'?'selected':''}>Landevejscykel</option><option value="cycling-mountain" ${routeDefaults.profile==='cycling-mountain'?'selected':''}>Mountainbike</option><option value="foot-walking" ${routeDefaults.profile==='foot-walking'?'selected':''}>Gang / gåtur</option></select></label><label><span class="field-label">Rutetype</span><select id="set-route-type" class="field"><option ${routeDefaults.routeType==='Rundtur'?'selected':''}>Rundtur</option><option ${routeDefaults.routeType==='Tur/retur'?'selected':''}>Tur/retur</option><option ${routeDefaults.routeType==='Fra A til B'?'selected':''}>Fra A til B</option></select></label></div>
+            <div class="field-row two"><label><span class="field-label">Foretrukket underlag</span><select id="set-route-surface" class="field"><option ${routeDefaults.surface==='Asfalt'?'selected':''}>Asfalt</option><option ${routeDefaults.surface==='Grus'?'selected':''}>Grus</option><option ${routeDefaults.surface==='Blandet'?'selected':''}>Blandet</option><option ${routeDefaults.surface==='Skovsti'?'selected':''}>Skovsti</option></select></label><label><span class="field-label">Standard pausestop (min)</span><input type="number" min="0" max="180" class="field" id="set-route-pause" value="${routeDefaults.pauseMin}"></label></div>
+            <div class="stack"><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-route-scenic" ${routeDefaults.preferScenic?'checked':''}> Prioritér naturskønne ruter</label><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-route-traffic" ${routeDefaults.avoidTraffic?'checked':''}> Undgå trafikerede strækninger når muligt</label></div>
+            <div class="panel">Ekstra funktioner i ruteeditoren: GPX-eksport, duplikér rute, pausestop, højdepunkter, isokroner, POI-søgning og bedre detaljefelter.</div>
+            <button class="primary-btn" id="save-route-defaults">Gem ruteindstillinger</button>
+          </div>
+
+          <div class="form-section card">
+            <h3>Kort og API-nøgler</h3>
             <label><span class="field-label">Openrouteservice API-nøgle</span><input id="set-ors-key" class="field" value="${esc(secrets.orsKey||'')}" placeholder="Indsæt din nøgle"></label>
             <label><span class="field-label">Google Maps API-nøgle (valgfri)</span><input id="set-google-key" class="field" value="${esc(secrets.googleMapsKey||'')}" placeholder="Valgfri reserve"></label>
             <div class="action-row"><button class="primary-btn" id="save-api-settings">Gem kort og nøgler</button><button class="ghost-btn" id="test-ors-btn">Test Openrouteservice</button></div>
@@ -714,13 +835,21 @@
             <div class="action-row"><button class="danger-btn" id="reset-data-btn">Nulstil campingdata</button></div>
             <div class="subtle">API-nøgler udelades automatisk fra sikkerhedskopien.</div>
           </div>
+
+
+          <div class="form-section card">
+            <h3>Udgivelse på GitHub Pages</h3>
+            <p class="subtle">Appen er færdig som statisk webapp og skal udgives fra <strong>main</strong>-branchens <strong>/docs</strong>-mappe.</p>
+            <div class="panel">Der kræves hverken npm, build-trin eller en brugeroprettet GitHub Action.</div>
+            <a class="primary-btn" href="github-guide.html" target="_blank" rel="noreferrer">Åbn trin-for-trin guide</a>
+          </div>
         </section>
       </div>`;
     bindSettingsHandlers();
   }
 
   function sceneThumbs(){
-    const options = [PRESET_IMAGES.scene, PRESET_IMAGES.corner, PRESET_IMAGES.cover, PRESET_IMAGES.campHero];
+    const options = [PRESET_IMAGES.cover, PRESET_IMAGES.corner, PRESET_IMAGES.campHero, PRESET_IMAGES.campCutout];
     return options.map(src => `<button class="preview-thumb ${state.settings.countdownScene===src?'active':''}" data-scene="${src}" style="background-image:url('${src}')"></button>`).join('');
   }
 
@@ -779,12 +908,15 @@
           <div class="route-metrics">
             <div class="metric-card"><span>Afstand</span><strong>${route.distanceKm || '—'} km</strong></div>
             <div class="metric-card"><span>Forventet tid</span><strong>${hours ? hours+' t ' : ''}${minutes} min</strong></div>
+            <div class="metric-card"><span>Pausetid</span><strong>${route.pauseMin || 0} min</strong></div>
             <div class="metric-card"><span>Sværhedsgrad</span><strong>${esc(route.difficulty || 'Ikke valgt')}</strong></div>
+            <div class="metric-card"><span>Underlag</span><strong>${esc(route.surface || '—')}</strong></div>
             <div class="metric-card"><span>Stigning</span><strong>${route.ascentM || '—'} m</strong></div>
           </div>
           <div class="card-section card">
-            <div class="grid-2"><div class="panel"><strong>Rutebeskrivelse</strong><p>${esc(route.description || 'Ingen beskrivelse endnu.')}</p></div><div class="panel"><strong>Start, stop og mål</strong><p>${esc(route.start || 'Start')} ${route.waypoints?.length ? '→ ' + route.waypoints.map(esc).join(' → ') : ''} → ${esc(route.end || 'Mål')}</p></div></div>
-            <div class="action-row">${route.googleMapsUrl ? `<a class="ghost-btn" target="_blank" rel="noreferrer" href="${safeUrl(route.googleMapsUrl)}">Åbn delt Google Maps-rute</a>` : ''}<button class="ghost-btn" id="copy-route-link-btn">Kopiér rutelink</button></div>
+            <div class="grid-2"><div class="panel"><strong>Rutebeskrivelse</strong><p>${esc(route.description || 'Ingen beskrivelse endnu.')}</p><p class="subtle">${esc(route.notes || '')}</p></div><div class="panel"><strong>Start, stop og mål</strong><p>${esc(route.start || 'Start')} ${route.waypoints?.length ? '→ ' + route.waypoints.map(esc).join(' → ') : ''} → ${esc(route.end || 'Mål')}</p><p class="subtle">Type: ${esc(route.routeType || '—')} · Profil: ${esc(route.profile || '—')}</p></div></div>
+            <div class="panel"><strong>Højdepunkter og stop</strong><div class="inline-list">${(route.highlights||[]).map(item => `<span class="chip">${esc(item)}</span>`).join('') || '<span class="subtle">Ingen højdepunkter gemt endnu.</span>'}</div></div>
+            <div class="action-row">${route.googleMapsUrl ? `<a class="ghost-btn" target="_blank" rel="noreferrer" href="${safeUrl(route.googleMapsUrl)}">Åbn delt Google Maps-rute</a>` : ''}<button class="ghost-btn" id="copy-route-link-btn">Kopiér rutelink</button><button class="ghost-btn" id="route-detail-export-btn">Eksportér GPX</button></div>
           </div>
         </section>
         <aside class="summary-rail"><div class="card-section card sticky-map-card"><div class="section-head"><h3>Rutens kort</h3><span class="badge">${route.points?.length || 0} punkter</span></div><div id="route-map" class="map-holder route-detail-map"></div></div></aside>
@@ -795,6 +927,7 @@
     initMapOnce('route-map', sitePoints, { styleKey: state.settings.mapStyle, fitAll:false, routeGeoJSON: detailRouteGeoJSON, routePoints: route.points || [] });
     qs('#share-route-btn').onclick = () => shareRoute(route);
     qs('#copy-route-link-btn').onclick = async () => { await navigator.clipboard.writeText(route.googleMapsUrl || location.href); toast('Rutelink kopieret.'); };
+    qs('#route-detail-export-btn').onclick = () => downloadRouteGpx(route);
   }
 
   function renderAdvancedRouteEditor(view, id, siteIdParam=''){
@@ -802,7 +935,8 @@
     const original = isNew ? null : getRoute(id);
     const route = original ? structuredClone(original) : {
       id: uid(), siteId: siteIdParam || state.campsites[0]?.id || '', name: 'Ny cykelrute', start: '', end: '', waypoints: [], points: [],
-      profile: 'cycling-regular', difficulty: 'Let', description: '', distanceKm: '', durationMin: '', ascentM: '', descentM: '', googleMapsUrl: '', geojson: null, isochrone: null,
+      profile: state.settings.routeDefaults.profile || 'cycling-regular', difficulty: 'Let', description: '', distanceKm: '', durationMin: '', ascentM: '', descentM: '', googleMapsUrl: '', geojson: null, isochrone: null,
+      surface: state.settings.routeDefaults.surface || 'Blandet', routeType: state.settings.routeDefaults.routeType || 'Rundtur', pauseMin: state.settings.routeDefaults.pauseMin || 20, roundTrip: true, preferScenic: state.settings.routeDefaults.preferScenic ?? true, avoidTraffic: state.settings.routeDefaults.avoidTraffic ?? false, notes: '', highlights: [],
     };
     const site = getSite(route.siteId);
     if (!route.points?.length && site?.coords?.lat && site?.coords?.lng) {
@@ -820,6 +954,12 @@
             <div class="field-row"><label><span class="field-label">Startnavn</span><input id="route-start" class="field" value="${esc(route.start)}" placeholder="Fx campingpladsen"></label><label><span class="field-label">Slutnavn</span><input id="route-end" class="field" value="${esc(route.end)}" placeholder="Fx udsigtspunktet"></label></div>
             <label><span class="field-label">Beskrivelse</span><textarea id="route-description">${esc(route.description)}</textarea></label>
             <label><span class="field-label">Delt Google Maps-link</span><input id="route-google" class="field" value="${esc(route.googleMapsUrl)}"></label>
+            <div class="field-row two"><label><span class="field-label">Ruteprofil</span><select id="route-profile" class="field"><option value="cycling-regular" ${route.profile==='cycling-regular'?'selected':''}>Almindelig cykel</option><option value="cycling-road" ${route.profile==='cycling-road'?'selected':''}>Landevej</option><option value="cycling-mountain" ${route.profile==='cycling-mountain'?'selected':''}>Mountainbike</option><option value="foot-walking" ${route.profile==='foot-walking'?'selected':''}>Gang / gåtur</option></select></label><label><span class="field-label">Rutetype</span><select id="route-type" class="field"><option ${route.routeType==='Rundtur'?'selected':''}>Rundtur</option><option ${route.routeType==='Tur/retur'?'selected':''}>Tur/retur</option><option ${route.routeType==='Fra A til B'?'selected':''}>Fra A til B</option></select></label></div>
+            <div class="field-row two"><label><span class="field-label">Underlag</span><select id="route-surface" class="field"><option ${route.surface==='Asfalt'?'selected':''}>Asfalt</option><option ${route.surface==='Grus'?'selected':''}>Grus</option><option ${route.surface==='Blandet'?'selected':''}>Blandet</option><option ${route.surface==='Skovsti'?'selected':''}>Skovsti</option></select></label><label><span class="field-label">Planlagt pause (min)</span><input type="number" min="0" max="180" id="route-pause" class="field" value="${esc(route.pauseMin || 0)}"></label></div>
+            <div class="field-row two"><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="route-roundtrip" ${route.roundTrip?'checked':''}> Markér som rundtur</label><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="route-scenic" ${route.preferScenic?'checked':''}> Prioritér naturskøn oplevelse</label></div>
+            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="route-traffic" ${route.avoidTraffic?'checked':''}> Forsøg at undgå trafikerede veje</label>
+            <label><span class="field-label">Højdepunkter / stop (kommasepareret)</span><input id="route-highlights" class="field" value="${esc((route.highlights||[]).join(', '))}" placeholder="Udsigtspunkt, café, badesø"></label>
+            <label><span class="field-label">Ekstra noter til ruten</span><textarea id="route-notes">${esc(route.notes || '')}</textarea></label>
           </div>
           <div class="route-editor-help"><strong>Sådan tegner du:</strong> Klik på kortet for at tilføje punkter. Træk punkterne for at flytte dem. Dobbeltklik på et mellempunkt for at fjerne det.</div>
           <div class="route-editor-actions">
@@ -834,9 +974,10 @@
             <button class="tool-card" id="route-isochrone-btn"><span>◉</span><strong>15/30 min rækkevidde</strong><small>Vis hvor langt I kan cykle</small></button>
             <button class="tool-card" id="route-pois-btn"><span>⌖</span><strong>Find oplevelser</strong><small>Se seværdigheder nær ruten</small></button>
             <button class="tool-card" id="route-elevation-btn"><span>⌁</span><strong>Højdeprofil</strong><small>Hent højdedata for ruten</small></button>
+            <button class="tool-card" id="route-export-gpx-btn"><span>⇩</span><strong>Eksportér GPX</strong><small>Gem ruten som GPX-fil</small></button>
           </div>
           <div id="route-tool-results" class="stack"></div>
-          <div class="route-save-bar"><button class="primary-btn warm" id="save-route-btn">Gem rute</button><button class="ghost-btn" data-nav="${original ? 'route/'+original.id : route.siteId ? 'detail/'+route.siteId : 'overview'}">Annuller</button>${original ? `<button class="danger-btn" id="delete-route-btn">Slet rute</button>` : ''}</div>
+          <div class="route-save-bar"><button class="primary-btn warm" id="save-route-btn">Gem rute</button><button class="ghost-btn" id="duplicate-route-btn">Duplikér</button><button class="ghost-btn" data-nav="${original ? 'route/'+original.id : route.siteId ? 'detail/'+route.siteId : 'overview'}">Annuller</button>${original ? `<button class="danger-btn" id="delete-route-btn">Slet rute</button>` : ''}</div>
         </section>
         <section class="route-map-panel card">
           <div class="route-map-toolbar"><div class="seg-group">${Object.entries(window.VCMaps.styles).slice(0,5).map(([key,def]) => `<button class="seg-btn ${state.settings.mapStyle===key?'active':''}" data-route-map-style="${key}">${esc(def.label.replace('Camping – ','').replace('Lyst – ','').replace('Roligt – ','').replace('Natur – ',''))}</button>`).join('')}</div><div class="route-live-metrics"><span><strong id="live-distance">${route.distanceKm || '—'}</strong> km</span><span><strong id="live-duration">${route.durationMin || '—'}</strong> min</span><span><strong id="live-points">${route.points.length}</strong> punkter</span></div></div>
@@ -881,7 +1022,7 @@
       if (points.length < 2) return toast('Ruten skal have mindst start og mål.');
       setBusy(qs('#calculate-route-btn'), true, 'Beregner…'); setStatus('Beregner rute…','busy');
       try {
-        const result = await ors.directions(points.map(p=>[Number(p.lng),Number(p.lat)]), route.profile || 'cycling-regular');
+        const result = await ors.directions(points.map(p=>[Number(p.lng),Number(p.lat)]), qs('#route-profile').value || route.profile || 'cycling-regular');
         const summary = result?.features?.[0]?.properties?.summary || {};
         route.geojson = result;
         route.distanceKm = (Number(summary.distance || 0) / 1000).toFixed(1);
@@ -899,7 +1040,7 @@
       const points=activeRouteEditor.getPoints(); if(!points.length) return toast('Tilføj først punkter.');
       setBusy(qs('#snap-route-btn'),true,'Fastgør…');
       try {
-        const result=await ors.snap(points.map(p=>[Number(p.lng),Number(p.lat)]),route.profile||'cycling-regular',500);
+        const result=await ors.snap(points.map(p=>[Number(p.lng),Number(p.lat)]),qs('#route-profile').value || route.profile || 'cycling-regular',500);
         const snapped=(result?.features||[]).map((f,i)=>({lng:Number(f.geometry.coordinates[0]),lat:Number(f.geometry.coordinates[1]),label:points[i]?.label||`Punkt ${i+1}`}));
         if(snapped.length) activeRouteEditor.setPoints(snapped); else toast('Ingen punkter kunne fastgøres.');
       } catch(err){ handleOrsError(err); }
@@ -907,7 +1048,7 @@
     };
     qs('#route-isochrone-btn').onclick = async () => {
       const point=activeRouteEditor.getPoints()[0]; if(!point) return toast('Tilføj et startpunkt først.');
-      try { route.isochrone=await ors.isochrones([[point.lng,point.lat]],route.profile||'cycling-regular',[900,1800]); window.VCMaps.upsertGeoJSONFill(activeRouteEditor.map,'route-isochrone',route.isochrone); toast('Rækkevidde for 15 og 30 minutter vises på kortet.'); } catch(err){ handleOrsError(err); }
+      try { route.isochrone=await ors.isochrones([[point.lng,point.lat]],qs('#route-profile').value || route.profile || 'cycling-regular',[900,1800]); window.VCMaps.upsertGeoJSONFill(activeRouteEditor.map,'route-isochrone',route.isochrone); toast('Rækkevidde for 15 og 30 minutter vises på kortet.'); } catch(err){ handleOrsError(err); }
     };
     qs('#route-pois-btn').onclick = async () => {
       const point=activeRouteEditor.getPoints()[0]; if(!point) return toast('Tilføj et startpunkt først.');
@@ -934,6 +1075,15 @@
       route.siteId=qs('#route-site').value;
       route.name=qs('#route-name').value.trim()||'Ny cykelrute';
       route.difficulty=qs('#route-difficulty').value;
+      route.profile=qs('#route-profile').value;
+      route.routeType=qs('#route-type').value;
+      route.surface=qs('#route-surface').value;
+      route.pauseMin=Number(qs('#route-pause').value || 0);
+      route.roundTrip=qs('#route-roundtrip').checked;
+      route.preferScenic=qs('#route-scenic').checked;
+      route.avoidTraffic=qs('#route-traffic').checked;
+      route.highlights=splitCsv(qs('#route-highlights').value);
+      route.notes=qs('#route-notes').value.trim();
       route.start=qs('#route-start').value.trim(); route.end=qs('#route-end').value.trim();
       route.description=qs('#route-description').value.trim(); route.googleMapsUrl=qs('#route-google').value.trim();
       route.points=activeRouteEditor.getPoints();
@@ -942,6 +1092,19 @@
       if(original) Object.assign(original,route); else state.routes.push(route);
       if(route.siteId){ const linked=getSite(route.siteId); if(linked && !linked.routeIds.includes(route.id)) linked.routeIds.push(route.id); }
       saveState(); toast('Cykelruten er gemt.'); navigate('route/'+route.id);
+    };
+
+    qs('#route-export-gpx-btn').onclick = () => { route.points = activeRouteEditor.getPoints(); downloadRouteGpx(route); };
+    qs('#duplicate-route-btn').onclick = () => {
+      const clone = structuredClone(route);
+      clone.id = uid();
+      clone.name = `${route.name} (kopi)`;
+      state.routes.push(clone);
+      if (clone.siteId) {
+        const linked = getSite(clone.siteId);
+        if (linked && !linked.routeIds.includes(clone.id)) linked.routeIds.push(clone.id);
+      }
+      saveState(); toast('Ruten er duplikeret.'); navigate('route-edit/' + clone.id);
     };
     if(original) qs('#delete-route-btn').onclick=async()=>{ if(await confirmAction('Slet cykelrute','Ruten fjernes permanent.')){ state.routes=state.routes.filter(r=>r.id!==route.id); state.campsites.forEach(s=>s.routeIds=s.routeIds.filter(rid=>rid!==route.id)); saveState(); toast('Ruten er slettet.'); navigate(route.siteId?'detail/'+route.siteId:'overview'); } };
   }
@@ -1191,7 +1354,34 @@
     qsa('[data-clock-theme]').forEach(btn => btn.onclick = () => { state.settings.clockTheme = btn.dataset.clockTheme; saveState(); renderSettings(qs('#view')); updateCountdownDisplays(); });
     qsa('[data-scene]').forEach(btn => btn.onclick = () => { state.settings.countdownScene = btn.dataset.scene; saveState(); renderFloatingCountdown(); renderSettings(qs('#view')); });
     qs('#save-countdown-settings').onclick = () => { state.settings.nextTripName = qs('#set-trip-name').value.trim(); state.settings.nextTripDate = fromLocalInputValue(qs('#set-trip-date').value); state.settings.showCountdown = qs('#set-show-countdown').checked; saveState(); toast('Nedtælling gemt.'); renderFloatingCountdown(); renderRoute(); };
+    qs('#save-widget-settings').onclick = () => {
+      const w = state.settings.countdownWidget;
+      w.overviewOnly = qs('#set-widget-overview-only').checked;
+      w.locked = qs('#set-widget-locked').checked;
+      w.anchor = qs('#set-widget-anchor').value;
+      w.scale = Number(qs('#set-widget-scale').value);
+      w.offsetX = Number(qs('#set-widget-offset-x').value);
+      w.offsetY = Number(qs('#set-widget-offset-y').value);
+      w.opacity = Number(qs('#set-widget-opacity').value);
+      w.showBubble = qs('#set-widget-bubble').checked;
+      w.showTripText = qs('#set-widget-triptext').checked;
+      w.animationMode = qs('#set-widget-animation').value;
+      w.animationSpeed = Number(qs('#set-widget-animation-speed').value || 1);
+      w.autoExcitement = qs('#set-widget-auto-excitement').checked;
+      w.clickCheer = qs('#set-widget-click-cheer').checked;
+      saveState(); toast('Sisi og uret er opdateret.'); renderFloatingCountdown();
+    };
     qs('#save-style-settings').onclick = () => { state.settings.fontScale = Number(qs('#set-scale').value); state.settings.accent = qs('#set-accent').value; state.settings.compact = qs('#set-compact').checked; saveState(); toast('Layout og farver gemt.'); renderRoute(); };
+    qs('#save-map-prefs').onclick = () => { state.settings.mapStyle = qs('#set-map-style').value; state.settings.mapScope = qs('#set-map-scope').value; saveState(); toast('Kortvalg gemt.'); renderRoute(); };
+    qs('#save-route-defaults').onclick = () => {
+      state.settings.routeDefaults.profile = qs('#set-route-profile').value;
+      state.settings.routeDefaults.routeType = qs('#set-route-type').value;
+      state.settings.routeDefaults.surface = qs('#set-route-surface').value;
+      state.settings.routeDefaults.pauseMin = Number(qs('#set-route-pause').value || 0);
+      state.settings.routeDefaults.preferScenic = qs('#set-route-scenic').checked;
+      state.settings.routeDefaults.avoidTraffic = qs('#set-route-traffic').checked;
+      saveState(); toast('Standardindstillinger for cykelruter er gemt.');
+    };
     qs('#save-categories-btn').onclick = () => {
       state.categories = state.categories.map(cat => ({ ...cat, name: qs(`[data-cat-name="${cat.id}"]`)?.value.trim() || cat.name, icon: qs(`[data-cat-icon="${cat.id}"]`)?.value.trim() || cat.icon }));
       saveState(); toast('Kategorier gemt.'); renderRoute();
@@ -1199,7 +1389,6 @@
     qs('#add-category-btn').onclick = () => { const name=qs('#new-cat-name').value.trim(); if(!name) return; const icon=qs('#new-cat-icon').value.trim() || '⭐'; state.categories.push({id: uid(), name, icon}); saveState(); renderRoute(); };
     qsa('[data-remove-category]').forEach(btn => btn.onclick = async () => { if(await confirmAction('Fjern kategori', 'Kategorien fjernes fra listen.')) { state.categories = state.categories.filter(c => c.id !== btn.dataset.removeCategory); saveState(); renderRoute(); } });
     qs('#save-api-settings').onclick = () => {
-      state.settings.mapStyle = qs('#set-map-style').value;
       secrets.orsKey = qs('#set-ors-key').value.trim();
       secrets.googleMapsKey = qs('#set-google-key').value.trim();
       saveSecrets(); saveState(false); toast('Kort og API-nøgler gemt lokalt på enheden.');
@@ -1219,6 +1408,8 @@
     wireImageUpload('#upload-corner-btn','#upload-corner', img => { state.settings.cornerImage = img; state.settings.clockBridgeImage = img; saveState(); renderRoute(); });
     wireImageUpload('#upload-logo-btn','#upload-logo', img => { state.settings.logo = img; saveState(); renderRoute(); });
     wireImageUpload('#upload-clock-scene-btn','#upload-clock-scene', img => { state.settings.countdownScene = img; saveState(); renderRoute(); });
+    wireImageUpload('#upload-clock-face-btn','#upload-clock-face', img => { state.settings.countdownWidget.clockImage = img; saveState(); renderSettings(qs('#view')); renderFloatingCountdown(); });
+    wireImageUpload('#upload-dog-btn','#upload-dog', img => { state.settings.countdownWidget.dogImage = img; saveState(); renderSettings(qs('#view')); renderFloatingCountdown(); });
     qsa('[data-section-toggle]').forEach(box => box.onchange = () => { const id = box.dataset.sectionToggle; const set = new Set(state.settings.sections); box.checked ? set.add(id) : set.delete(id); state.settings.sections = [...set]; saveState(false); });
   }
 
@@ -1227,28 +1418,96 @@
 
   function renderFloatingCountdown(){
     const wrap = qs('#floating-countdown');
-    if (!state.settings.showCountdown) { wrap.classList.add('hidden'); return; }
+    const route = currentRoute();
+    const widget = state.settings.countdownWidget || {};
+    const showOnThisPage = !widget.overviewOnly || route.name === 'overview';
+    if (!state.settings.showCountdown || !showOnThisPage) { wrap.classList.add('hidden'); wrap.innerHTML=''; return; }
     wrap.classList.remove('hidden');
     wrap.classList.toggle('is-minimized', Boolean(state.settings.countdownMinimized));
+    wrap.classList.toggle('is-unlocked', !widget.locked && route.name === 'overview');
     const info = countdownInfo();
+    const animationMode = resolvedSisiAnimation(widget, info.days);
+    wrap.className = `floating-countdown sisi-mode-${animationMode}${state.settings.countdownMinimized ? ' is-minimized' : ''}${!widget.locked && route.name === 'overview' ? ' is-unlocked' : ''}`;
+    wrap.setAttribute('style', countdownWidgetStyle(widget));
     wrap.innerHTML = `
       <button class="countdown-toggle" type="button" data-countdown-toggle title="Minimér eller udvid nedtællingen">${state.settings.countdownMinimized ? '＋' : '−'}</button>
+      ${route.name === 'overview' ? `<button class="countdown-lock-btn" type="button" data-widget-lock title="Lås eller oplås placering">${widget.locked ? '🔒' : '🔓'}</button>` : ''}
       <div class="scene" style="background-image:url('${state.settings.countdownScene || PRESET_IMAGES.scene}')"></div>
       <div class="shade"></div>
-      <div class="dog-bubble">00:00 = EVENTYR! <span>🐾</span></div>
-      <div class="clock-overlay">
-        <div class="clock-mini-title">SISIS NEDTÆLLINGSUR</div>
-        <div class="digital">${[['days','Dage'],['hours','Timer'],['minutes','Min'],['seconds','Sek']].map(([key])=>`<span data-countdown-${key}>${pad(info[key])}</span>`).join('')}</div>
-        <div class="digital-labels"><span>Dage</span><span>Timer</span><span>Min</span><span>Sek</span></div>
+      ${widget.showBubble ? `<div class="dog-bubble">${state.settings.nextTripName ? esc(state.settings.nextTripName) : 'Næste tur'} <span>🐾</span></div>` : ''}
+      <div class="sisi-widget-wrap">
+        <div class="clock-overlay precise-clock">
+          <img class="clock-art" src="${widget.clockImage || PRESET_IMAGES.clockFace}" alt="Sisis nedtællingsur">
+          <div class="clock-digits-grid">
+            <span class="clock-digit clock-digit--days" data-countdown-days>${pad(info.days)}</span>
+            <span class="clock-digit clock-digit--hours" data-countdown-hours>${pad(info.hours)}</span>
+            <span class="clock-digit clock-digit--minutes" data-countdown-minutes>${pad(info.minutes)}</span>
+            <span class="clock-digit clock-digit--seconds" data-countdown-seconds>${pad(info.seconds)}</span>
+          </div>
+        </div>
+        <button class="sisi-dog-button" type="button" ${widget.clickCheer ? 'data-sisi-cheer' : ''} title="${widget.clickCheer ? 'Klik på Sisi for et jubelhop' : 'Sisi holder øje med nedtællingen'}">
+          <img class="sisi-dog" src="${widget.dogImage || PRESET_IMAGES.dogCutout}" alt="Sisi som sidder og kigger på uret">
+          <img class="sisi-tail-layer" aria-hidden="true" src="${widget.dogImage || PRESET_IMAGES.dogCutout}" alt="">
+          <span class="sisi-paw-sparkle" aria-hidden="true">🐾</span>
+        </button>
       </div>
-      <div class="footer"><strong>${esc(state.settings.nextTripName)}</strong><span>${formatDate(state.settings.nextTripDate)}</span></div>`;
+      ${widget.showTripText ? `<div class="footer"><strong>${esc(state.settings.nextTripName)}</strong><span>${formatDate(state.settings.nextTripDate)}</span></div>` : ''}`;
+    if (route.name === 'overview') enableCountdownDragging(wrap);
+  }
+
+  function resolvedSisiAnimation(widget = {}, days = 99){
+    if (widget.animationMode === 'off') return 'off';
+    if (widget.autoExcitement) {
+      if (days <= 3) return 'excited';
+      if (days <= 14) return 'happy';
+    }
+    return ['calm','happy','excited'].includes(widget.animationMode) ? widget.animationMode : 'happy';
+  }
+
+  function countdownWidgetStyle(widget = {}){
+    const anchor = String(widget.anchor || 'bottom-right');
+    const style = [`--widget-scale:${Number(widget.scale || 1)}`, `--widget-opacity:${Number(widget.opacity || 1)}`, `--sisi-speed:${Number(widget.animationSpeed || 1)}`];
+    const offsetX = `${Number(widget.offsetX || 0)}px`;
+    const offsetY = `${Number(widget.offsetY || 0)}px`;
+    if (anchor.includes('top')) style.push(`top:${offsetY}`, 'bottom:auto'); else style.push(`bottom:${offsetY}`, 'top:auto');
+    if (anchor.includes('left')) style.push(`left:${offsetX}`, 'right:auto'); else style.push(`right:${offsetX}`, 'left:auto');
+    style.push(`transform-origin:${anchor.includes('top') ? 'top' : 'bottom'} ${anchor.includes('left') ? 'left' : 'right'}`);
+    return style.join(';');
+  }
+
+  function enableCountdownDragging(wrap){
+    const widget = state.settings.countdownWidget;
+    if (!wrap || widget.locked) return;
+    wrap.onpointerdown = event => {
+      if (event.target.closest('[data-countdown-toggle],[data-widget-lock]')) return;
+      const rect = wrap.getBoundingClientRect();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const anchorLeft = (widget.anchor || '').includes('left');
+      const anchorTop = (widget.anchor || '').includes('top');
+      const startOffsetX = Number(widget.offsetX || 0);
+      const startOffsetY = Number(widget.offsetY || 0);
+      wrap.setPointerCapture?.(event.pointerId);
+      const move = ev => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        widget.offsetX = Math.max(0, Math.round(startOffsetX + (anchorLeft ? dx : -dx)));
+        widget.offsetY = Math.max(0, Math.round(startOffsetY + (anchorTop ? dy : -dy)));
+        wrap.setAttribute('style', countdownWidgetStyle(widget));
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        saveState(false);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up, { once: true });
+    };
   }
 
   function clockPreview(info){
-    const themeStyles = {
-      wood: ['#35503d','#d1aa72','#53301c'], dark: ['#3a403d','#666059','#e8dec9'], cream: ['#b7aa8d','#eadfc5','#5e4224'], green: ['#44724b','#d2b083','#573720'],
-    }[state.settings.clockTheme] || ['#35503d','#d1aa72','#53301c'];
-    return `<div class="clock-circle" style="background-image:url('${state.settings.clockBridgeImage || state.settings.countdownScene || PRESET_IMAGES.corner}');"><div class="clock-topline" style="color:${themeStyles[2]}">NÆSTE CAMPINGTUR<br><span style="font-size:.8em;">♥ NEDTÆLLING ♥</span></div><div class="clock-screen"><div class="digital"><span data-countdown-days>${pad(info.days)}</span><span data-countdown-hours>${pad(info.hours)}</span><span data-countdown-minutes>${pad(info.minutes)}</span><span data-countdown-seconds>${pad(info.seconds)}</span></div><div class="digital-labels"><span>Dage</span><span>Timer</span><span>Minutter</span><span>Sekunder</span></div></div><div class="clock-bottomline">Så kører vi! ♡</div><div class="clock-paw">🐾</div></div><div class="subtle">Billede og ur er samlet i én visuel nedtælling.</div>`;
+    const widget = state.settings.countdownWidget || {};
+    return `<div class="clock-circle preview-precise" style="background-image:url('${state.settings.countdownScene || PRESET_IMAGES.scene}');"><div class="clock-preview-stage"><img class="clock-art" src="${widget.clockImage || PRESET_IMAGES.clockFace}" alt="Ur"><div class="clock-digits-grid"><span data-countdown-days>${pad(info.days)}</span><span data-countdown-hours>${pad(info.hours)}</span><span data-countdown-minutes>${pad(info.minutes)}</span><span data-countdown-seconds>${pad(info.seconds)}</span></div><img class="sisi-dog" src="${widget.dogImage || PRESET_IMAGES.dogCutout}" alt="Sisi"></div></div><div class="subtle">Preview matcher nu den rigtige forside-widget med separate billeder af uret og Sisi.</div>`;
   }
 
   function countdownInfo(){
@@ -1362,6 +1621,45 @@
     try { state = JSON.parse(text); migrateState(); saveState(); toast('Sikkerhedskopi importeret.'); renderRoute(); } catch(err){ toast('Importen mislykkedes.'); }
   }
 
+  function routeCoordinates(route){
+    const geoCoords = route?.geojson?.features?.[0]?.geometry?.coordinates || route?.geojson?.geometry?.coordinates;
+    if (Array.isArray(geoCoords) && geoCoords.length) return geoCoords.map(([lng,lat]) => [Number(lng), Number(lat)]);
+    return (route?.points || []).map(point => [Number(point.lng), Number(point.lat)]).filter(pair => pair.every(Number.isFinite));
+  }
+
+  function downloadRouteGpx(route){
+    const coords = routeCoordinates(route);
+    if (coords.length < 2) return toast('Ruten skal have mindst to punkter før GPX kan eksporteres.');
+    const trkpts = coords.map(([lng,lat]) => `    <trkpt lat="${lat}" lon="${lng}"></trkpt>`).join('\n');
+    const wpts = (route.highlights || []).map(name => `  <wpt lat="${coords[0][1]}" lon="${coords[0][0]}"><name>${xml(name)}</name></wpt>`).join('\n');
+    const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Vores Camping" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>${xml(route.name || 'Cykelrute')}</name><desc>${xml(route.description || '')}</desc></metadata>
+${wpts}
+  <trk>
+    <name>${xml(route.name || 'Cykelrute')}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>`;
+    const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slugify(route.name || 'cykelrute')}.gpx`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('GPX-fil eksporteret.');
+  }
+
+  function xml(str=''){
+    return String(str).replace(/[<>&"]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch] || ch));
+  }
+
+  function slugify(str=''){
+    return String(str).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'rute';
+  }
+
   async function compressImage(file, maxDim=1280, quality=0.78){
     const objectUrl=URL.createObjectURL(file); const img = await new Promise((resolve, reject) => { const i = new Image(); i.onload=()=>resolve(i); i.onerror=reject; i.src = objectUrl; }); URL.revokeObjectURL(objectUrl);
     const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
@@ -1394,6 +1692,18 @@
     if (addResult) { navigate('add?status=' + addResult.dataset.status + '&prefillId=' + addResult.dataset.addResult); return; }
     const countdownToggle = e.target.closest('[data-countdown-toggle]');
     if (countdownToggle) { state.settings.countdownMinimized = !state.settings.countdownMinimized; saveState(false); renderFloatingCountdown(); return; }
+    const widgetLock = e.target.closest('[data-widget-lock]');
+    if (widgetLock) { state.settings.countdownWidget.locked = !state.settings.countdownWidget.locked; saveState(false); renderFloatingCountdown(); toast(state.settings.countdownWidget.locked ? 'Sisi er nu låst på forsiden.' : 'Sisi kan nu flyttes på forsiden.'); return; }
+    const sisiCheer = e.target.closest('[data-sisi-cheer]');
+    if (sisiCheer) {
+      const wrap = qs('#floating-countdown');
+      wrap.classList.remove('is-cheering');
+      void wrap.offsetWidth;
+      wrap.classList.add('is-cheering');
+      window.setTimeout(() => wrap.classList.remove('is-cheering'), 1200);
+      toast(countdownInfo().days <= 3 ? 'Sisi kan næsten ikke vente længere!' : 'Sisi holder øje med hvert eneste sekund.');
+      return;
+    }
   }
 
   function toLocalInputValue(iso){ if(!iso) return ''; const d=new Date(iso); if(Number.isNaN(+d)) return ''; const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
