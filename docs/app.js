@@ -1,11 +1,11 @@
 
 (() => {
-  const STORAGE_KEY = 'voresCampingState_v16';
-  const LEGACY_STORAGE_KEYS = ['voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
-  const CURRENT_VERSION = 16;
+  const STORAGE_KEY = 'voresCampingState_v17';
+  const LEGACY_STORAGE_KEYS = ['voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
+  const CURRENT_VERSION = 17;
   const PRESET_IMAGES = {
-    logo: 'assets/logo-main-v16.png',
-    logoLarge: 'assets/logo-main-v16.png',
+    logo: 'assets/logo-main-v17.png',
+    logoLarge: 'assets/logo-main-v17.png',
     cover: 'assets/cover-main.png',
     corner: 'assets/corner-mood.png',
     scene: 'assets/sisi-clock-scene.png',
@@ -61,6 +61,13 @@
   let detailRouteGeoJSON = null;
   let activeRouteEditor = null;
   const secrets = loadSecrets();
+  const weatherState = {
+    status: 'Henter vejr…',
+    summary: 'Finder aktuel placering…',
+    locationLabel: 'Aktuel placering',
+    fetchedAt: 0,
+    coords: null
+  };
   const ors = window.VCORS.createClient({ getApiKey: () => secrets.orsKey || state?.settings?.api?.orsKey || '' });
   window.addEventListener('hashchange', renderRoute);
   document.addEventListener('click', handleGlobalClicks);
@@ -71,9 +78,11 @@
     migrateState();
     renderNav();
     renderBottomNav();
-    renderFloatingCountdown();
+    renderQuickDock();
+    renderQuickDock();
     renderRoute();
-    window.setInterval(updateCountdownDisplays, 1000);
+    window.setInterval(updateLiveInfoDisplays, 1000);
+    refreshWeather();
   }
 
   function loadState(){
@@ -116,9 +125,9 @@
       version: CURRENT_VERSION,
       settings: {
         appName: 'Vores Camping',
-        tagline: 'Vores ture, vores minder',
-        greeting: 'Godmorgen Sisi & Jan',
-        intro: 'Her er jeres camping-overblik',
+        tagline: 'Stener og Vibekes campingunivers',
+        greeting: 'Hej Stener, Vibeke og Sisi',
+        intro: 'Her er jeres personlige camping-overblik',
         themeMode: 'light',
         accent: '#1f5f3c',
         fontScale: 1,
@@ -126,7 +135,6 @@
         mapStyle: 'liberty',
         mapScope: 'europe',
         showCountdown: true,
-        countdownMinimized: false,
         nextTripName: 'Norge 2026',
         nextTripDate: `${nowYear+1}-07-15T08:00:00`,
         countdownScene: PRESET_IMAGES.cover,
@@ -152,6 +160,23 @@
           clickCheer: true,
           clockImage: PRESET_IMAGES.clockFace,
           dogImage: PRESET_IMAGES.dogCutout,
+        },
+        family: {
+          fatherName: 'Stener Sørensen',
+          fatherBirth: '1952-11-11',
+          motherName: 'Vibeke Mejlvang',
+          motherNick: 'Vibse',
+          motherBirth: '1960-03-20',
+          dogName: 'Sisi',
+          dogBirth: '2020-01-01'
+        },
+        heroClock: {
+          enabled: true,
+          showDate: true,
+          showWeather: true,
+          useCurrentLocation: true,
+          title: 'Lokal tid og vejr',
+          subtitle: 'Lige nu hvor I er'
         },
         routeDefaults: {
           profile: 'cycling-regular',
@@ -222,7 +247,6 @@
     if (!state || typeof state !== 'object') state = defaults;
     state.settings = { ...defaults.settings, ...(state.settings || {}) };
     state.settings.api = { ...defaults.settings.api, ...(state.settings.api || {}) };
-    state.settings.countdownWidget = { ...defaults.settings.countdownWidget, ...(state.settings.countdownWidget || {}) };
     state.settings.routeDefaults = { ...defaults.settings.routeDefaults, ...(state.settings.routeDefaults || {}) };
     if (!window.VCMaps.styles[state.settings.mapStyle]) state.settings.mapStyle = 'liberty';
     if (!state.version || state.version < CURRENT_VERSION || /logo-badge-large|logo-main\.png/.test(String(state.settings.logo || ''))) state.settings.logo = PRESET_IMAGES.logo;
@@ -337,39 +361,55 @@
     }
   }
 
-  function renderNav(){
-    const current = currentRoute().name;
-    const next = countdownInfo();
-    const s = stats();
-    qs('#sidebar').innerHTML = `
-      <div class="sidebar-card brand-card">
-        <div class="brand-logo"><img src="${state.settings.logo || PRESET_IMAGES.logoLarge}" alt="Logo"></div>
-        <div>
-          <h2 style="margin:0 0 4px;">${esc(state.settings.greeting)}</h2>
-          <p class="brand-sub">${esc(state.settings.intro)}</p>
-        </div>
-        <div class="nav-list">
-          ${NAV_ITEMS.map(([key,label,icon]) => `<button class="nav-item ${current===key?'active':''}" data-nav="${key}"><span class="icon">${icon}</span><span>${label}</span></button>`).join('')}
-        </div>
-      </div>
-      <div class="sidebar-card sidebar-mini">
-        <h3 style="margin-top:0;">Næste campingtur</h3>
-        ${miniCountdown(next)}
-        <div class="soft-divider" style="margin:12px 0;"></div>
-        <div class="subtle">${esc(state.settings.nextTripName)}<br>${formatDate(state.settings.nextTripDate)}</div>
-      </div>
-      <div class="sidebar-card sidebar-mini">
-        <h3 style="margin-top:0;">Hurtige tal</h3>
-        <div class="table-list">
-          <div class="table-row"><span>Besøgte</span><strong>${s.visited}</strong><span>📍</span><span></span></div>
-          <div class="table-row"><span>Ønsker</span><strong>${s.wish}</strong><span>💛</span><span></span></div>
-          <div class="table-row"><span>Lande</span><strong>${s.countries}</strong><span>🌍</span><span></span></div>
-          <div class="table-row"><span>Cykelruter</span><strong>${s.routes}</strong><span>🚴</span><span></span></div>
-        </div>
-      </div>`;
-  }
 
-  function renderBottomNav(){
+function renderNav(){
+  const current = currentRoute().name;
+  const next = countdownInfo();
+  const s = stats();
+  const family = state.settings.family || {};
+  qs('#sidebar').innerHTML = `
+    <div class="sidebar-card brand-card">
+      <div class="brand-logo"><img src="${state.settings.logo || PRESET_IMAGES.logoLarge}" alt="Logo"></div>
+      <div>
+        <h2 style="margin:0 0 4px;">${esc(state.settings.greeting)}</h2>
+        <p class="brand-sub">${esc(state.settings.intro)}</p>
+      </div>
+      <div class="meta-pills" style="margin:6px 0 0;">
+        <span class="chip">${esc(family.fatherName || 'Stener Sørensen')}</span>
+        <span class="chip">${esc(family.motherNick || family.motherName || 'Vibeke')}</span>
+        <span class="chip">🐾 ${esc(family.dogName || 'Sisi')}</span>
+      </div>
+      <div class="nav-list">
+        ${NAV_ITEMS.map(([key,label,icon]) => `<button class="nav-item ${current===key?'active':''}" data-nav="${key}"><span class="icon">${icon}</span><span>${label}</span></button>`).join('')}
+      </div>
+    </div>
+    <div class="sidebar-card sidebar-mini">
+      <h3 style="margin-top:0;">Næste campingtur</h3>
+      ${miniCountdown(next)}
+      <div class="soft-divider" style="margin:12px 0;"></div>
+      <div class="subtle">${esc(state.settings.nextTripName)}<br>${formatDate(state.settings.nextTripDate)}</div>
+    </div>
+    <div class="sidebar-card sidebar-mini">
+      <h3 style="margin-top:0;">Familien bag appen</h3>
+      <div class="stack subtle personal-lines">
+        <div><strong>Far:</strong> ${esc(family.fatherName || 'Stener Sørensen')} · ${formatDate(family.fatherBirth)}</div>
+        <div><strong>Mor:</strong> ${esc(family.motherName || 'Vibeke Mejlvang')} ${family.motherNick ? `(${esc(family.motherNick)})` : ''} · ${formatDate(family.motherBirth)}</div>
+        <div><strong>Hund:</strong> ${esc(family.dogName || 'Sisi')} · ${family.dogBirth ? new Date(family.dogBirth).getFullYear() : '2020'}</div>
+      </div>
+    </div>
+    <div class="sidebar-card sidebar-mini">
+      <h3 style="margin-top:0;">Hurtige tal</h3>
+      <div class="table-list">
+        <div class="table-row"><span>Besøgte</span><strong>${s.visited}</strong><span>📍</span><span></span></div>
+        <div class="table-row"><span>Ønsker</span><strong>${s.wish}</strong><span>💛</span><span></span></div>
+        <div class="table-row"><span>Lande</span><strong>${s.countries}</strong><span>🌍</span><span></span></div>
+        <div class="table-row"><span>Cykelruter</span><strong>${s.routes}</strong><span>🚴</span><span></span></div>
+      </div>
+    </div>`;
+}
+
+function renderBottomNav(){
+
     const current = currentRoute().name;
     qs('#bottom-nav').innerHTML = NAV_ITEMS.map(([key,label,icon]) => `<button class="${current===key?'active':''}" data-nav="${key}">${icon} ${label}</button>`).join('');
   }
@@ -411,8 +451,8 @@
       else if (route.name === 'route') renderRouteDetail(view, route.id);
       else if (route.name === 'route-edit') renderAdvancedRouteEditor(view, route.id, route.params.siteId || '');
       else renderOverview(view);
-      renderFloatingCountdown();
-      window.requestAnimationFrame(updateCountdownDisplays);
+      renderQuickDock();
+      window.requestAnimationFrame(updateLiveInfoDisplays);
     } catch (err) {
       console.error(err);
       showError(`Der opstod en fejl: ${err?.message || 'ukendt fejl'}. Menuen virker stadig, så appen ender ikke som en tom hvid skærm.`);
@@ -430,88 +470,83 @@
     maps = {};
   }
 
-  function renderOverview(view){
-    setHeader(state.settings.greeting, state.settings.intro);
-    const s = stats();
-    const latest = getSortedVisited('latest').slice(0,3);
-    const best = getSortedVisited('rating').slice(0,3);
-    const wishes = getWishlist().slice(0,3);
-    const routes = state.routes.slice(0,4);
-    const sections = new Set(state.settings.sections || []);
-    const count = countdownInfo();
-    const nextWish = getWishlist().slice().sort((a,b) => String(a.plannedDate||'9999').localeCompare(String(b.plannedDate||'9999')))[0];
-    const bestPlace = best[0];
-    const recentRoute = routes[0];
-    const sisiMood = countdownMood(count.days);
-    view.innerHTML = `
-      <div class="view-grid overview-page ${state.settings.compact ? 'is-compact' : 'is-airy'}">
-        <section class="dashboard-hero card">
-          <div class="dashboard-hero-image" style="background-image:linear-gradient(90deg,rgba(20,45,29,.88),rgba(20,45,29,.34),rgba(20,45,29,.03)),url('${state.settings.coverImage || PRESET_IMAGES.cover}')">
-            <div class="dashboard-welcome">
-              <span class="eyebrow">${esc(state.settings.tagline)}</span>
-              <h2>Jeres campingliv samlet ét sted</h2>
-              <p>Gem minder, planlæg næste tur og find hurtigt tilbage til de steder, der var værd at vende om for.</p>
-              <div class="hero-action-row">
-                <button class="primary-btn warm" data-quick="addVisited">＋ Nyt besøg</button>
-                <button class="glass-btn" data-quick="addWish">♡ Nyt ønske</button>
-                <button class="glass-btn" data-quick="bigMap">⌖ Åbn kort</button>
-                <button class="glass-btn" data-quick="addRoute">🚴 Ny cykelrute</button>
-              </div>
-            </div>
-            <div class="hero-trip-card">
-              <span class="eyebrow">Næste campingtur</span>
-              <strong>${esc(state.settings.nextTripName)}</strong>
-              <span>${formatDate(state.settings.nextTripDate)}</span>
-              <div class="hero-countdown" data-countdown-container>
-                ${countdownCells(count, 'hero')}
-              </div>
+
+function renderOverview(view){
+  const family = state.settings.family || {};
+  setHeader(state.settings.appName || 'Vores Camping', state.settings.intro);
+  const s = stats();
+  const latest = getSortedVisited('latest').slice(0,3);
+  const best = getSortedVisited('rating').slice(0,3);
+  const wishes = getWishlist().slice(0,3);
+  const routes = state.routes.slice(0,4);
+  const sections = new Set(state.settings.sections || []);
+  const nextWish = getWishlist().slice().sort((a,b) => String(a.plannedDate||'9999').localeCompare(String(b.plannedDate||'9999')))[0];
+  const bestPlace = best[0];
+  const recentRoute = routes[0];
+  view.innerHTML = `
+    <div class="view-grid overview-page ${state.settings.compact ? 'is-compact' : 'is-airy'}">
+      <section class="dashboard-hero card">
+        <div class="dashboard-hero-image" style="background-image:linear-gradient(90deg,rgba(20,45,29,.88),rgba(20,45,29,.34),rgba(20,45,29,.03)),url('${state.settings.coverImage || PRESET_IMAGES.cover}')">
+          <div class="dashboard-welcome">
+            <span class="eyebrow">${esc(state.settings.tagline)}</span>
+            <h2>Velkommen tilbage, ${esc((family.fatherName || 'Stener').split(' ')[0])} & ${esc((family.motherNick || family.motherName || 'Vibeke').split(' ')[0])}</h2>
+            <p>Et varmt og personligt overblik over jeres ture, ønsker, vurderinger og cykeloplevelser – samlet i et roligt campingunivers.</p>
+            <div class="meta-pills">
+              <span class="chip">🏕️ ${esc(state.settings.nextTripName)}</span>
+              <span class="chip">🐾 ${esc(family.dogName || 'Sisi')} følger med</span>
+              <span class="chip">📅 Næste afgang ${formatDate(state.settings.nextTripDate)}</span>
             </div>
           </div>
-          <div class="hero-actions refined-actions">
-            ${quickTile('search')}
-            ${quickTile('addVisited')}
-            ${quickTile('addWish')}
-            ${quickTile('bigMap')}
-            ${quickTile('addRoute')}
-            ${quickTile('settings')}
+          <div class="hero-clock-card" id="hero-live-card">
+            <span class="eyebrow">${esc(state.settings.heroClock?.title || 'Lokal tid og vejr')}</span>
+            <div class="hero-clock-time" data-live-clock-time>--:--</div>
+            <div class="hero-clock-date" data-live-clock-date>Dato opdateres…</div>
+            <div class="hero-weather-wrap">
+              <strong data-live-location>${esc(state.settings.heroClock?.subtitle || 'Aktuel placering')}</strong>
+              <span data-live-weather>Henter vejr…</span>
+            </div>
+            <button class="ghost-btn compact-ghost" data-refresh-weather>Opdatér vejr</button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="overview-pulse card">
-          <div class="pulse-intro"><span class="eyebrow dark">Campingpulsen</span><strong>${esc(sisiMood.title)}</strong><span>${esc(sisiMood.text)}</span></div>
-          <button class="pulse-item" data-nav="${nextWish ? 'detail/'+nextWish.id : 'wishlist'}"><span class="pulse-icon">💛</span><div><small>Næste ønskemål</small><strong>${esc(nextWish?.name || 'Tilføj et nyt ønske')}</strong><span>${nextWish?.plannedDate ? formatDate(nextWish.plannedDate) : 'Ingen dato valgt endnu'}</span></div></button>
-          <button class="pulse-item" data-nav="${bestPlace ? 'detail/'+bestPlace.id : 'top'}"><span class="pulse-icon">🏆</span><div><small>Jeres bedst bedømte</small><strong>${esc(bestPlace?.name || 'Bedøm jeres besøg')}</strong><span>${bestPlace?.average ? `${bestPlace.average.toFixed(1).replace('.',',')} stjerner` : 'Ingen vurdering endnu'}</span></div></button>
-          <button class="pulse-item" data-nav="${recentRoute ? 'route/'+recentRoute.id : 'route-edit/new'}"><span class="pulse-icon">🚴</span><div><small>Seneste cykelrute</small><strong>${esc(recentRoute?.name || 'Opret første rute')}</strong><span>${recentRoute?.distanceKm ? `${recentRoute.distanceKm} km · ${esc(recentRoute.difficulty)}` : 'Klar til et nyt eventyr'}</span></div></button>
-        </section>
+      <section class="overview-pulse card">
+        <div class="pulse-intro"><span class="eyebrow dark">Campingpulsen</span><strong>Personligt og praktisk overblik</strong><span>Jeres vigtigste genveje ligger nu fast i bunden, mens forsiden fokuserer på overblik og stemning.</span></div>
+        <button class="pulse-item" data-nav="${nextWish ? 'detail/'+nextWish.id : 'wishlist'}"><span class="pulse-icon">💛</span><div><small>Næste ønskemål</small><strong>${esc(nextWish?.name || 'Tilføj et nyt ønske')}</strong><span>${nextWish?.plannedDate ? formatDate(nextWish.plannedDate) : 'Ingen dato valgt endnu'}</span></div></button>
+        <button class="pulse-item" data-nav="${bestPlace ? 'detail/'+bestPlace.id : 'top'}"><span class="pulse-icon">🏆</span><div><small>Jeres bedst bedømte</small><strong>${esc(bestPlace?.name || 'Bedøm jeres besøg')}</strong><span>${bestPlace?.average ? `${bestPlace.average.toFixed(1).replace('.',',')} stjerner` : 'Ingen vurdering endnu'}</span></div></button>
+        <button class="pulse-item" data-nav="${recentRoute ? 'route/'+recentRoute.id : 'route-edit/new'}"><span class="pulse-icon">🚴</span><div><small>Seneste cykelrute</small><strong>${esc(recentRoute?.name || 'Opret første rute')}</strong><span>${recentRoute?.distanceKm ? `${recentRoute.distanceKm} km · ${esc(recentRoute.difficulty)}` : 'Klar til et nyt eventyr'}</span></div></button>
+      </section>
 
-        ${sections.has('stats') ? `<section class="stats-row refined-stats">
-          ${statCard(s.visited,'Besøgte campingpladser','✓')}
-          ${statCard(s.wish,'Steder på ønskelisten','♥','status-wish')}
-          ${statCard(s.countries,'Besøgte lande','◎')}
-          ${statCard(s.routes,'Gemte cykelruter','🚲')}
-        </section>` : ''}
+      ${sections.has('stats') ? `<section class="stats-row refined-stats">
+        ${statCard(s.visited,'Besøgte campingpladser','✓')}
+        ${statCard(s.wish,'Steder på ønskelisten','♥','status-wish')}
+        ${statCard(s.countries,'Besøgte lande','◎')}
+        ${statCard(s.routes,'Gemte cykelruter','🚲')}
+      </section>` : ''}
 
-        ${sections.has('map') ? `<section class="map-card card overview-map-card">
-          <div class="map-card-heading"><div><span class="eyebrow dark">Jeres campingkort</span><h2>Besøgte steder og nye drømme</h2></div><div class="map-legend"><span><i class="legend-dot visited"></i> Besøgt</span><span><i class="legend-dot wish"></i> Vil besøge</span></div></div>
-          <div id="overview-map" class="map-holder"></div>
-          <div class="map-bottom-bar"><div class="seg-group">${mapStyleButtons()}</div><button class="primary-btn" data-nav="map">Åbn stort kort</button></div>
-        </section>` : ''}
+      ${sections.has('map') ? `<section class="map-card card overview-map-card">
+        <div class="map-card-heading"><div><span class="eyebrow dark">Jeres campingkort</span><h2>Besøgte steder og nye drømme</h2></div><div class="map-legend"><span><i class="legend-dot visited"></i> Besøgt</span><span><i class="legend-dot wish"></i> Vil besøge</span></div></div>
+        <div id="overview-map" class="map-holder"></div>
+        <div class="map-bottom-bar"><div class="seg-group">${mapStyleButtons()}</div><button class="primary-btn" data-nav="map">Åbn stort kort</button></div>
+      </section>` : ''}
 
-        ${(sections.has('latest') || sections.has('top') || sections.has('wishlist')) ? `<section class="dashboard-content-grid">
-          ${sections.has('latest') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Senest</span><h3>Campingbesøg</h3></div><button class="text-btn" data-nav="visited">Se alle →</button></div>${compactList(latest)}</div>` : ''}
-          ${sections.has('top') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Favoritter</span><h3>Bedst bedømte</h3></div><button class="text-btn" data-nav="top">Se rangliste →</button></div>${compactList(best, true)}</div>` : ''}
-          ${sections.has('wishlist') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Næste eventyr</span><h3>Fra ønskelisten</h3></div><button class="text-btn" data-nav="wishlist">Se alle →</button></div>${compactList(wishes)}</div>` : ''}
-        </section>` : ''}
+      ${(sections.has('latest') || sections.has('top') || sections.has('wishlist')) ? `<section class="dashboard-content-grid">
+        ${sections.has('latest') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Senest</span><h3>Campingbesøg</h3></div><button class="text-btn" data-nav="visited">Se alle →</button></div>${compactList(latest)}</div>` : ''}
+        ${sections.has('top') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Favoritter</span><h3>Bedst bedømte</h3></div><button class="text-btn" data-nav="top">Se rangliste →</button></div>${compactList(best, true)}</div>` : ''}
+        ${sections.has('wishlist') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Næste eventyr</span><h3>Fra ønskelisten</h3></div><button class="text-btn" data-nav="wishlist">Se alle →</button></div>${compactList(wishes)}</div>` : ''}
+      </section>` : ''}
 
-        ${sections.has('routes') ? `<section class="grid-2 overview-bottom-grid">
-          <div class="card-section card"><div class="section-head"><div><span class="eyebrow dark">På to hjul</span><h3>Udvalgte cykelruter</h3></div><button class="ghost-btn" data-nav="route-edit/new">Opret rute</button></div>${routesList(routes)}</div>
-          <div class="mood-card card" style="background-image:linear-gradient(90deg,rgba(20,45,29,.05),rgba(20,45,29,.42)),url('${state.settings.cornerImage || PRESET_IMAGES.corner}')"><div class="mood-card-copy"><span class="eyebrow">Campinglykke</span><strong>Frihed på fire hjul – og fire poter</strong></div></div>
-        </section>` : ''}
-      </div>`;
-    if (sections.has('map')) initMapOnce('overview-map', state.campsites.map(siteWithComputed), { fitAll:true });
-  }
+      ${sections.has('routes') ? `<section class="grid-2 overview-bottom-grid">
+        <div class="card-section card"><div class="section-head"><div><span class="eyebrow dark">På to hjul</span><h3>Udvalgte cykelruter</h3></div><button class="ghost-btn" data-nav="route-edit/new">Opret rute</button></div>${routesList(routes)}</div>
+        <div class="mood-card card" style="background-image:linear-gradient(90deg,rgba(20,45,29,.05),rgba(20,45,29,.42)),url('${state.settings.cornerImage || PRESET_IMAGES.corner}')"><div class="mood-card-copy"><span class="eyebrow">Campinglykke</span><strong>${esc(family.fatherName || 'Stener Sørensen')} · ${esc(family.motherName || 'Vibeke Mejlvang')} · ${esc(family.dogName || 'Sisi')}</strong></div></div>
+      </section>` : ''}
+    </div>`;
+  if (sections.has('map')) initMapOnce('overview-map', state.campsites.map(siteWithComputed), { fitAll:true });
+  updateLiveInfoDisplays();
+  refreshWeather();
+}
 
-  function countdownMood(days){
+function countdownMood(days){
     if (days <= 0) return { title:'Sisi er klar til afgang!', text:'Nedtællingen er slut – nu skal campinglivet leves.' };
     if (days <= 3) return { title:'Sisi er helt oppe at køre', text:`Kun ${days} dage tilbage. Halen er allerede på overarbejde.` };
     if (days <= 14) return { title:'Eventyret nærmer sig', text:`${days} dage tilbage – god tid til den sidste pakkeliste.` };
@@ -523,6 +558,18 @@
   }
 
   function quickTile(action){ const meta=QUICK_ACTION_META[action]||{label:action,icon:'•',image:''}; return `<button class="quick-tile quick-tile--${action}" data-quick="${action}">${meta.image ? `<img class="quick-tile-image" src="${meta.image}" alt="${esc(meta.label)}">` : `<div class="big-icon">${meta.icon || '•'}</div>`}<div>${esc(meta.label)}</div></button>`; }
+  function quickDockButton(action){ const meta=QUICK_ACTION_META[action]||{label:action}; return `<button class="quick-dock-btn quick-dock-btn--${action}" data-quick="${action}"><span class="quick-dock-icon">${quickActionIconSvg(action)}</span><span class="quick-dock-label">${esc(meta.label)}</span></button>`; }
+  function quickActionIconSvg(action){
+    const icons = {
+      search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>`,
+      addVisited:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z"/><path d="m9.5 11 1.6 1.8 3-3.3"/></svg>`,
+      addWish:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-6.7-4.1-8.6-8.2C1.7 8 3.5 5 6.8 5c2 0 3.2 1 4.2 2.3C12 6 13.2 5 15.2 5 18.5 5 20.3 8 18.6 11.8 16.7 15.9 12 20 12 20Z"/></svg>`,
+      addRoute:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17 9 9h4l3 8"/><path d="M10 9H7.5"/><path d="M13 9h3.5"/></svg>`,
+      bigMap:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Z"/><path d="M9 4v13.5"/><path d="M15 6.5V20"/></svg>`,
+      settings:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 14 5l2.3-.3 1 2.1 2 1.2-.6 2.2.6 2.2-2 1.2-1 2.1L14 19l-2 1.2L10 19l-2.3.3-1-2.1-2-1.2.6-2.2-.6-2.2 2-1.2 1-2.1L10 5l2-1.2Z"/><circle cx="12" cy="12" r="3.2"/></svg>`
+    };
+    return icons[action] || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>';
+  }
   function statCard(value, label, icon, cls=''){ return `<div class="stat-card card ${cls}"><div class="value">${value}</div><div>${label}</div><div class="big-icon">${icon}</div></div>`; }
   function stars(avg){ const r = Math.round(avg||0); return `<span class="rating">${'★'.repeat(r)}${'☆'.repeat(Math.max(0,5-r))}</span>`; }
   function compactList(items, showRank=false){
@@ -716,142 +763,139 @@
     return list.map(item => `<div class="list-item"><div class="list-thumb"><img src="${(item.images&&item.images[0])||PRESET_IMAGES.cover}" alt=""></div><div class="list-meta"><h4>${esc(item.name)}</h4><div class="subtle">${esc(countryLine(item))} · Planlagt: ${formatDate(item.plannedDate)}</div><p style="margin:.4rem 0 0;">${esc(item.description || 'Ingen beskrivelse endnu.')}</p><div class="meta-pills">${(item.tags||[]).map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div></div><div class="item-actions"><button class="mini-btn" data-nav="detail/${item.id}">Detaljer</button><button class="mini-btn" data-nav="edit/${item.id}">Redigér</button><button class="primary-btn" data-convert="${item.id}">Markér som besøgt</button></div></div>`).join('');
   }
 
-  function renderSettings(view){
-    setHeader('Indstillinger', 'Tilpas appen, så den passer perfekt til jeres campingoplevelser');
-    const next = countdownInfo();
-    const widget = state.settings.countdownWidget;
-    const routeDefaults = state.settings.routeDefaults;
-    view.innerHTML = `
-      <div class="view-grid">
-        <section class="settings-grid">
-          <div class="form-section card">
-            <h3>Appnavn og forsidetekster</h3>
-            <label><span class="field-label">Appnavn</span><input class="field" id="set-app-name" value="${esc(state.settings.appName)}"></label>
-            <label><span class="field-label">Undertitel</span><input class="field" id="set-tagline" value="${esc(state.settings.tagline)}"></label>
-            <label><span class="field-label">Hilsen</span><input class="field" id="set-greeting" value="${esc(state.settings.greeting)}"></label>
-            <label><span class="field-label">Forsidetekst</span><input class="field" id="set-intro" value="${esc(state.settings.intro)}"></label>
-            <button class="primary-btn" id="save-text-settings">Gem tekster</button>
+
+function renderSettings(view){
+  setHeader('Indstillinger', 'Tilpas appen, så den passer perfekt til jeres campingoplevelser');
+  const family = state.settings.family || {};
+  const routeDefaults = state.settings.routeDefaults;
+  const heroClock = state.settings.heroClock || {};
+  view.innerHTML = `
+    <div class="view-grid">
+      <section class="settings-grid">
+        <div class="form-section card">
+          <h3>Appnavn og forsidetekster</h3>
+          <label><span class="field-label">Appnavn</span><input class="field" id="set-app-name" value="${esc(state.settings.appName)}"></label>
+          <label><span class="field-label">Undertitel</span><input class="field" id="set-tagline" value="${esc(state.settings.tagline)}"></label>
+          <label><span class="field-label">Hilsen</span><input class="field" id="set-greeting" value="${esc(state.settings.greeting)}"></label>
+          <label><span class="field-label">Forsidetekst</span><input class="field" id="set-intro" value="${esc(state.settings.intro)}"></label>
+          <button class="primary-btn" id="save-text-settings">Gem tekster</button>
+        </div>
+
+        <div class="form-section card">
+          <h3>Familie og personligt præg</h3>
+          <div class="field-row two">
+            <label><span class="field-label">Far</span><input class="field" id="set-father-name" value="${esc(family.fatherName || '')}"></label>
+            <label><span class="field-label">Fødselsdag</span><input type="date" class="field" id="set-father-birth" value="${esc(family.fatherBirth || '')}"></label>
           </div>
-
-          <div class="form-section card">
-            <h3>Næste campingtur og nedtælling</h3>
-            <label><span class="field-label">Næste tur</span><input class="field" id="set-trip-name" value="${esc(state.settings.nextTripName)}"></label>
-            <label><span class="field-label">Måldato</span><input type="datetime-local" class="field" id="set-trip-date" value="${toLocalInputValue(state.settings.nextTripDate)}"></label>
-            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-show-countdown" ${state.settings.showCountdown?'checked':''}> Vis nedtælling</label>
-            <div class="clock-preview">
-              <div class="preview-card"><div class="subtle">Stil og udseende</div><div class="swatches"><button class="swatch ${state.settings.clockTheme==='wood'?'active':''}" style="background:#c79f65" data-clock-theme="wood"></button><button class="swatch ${state.settings.clockTheme==='dark'?'active':''}" style="background:#3a403d" data-clock-theme="dark"></button><button class="swatch ${state.settings.clockTheme==='cream'?'active':''}" style="background:#eadfbf" data-clock-theme="cream"></button><button class="swatch ${state.settings.clockTheme==='green'?'active':''}" style="background:#44724b" data-clock-theme="green"></button></div><div class="subtle">Baggrund / scenebillede</div><div class="preview-strip">${sceneThumbs()}</div><button class="ghost-btn" id="upload-clock-scene-btn">Upload eget billede omkring uret</button><input type="file" class="hidden-file" id="upload-clock-scene" accept="image/*"></div>
-              <div class="preview-card"><div class="subtle">Sisis nedtællingsur – forhåndsvisning</div>${clockPreview(next)}</div>
-            </div>
-            <button class="primary-btn" id="save-countdown-settings">Gem nedtælling</button>
+          <div class="field-row two">
+            <label><span class="field-label">Mor</span><input class="field" id="set-mother-name" value="${esc(family.motherName || '')}"></label>
+            <label><span class="field-label">Kælenavn</span><input class="field" id="set-mother-nick" value="${esc(family.motherNick || '')}"></label>
           </div>
-
-          <div class="form-section card">
-            <h3>Sisi & uret på forsiden</h3>
-            <div class="field-row two">
-              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-overview-only" ${widget.overviewOnly?'checked':''}> Kun på forsiden</label>
-              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-locked" ${widget.locked?'checked':''}> Lås placering</label>
-            </div>
-            <div class="field-row two">
-              <label><span class="field-label">Placering</span><select id="set-widget-anchor" class="field"><option value="top-left" ${widget.anchor==='top-left'?'selected':''}>Øverst til venstre</option><option value="top-right" ${widget.anchor==='top-right'?'selected':''}>Øverst til højre</option><option value="bottom-left" ${widget.anchor==='bottom-left'?'selected':''}>Nederst til venstre</option><option value="bottom-right" ${widget.anchor==='bottom-right'?'selected':''}>Nederst til højre</option></select></label>
-              <label><span class="field-label">Størrelse</span><input type="range" min="0.72" max="1.28" step="0.02" value="${widget.scale}" id="set-widget-scale"></label>
-            </div>
-            <div class="field-row two">
-              <label><span class="field-label">Vandret afstand</span><input type="range" min="0" max="80" step="1" value="${widget.offsetX}" id="set-widget-offset-x"></label>
-              <label><span class="field-label">Lodret afstand</span><input type="range" min="0" max="80" step="1" value="${widget.offsetY}" id="set-widget-offset-y"></label>
-            </div>
-            <div class="field-row two">
-              <label><span class="field-label">Gennemsigtighed</span><input type="range" min="0.65" max="1" step="0.01" value="${widget.opacity}" id="set-widget-opacity"></label>
-              <div class="stack"><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-bubble" ${widget.showBubble?'checked':''}> Vis taleboble</label><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-triptext" ${widget.showTripText?'checked':''}> Vis tur-tekst</label></div>
-            </div>
-            <div class="field-row two">
-              <label><span class="field-label">Sisis animation</span><select id="set-widget-animation" class="field"><option value="off" ${widget.animationMode==='off'?'selected':''}>Slået fra</option><option value="calm" ${widget.animationMode==='calm'?'selected':''}>Rolig</option><option value="happy" ${widget.animationMode==='happy'?'selected':''}>Glad og utålmodig</option><option value="excited" ${widget.animationMode==='excited'?'selected':''}>Fuld eventyr-mode</option></select></label>
-              <label><span class="field-label">Animationshastighed</span><input type="range" min="0.65" max="1.65" step="0.05" value="${widget.animationSpeed || 1}" id="set-widget-animation-speed"></label>
-            </div>
-            <div class="field-row two">
-              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-auto-excitement" ${widget.autoExcitement?'checked':''}> Bliv automatisk mere utålmodig tæt på turen</label>
-              <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-widget-click-cheer" ${widget.clickCheer?'checked':''}> Klik på Sisi giver et lille jubelhop</label>
-            </div>
-            <div class="action-row"><button class="ghost-btn" id="upload-clock-face-btn">Skift urbillede</button><input type="file" class="hidden-file" id="upload-clock-face" accept="image/*"><button class="ghost-btn" id="upload-dog-btn">Skift Sisi-billede</button><input type="file" class="hidden-file" id="upload-dog" accept="image/*"></div>
-            <div class="panel">Tip: Når placeringen er låst op, kan widgeten flyttes direkte på forsiden med mus eller finger.</div>
-            <button class="primary-btn" id="save-widget-settings">Gem Sisi & ur</button>
+          <div class="field-row two">
+            <label><span class="field-label">Mors fødselsdag</span><input type="date" class="field" id="set-mother-birth" value="${esc(family.motherBirth || '')}"></label>
+            <label><span class="field-label">Hund</span><input class="field" id="set-dog-name" value="${esc(family.dogName || '')}"></label>
           </div>
+          <label><span class="field-label">Sisis år / fødselsdato</span><input class="field" id="set-dog-birth" value="${esc(family.dogBirth || '')}" placeholder="fx 2020 eller 2020-01-01"></label>
+          <button class="primary-btn" id="save-family-settings">Gem familieoplysninger</button>
+        </div>
 
-          <div class="form-section card">
-            <h3>Billeder og cover</h3>
-            <div class="stack"><label><span class="field-label">Coverbillede</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.coverImage}" id="cover-preview"></div></label><button class="ghost-btn" id="upload-cover-btn">Skift coverbillede</button><input type="file" class="hidden-file" id="upload-cover" accept="image/*"></div>
-            <div class="stack"><label><span class="field-label">Hjørnebillede / stemning</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.cornerImage}" id="corner-preview"></div></label><button class="ghost-btn" id="upload-corner-btn">Skift hjørnebillede</button><input type="file" class="hidden-file" id="upload-corner" accept="image/*"></div>
-            <div class="stack"><label><span class="field-label">Logo</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.logo}" id="logo-preview" style="object-fit:contain;background:#fff;"></div></label><button class="ghost-btn" id="upload-logo-btn">Skift logo</button><input type="file" class="hidden-file" id="upload-logo" accept="image/*"></div>
+        <div class="form-section card">
+          <h3>Næste campingtur og nedtælling</h3>
+          <label><span class="field-label">Næste tur</span><input class="field" id="set-trip-name" value="${esc(state.settings.nextTripName)}"></label>
+          <label><span class="field-label">Måldato</span><input type="datetime-local" class="field" id="set-trip-date" value="${toLocalInputValue(state.settings.nextTripDate)}"></label>
+          <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-show-countdown" ${state.settings.showCountdown?'checked':''}> Vis nedtælling i sidemenuen</label>
+          <button class="primary-btn" id="save-countdown-settings">Gem nedtælling</button>
+        </div>
+
+        <div class="form-section card">
+          <h3>Forsideur, dato og vejrudsigt</h3>
+          <label><span class="field-label">Titel på urkort</span><input class="field" id="set-clock-title" value="${esc(heroClock.title || '')}"></label>
+          <label><span class="field-label">Undertitel / placeringstekst</span><input class="field" id="set-clock-subtitle" value="${esc(heroClock.subtitle || '')}"></label>
+          <div class="stack">
+            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-clock-enabled" ${heroClock.enabled !== false ? 'checked' : ''}> Vis informationskortet på forsiden</label>
+            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-clock-date-enabled" ${heroClock.showDate !== false ? 'checked' : ''}> Vis dato</label>
+            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-clock-weather-enabled" ${heroClock.showWeather !== false ? 'checked' : ''}> Vis vejrudsigt</label>
+            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-clock-location-enabled" ${heroClock.useCurrentLocation !== false ? 'checked' : ''}> Brug aktuel placering automatisk</label>
           </div>
+          <div class="panel">Forsideuret viser almindeligt klokkeslæt, dagens dato og lokalt vejr på jeres aktuelle placering. Hvis placering ikke tillades, vises en rolig fallback-tekst.</div>
+          <button class="primary-btn" id="save-hero-clock-settings">Gem forsideur</button>
+        </div>
 
-          <div class="form-section card">
-            <h3>Layout, tema og størrelsesskalering</h3>
-            <label><span class="field-label">Størrelsesskalering</span><input type="range" min="0.9" max="1.18" step="0.01" value="${state.settings.fontScale}" id="set-scale"></label>
-            <label><span class="field-label">Farvepalette</span><select id="set-accent" class="field"><option value="#1f5f3c" ${state.settings.accent==='#1f5f3c'?'selected':''}>Skovgrøn</option><option value="#4e6b3a" ${state.settings.accent==='#4e6b3a'?'selected':''}>Olivengrøn</option><option value="#b6782d" ${state.settings.accent==='#b6782d'?'selected':''}>Dæmpet orange</option><option value="#7d6b3f" ${state.settings.accent==='#7d6b3f'?'selected':''}>Sandbrun</option></select></label>
-            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-compact" ${state.settings.compact?'checked':''}> Kompakt forside</label>
-            <button class="primary-btn" id="save-style-settings">Gem layout og farver</button>
-          </div>
+        <div class="form-section card">
+          <h3>Billeder og cover</h3>
+          <div class="stack"><label><span class="field-label">Coverbillede</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.coverImage}" id="cover-preview"></div></label><button class="ghost-btn" id="upload-cover-btn">Skift coverbillede</button><input type="file" class="hidden-file" id="upload-cover" accept="image/*"></div>
+          <div class="stack"><label><span class="field-label">Hjørnebillede / stemning</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.cornerImage}" id="corner-preview"></div></label><button class="ghost-btn" id="upload-corner-btn">Skift hjørnebillede</button><input type="file" class="hidden-file" id="upload-corner" accept="image/*"></div>
+          <div class="stack"><label><span class="field-label">Logo</span><div class="list-thumb" style="height:120px;"><img src="${state.settings.logo}" id="logo-preview" style="object-fit:contain;background:transparent;"></div></label><button class="ghost-btn" id="upload-logo-btn">Skift logo</button><input type="file" class="hidden-file" id="upload-logo" accept="image/*"></div>
+        </div>
 
-          <div class="form-section card full-span">
-            <h3>Forsidesektioner</h3>
-            <div class="table-list">${['map','stats','latest','top','wishlist','routes'].map(id => `<label class="table-row"><span>${labelForSection(id)}</span><span></span><input type="checkbox" data-section-toggle="${id}" ${state.settings.sections.includes(id)?'checked':''}></label>`).join('')}</div>
-          </div>
+        <div class="form-section card">
+          <h3>Layout, tema og størrelsesskalering</h3>
+          <label><span class="field-label">Størrelsesskalering</span><input type="range" min="0.9" max="1.18" step="0.01" value="${state.settings.fontScale}" id="set-scale"></label>
+          <label><span class="field-label">Farvepalette</span><select id="set-accent" class="field"><option value="#1f5f3c" ${state.settings.accent==='#1f5f3c'?'selected':''}>Skovgrøn</option><option value="#4e6b3a" ${state.settings.accent==='#4e6b3a'?'selected':''}>Olivengrøn</option><option value="#b6782d" ${state.settings.accent==='#b6782d'?'selected':''}>Dæmpet orange</option><option value="#7d6b3f" ${state.settings.accent==='#7d6b3f'?'selected':''}>Sandbrun</option></select></label>
+          <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-compact" ${state.settings.compact?'checked':''}> Kompakt forside</label>
+          <button class="primary-btn" id="save-style-settings">Gem layout og farver</button>
+        </div>
 
-          <div class="form-section card">
-            <h3>Vurderingskategorier</h3>
-            <div id="category-list" class="table-list">${state.categories.map(cat => `<div class="table-row"><input class="field" value="${esc(cat.name)}" data-cat-name="${cat.id}"><input class="field" value="${esc(cat.icon)}" data-cat-icon="${cat.id}"><span></span><button class="mini-btn" data-remove-category="${cat.id}">Fjern</button></div>`).join('')}</div>
-            <div class="field-row"><input id="new-cat-name" class="field" placeholder="Ny kategori"><input id="new-cat-icon" class="field" placeholder="Ikon, fx 🌲"></div>
-            <button class="ghost-btn" id="add-category-btn">Tilføj kategori</button>
-            <button class="primary-btn" id="save-categories-btn">Gem kategorier</button>
-          </div>
+        <div class="form-section card full-span">
+          <h3>Forsidesektioner</h3>
+          <div class="table-list">${['map','stats','latest','top','wishlist','routes'].map(id => `<label class="table-row"><span>${labelForSection(id)}</span><span></span><input type="checkbox" data-section-toggle="${id}" ${state.settings.sections.includes(id)?'checked':''}></label>`).join('')}</div>
+        </div>
 
-          <div class="form-section card">
-            <h3>Kort og markører</h3>
-            <label><span class="field-label">Kortstil</span><select id="set-map-style" class="field">${Object.entries(window.VCMaps.styles).map(([k,v]) => `<option value="${k}" ${state.settings.mapStyle===k?'selected':''}>${esc(v.label)}</option>`).join('')}</select></label>
-            <label><span class="field-label">Startkort</span><select id="set-map-scope" class="field"><option value="europe" ${state.settings.mapScope==='europe'?'selected':''}>Europakort</option><option value="world" ${state.settings.mapScope==='world'?'selected':''}>Verdenskort</option></select></label>
-            <div class="panel">OpenFreeMap og MapLibre bruges som primært kort. Hvis noget fejler, falder appen tilbage til et gratis reservekort.</div>
-            <button class="primary-btn" id="save-map-prefs">Gem kortvalg</button>
-          </div>
+        <div class="form-section card">
+          <h3>Vurderingskategorier</h3>
+          <div id="category-list" class="table-list">${state.categories.map(cat => `<div class="table-row"><input class="field" value="${esc(cat.name)}" data-cat-name="${cat.id}"><input class="field" value="${esc(cat.icon)}" data-cat-icon="${cat.id}"><span></span><button class="mini-btn" data-remove-category="${cat.id}">Fjern</button></div>`).join('')}</div>
+          <div class="field-row"><input id="new-cat-name" class="field" placeholder="Ny kategori"><input id="new-cat-icon" class="field" placeholder="Ikon, fx 🌲"></div>
+          <button class="ghost-btn" id="add-category-btn">Tilføj kategori</button>
+          <button class="primary-btn" id="save-categories-btn">Gem kategorier</button>
+        </div>
 
-          <div class="form-section card">
-            <h3>Cykelruter – standarder og ekstra funktioner</h3>
-            <div class="field-row two"><label><span class="field-label">Standardprofil</span><select id="set-route-profile" class="field"><option value="cycling-regular" ${routeDefaults.profile==='cycling-regular'?'selected':''}>Almindelig cykel</option><option value="cycling-road" ${routeDefaults.profile==='cycling-road'?'selected':''}>Landevejscykel</option><option value="cycling-mountain" ${routeDefaults.profile==='cycling-mountain'?'selected':''}>Mountainbike</option><option value="foot-walking" ${routeDefaults.profile==='foot-walking'?'selected':''}>Gang / gåtur</option></select></label><label><span class="field-label">Rutetype</span><select id="set-route-type" class="field"><option ${routeDefaults.routeType==='Rundtur'?'selected':''}>Rundtur</option><option ${routeDefaults.routeType==='Tur/retur'?'selected':''}>Tur/retur</option><option ${routeDefaults.routeType==='Fra A til B'?'selected':''}>Fra A til B</option></select></label></div>
-            <div class="field-row two"><label><span class="field-label">Foretrukket underlag</span><select id="set-route-surface" class="field"><option ${routeDefaults.surface==='Asfalt'?'selected':''}>Asfalt</option><option ${routeDefaults.surface==='Grus'?'selected':''}>Grus</option><option ${routeDefaults.surface==='Blandet'?'selected':''}>Blandet</option><option ${routeDefaults.surface==='Skovsti'?'selected':''}>Skovsti</option></select></label><label><span class="field-label">Standard pausestop (min)</span><input type="number" min="0" max="180" class="field" id="set-route-pause" value="${routeDefaults.pauseMin}"></label></div>
-            <div class="stack"><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-route-scenic" ${routeDefaults.preferScenic?'checked':''}> Prioritér naturskønne ruter</label><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-route-traffic" ${routeDefaults.avoidTraffic?'checked':''}> Undgå trafikerede strækninger når muligt</label></div>
-            <div class="panel">Ekstra funktioner i ruteeditoren: GPX-eksport, duplikér rute, pausestop, højdepunkter, isokroner, POI-søgning og bedre detaljefelter.</div>
-            <button class="primary-btn" id="save-route-defaults">Gem ruteindstillinger</button>
-          </div>
+        <div class="form-section card">
+          <h3>Kort og markører</h3>
+          <label><span class="field-label">Kortstil</span><select id="set-map-style" class="field">${Object.entries(window.VCMaps.styles).map(([k,v]) => `<option value="${k}" ${state.settings.mapStyle===k?'selected':''}>${esc(v.label)}</option>`).join('')}</select></label>
+          <label><span class="field-label">Startkort</span><select id="set-map-scope" class="field"><option value="europe" ${state.settings.mapScope==='europe'?'selected':''}>Europakort</option><option value="world" ${state.settings.mapScope==='world'?'selected':''}>Verdenskort</option></select></label>
+          <div class="panel">OpenFreeMap og MapLibre bruges som primært kort. Hvis noget fejler, falder appen tilbage til et gratis reservekort.</div>
+          <button class="primary-btn" id="save-map-prefs">Gem kortvalg</button>
+        </div>
 
-          <div class="form-section card">
-            <h3>Kort og API-nøgler</h3>
-            <label><span class="field-label">Openrouteservice API-nøgle</span><input id="set-ors-key" class="field" value="${esc(secrets.orsKey||'')}" placeholder="Indsæt din nøgle"></label>
-            <label><span class="field-label">Google Maps API-nøgle (valgfri)</span><input id="set-google-key" class="field" value="${esc(secrets.googleMapsKey||'')}" placeholder="Valgfri reserve"></label>
-            <div class="action-row"><button class="primary-btn" id="save-api-settings">Gem kort og nøgler</button><button class="ghost-btn" id="test-ors-btn">Test Openrouteservice</button></div>
-            <div class="panel" style="padding:12px;"><strong>Openrouteservice i appen:</strong> søgning, geokodning, ruteberegning, snap, isokroner, POI-søgning og elevation er klargjort i koden. Brug jeres egen API-nøgle for live data.</div>
-          </div>
+        <div class="form-section card">
+          <h3>Cykelruter – standarder og ekstra funktioner</h3>
+          <div class="field-row two"><label><span class="field-label">Standardprofil</span><select id="set-route-profile" class="field"><option value="cycling-regular" ${routeDefaults.profile==='cycling-regular'?'selected':''}>Almindelig cykel</option><option value="cycling-road" ${routeDefaults.profile==='cycling-road'?'selected':''}>Landevejscykel</option><option value="cycling-mountain" ${routeDefaults.profile==='cycling-mountain'?'selected':''}>Mountainbike</option><option value="foot-walking" ${routeDefaults.profile==='foot-walking'?'selected':''}>Gang / gåtur</option></select></label><label><span class="field-label">Rutetype</span><select id="set-route-type" class="field"><option ${routeDefaults.routeType==='Rundtur'?'selected':''}>Rundtur</option><option ${routeDefaults.routeType==='Tur/retur'?'selected':''}>Tur/retur</option><option ${routeDefaults.routeType==='Fra A til B'?'selected':''}>Fra A til B</option></select></label></div>
+          <div class="field-row two"><label><span class="field-label">Foretrukket underlag</span><select id="set-route-surface" class="field"><option ${routeDefaults.surface==='Asfalt'?'selected':''}>Asfalt</option><option ${routeDefaults.surface==='Grus'?'selected':''}>Grus</option><option ${routeDefaults.surface==='Blandet'?'selected':''}>Blandet</option><option ${routeDefaults.surface==='Skovsti'?'selected':''}>Skovsti</option></select></label><label><span class="field-label">Standard pausestop (min)</span><input type="number" min="0" max="180" class="field" id="set-route-pause" value="${routeDefaults.pauseMin}"></label></div>
+          <div class="stack"><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-route-scenic" ${routeDefaults.preferScenic?'checked':''}> Prioritér naturskønne ruter</label><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-route-traffic" ${routeDefaults.avoidTraffic?'checked':''}> Undgå trafikerede strækninger når muligt</label></div>
+          <div class="panel">Ekstra funktioner i ruteeditoren: GPX-eksport, duplikér rute, pausestop, højdepunkter, isokroner, POI-søgning, bedre stopfelter og tydeligere ruteopsætning.</div>
+          <button class="primary-btn" id="save-route-defaults">Gem ruteindstillinger</button>
+        </div>
 
-          <div class="form-section card">
-            <h3>Sikkerhedskopi og data</h3>
-            <div class="action-row"><button class="primary-btn" id="export-btn">Eksportér backupfil</button><button class="ghost-btn" id="import-btn">Importér backupfil</button><input type="file" class="hidden-file" id="import-file" accept="application/json"></div>
-            <div class="action-row"><button class="danger-btn" id="reset-data-btn">Nulstil campingdata</button></div>
-            <div class="subtle">API-nøgler udelades automatisk fra sikkerhedskopien.</div>
-          </div>
+        <div class="form-section card">
+          <h3>Kort og API-nøgler</h3>
+          <label><span class="field-label">Openrouteservice API-nøgle</span><input id="set-ors-key" class="field" value="${esc(secrets.orsKey||'')}" placeholder="Indsæt din nøgle"></label>
+          <label><span class="field-label">Google Maps API-nøgle (valgfri)</span><input id="set-google-key" class="field" value="${esc(secrets.googleMapsKey||'')}" placeholder="Valgfri reserve"></label>
+          <div class="action-row"><button class="primary-btn" id="save-api-settings">Gem kort og nøgler</button><button class="ghost-btn" id="test-ors-btn">Test Openrouteservice</button></div>
+          <div class="panel" style="padding:12px;"><strong>Openrouteservice i appen:</strong> søgning, geokodning, ruteberegning, snap, isokroner, POI-søgning og elevation er klargjort i koden. Brug jeres egen API-nøgle for live data.</div>
+        </div>
 
+        <div class="form-section card">
+          <h3>Sikkerhedskopi og data</h3>
+          <div class="action-row"><button class="primary-btn" id="export-btn">Eksportér backupfil</button><button class="ghost-btn" id="import-btn">Importér backupfil</button><input type="file" class="hidden-file" id="import-file" accept="application/json"></div>
+          <div class="action-row"><button class="danger-btn" id="reset-data-btn">Nulstil campingdata</button></div>
+          <div class="subtle">API-nøgler udelades automatisk fra sikkerhedskopien.</div>
+        </div>
 
-          <div class="form-section card">
-            <h3>Udgivelse på GitHub Pages</h3>
-            <p class="subtle">Appen er færdig som statisk webapp og skal udgives fra <strong>main</strong>-branchens <strong>/docs</strong>-mappe.</p>
-            <div class="panel">Der kræves hverken npm, build-trin eller en brugeroprettet GitHub Action.</div>
-            <a class="primary-btn" href="github-guide.html" target="_blank" rel="noreferrer">Åbn trin-for-trin guide</a>
-          </div>
-        </section>
-      </div>`;
-    bindSettingsHandlers();
-  }
+        <div class="form-section card">
+          <h3>Udgivelse på GitHub Pages</h3>
+          <p class="subtle">Appen er færdig som statisk webapp og skal udgives fra <strong>main</strong>-branchens <strong>/docs</strong>-mappe.</p>
+          <div class="panel">Der kræves hverken npm, build-trin eller en brugeroprettet GitHub Action.</div>
+          <a class="primary-btn" href="github-guide.html" target="_blank" rel="noreferrer">Åbn trin-for-trin guide</a>
+        </div>
+      </section>
+    </div>`;
+  bindSettingsHandlers();
+}
 
-  function sceneThumbs(){
-    const options = [PRESET_IMAGES.cover, PRESET_IMAGES.corner, PRESET_IMAGES.campHero, PRESET_IMAGES.campCutout];
-    return options.map(src => `<button class="preview-thumb ${state.settings.countdownScene===src?'active':''}" data-scene="${src}" style="background-image:url('${src}')"></button>`).join('');
-  }
+function sceneThumbs(){
+  return '';
+}
+
 
   function renderDetail(view, id){
     const site = getSite(id); if (!site) return navigate('overview');
@@ -1349,182 +1393,182 @@
     if (prefill.phone) site.phone = prefill.phone;
   }
 
-  function bindSettingsHandlers(){
-    qs('#save-text-settings').onclick = () => { state.settings.appName = qs('#set-app-name').value.trim() || 'Vores Camping'; state.settings.tagline = qs('#set-tagline').value.trim(); state.settings.greeting = qs('#set-greeting').value.trim(); state.settings.intro = qs('#set-intro').value.trim(); saveState(); toast('Tekster gemt.'); renderRoute(); };
-    qsa('[data-clock-theme]').forEach(btn => btn.onclick = () => { state.settings.clockTheme = btn.dataset.clockTheme; saveState(); renderSettings(qs('#view')); updateCountdownDisplays(); });
-    qsa('[data-scene]').forEach(btn => btn.onclick = () => { state.settings.countdownScene = btn.dataset.scene; saveState(); renderFloatingCountdown(); renderSettings(qs('#view')); });
-    qs('#save-countdown-settings').onclick = () => { state.settings.nextTripName = qs('#set-trip-name').value.trim(); state.settings.nextTripDate = fromLocalInputValue(qs('#set-trip-date').value); state.settings.showCountdown = qs('#set-show-countdown').checked; saveState(); toast('Nedtælling gemt.'); renderFloatingCountdown(); renderRoute(); };
-    qs('#save-widget-settings').onclick = () => {
-      const w = state.settings.countdownWidget;
-      w.overviewOnly = qs('#set-widget-overview-only').checked;
-      w.locked = qs('#set-widget-locked').checked;
-      w.anchor = qs('#set-widget-anchor').value;
-      w.scale = Number(qs('#set-widget-scale').value);
-      w.offsetX = Number(qs('#set-widget-offset-x').value);
-      w.offsetY = Number(qs('#set-widget-offset-y').value);
-      w.opacity = Number(qs('#set-widget-opacity').value);
-      w.showBubble = qs('#set-widget-bubble').checked;
-      w.showTripText = qs('#set-widget-triptext').checked;
-      w.animationMode = qs('#set-widget-animation').value;
-      w.animationSpeed = Number(qs('#set-widget-animation-speed').value || 1);
-      w.autoExcitement = qs('#set-widget-auto-excitement').checked;
-      w.clickCheer = qs('#set-widget-click-cheer').checked;
-      saveState(); toast('Sisi og uret er opdateret.'); renderFloatingCountdown();
-    };
-    qs('#save-style-settings').onclick = () => { state.settings.fontScale = Number(qs('#set-scale').value); state.settings.accent = qs('#set-accent').value; state.settings.compact = qs('#set-compact').checked; saveState(); toast('Layout og farver gemt.'); renderRoute(); };
-    qs('#save-map-prefs').onclick = () => { state.settings.mapStyle = qs('#set-map-style').value; state.settings.mapScope = qs('#set-map-scope').value; saveState(); toast('Kortvalg gemt.'); renderRoute(); };
-    qs('#save-route-defaults').onclick = () => {
-      state.settings.routeDefaults.profile = qs('#set-route-profile').value;
-      state.settings.routeDefaults.routeType = qs('#set-route-type').value;
-      state.settings.routeDefaults.surface = qs('#set-route-surface').value;
-      state.settings.routeDefaults.pauseMin = Number(qs('#set-route-pause').value || 0);
-      state.settings.routeDefaults.preferScenic = qs('#set-route-scenic').checked;
-      state.settings.routeDefaults.avoidTraffic = qs('#set-route-traffic').checked;
-      saveState(); toast('Standardindstillinger for cykelruter er gemt.');
-    };
-    qs('#save-categories-btn').onclick = () => {
-      state.categories = state.categories.map(cat => ({ ...cat, name: qs(`[data-cat-name="${cat.id}"]`)?.value.trim() || cat.name, icon: qs(`[data-cat-icon="${cat.id}"]`)?.value.trim() || cat.icon }));
-      saveState(); toast('Kategorier gemt.'); renderRoute();
-    };
-    qs('#add-category-btn').onclick = () => { const name=qs('#new-cat-name').value.trim(); if(!name) return; const icon=qs('#new-cat-icon').value.trim() || '⭐'; state.categories.push({id: uid(), name, icon}); saveState(); renderRoute(); };
-    qsa('[data-remove-category]').forEach(btn => btn.onclick = async () => { if(await confirmAction('Fjern kategori', 'Kategorien fjernes fra listen.')) { state.categories = state.categories.filter(c => c.id !== btn.dataset.removeCategory); saveState(); renderRoute(); } });
-    qs('#save-api-settings').onclick = () => {
-      secrets.orsKey = qs('#set-ors-key').value.trim();
-      secrets.googleMapsKey = qs('#set-google-key').value.trim();
-      saveSecrets(); saveState(false); toast('Kort og API-nøgler gemt lokalt på enheden.');
-    };
-    qs('#test-ors-btn').onclick = async () => {
-      secrets.orsKey = qs('#set-ors-key').value.trim(); saveSecrets();
-      setBusy(qs('#test-ors-btn'),true,'Tester…');
-      try { const result=await ors.search('Holstebro, Danmark',{size:1}); toast(result?.features?.length ? 'Forbindelsen til Openrouteservice virker.' : 'Forbindelsen svarede, men uden resultater.'); }
-      catch(err){ handleOrsError(err); }
-      finally { setBusy(qs('#test-ors-btn'),false,'Test Openrouteservice'); }
-    };
-    qs('#export-btn').onclick = exportBackup;
-    qs('#import-btn').onclick = () => qs('#import-file').click();
-    qs('#import-file').onchange = importBackup;
-    qs('#reset-data-btn').onclick = async () => { if(await confirmAction('Nulstil campingdata', 'Alle gemte campingdata slettes, men API-nøgler og appens faste billeder bevares.')) { state = seedState(); saveState(); toast('Campingdata nulstillet.'); navigate('overview'); } };
-    wireImageUpload('#upload-cover-btn','#upload-cover', img => { state.settings.coverImage = img; saveState(); renderRoute(); });
-    wireImageUpload('#upload-corner-btn','#upload-corner', img => { state.settings.cornerImage = img; state.settings.clockBridgeImage = img; saveState(); renderRoute(); });
-    wireImageUpload('#upload-logo-btn','#upload-logo', img => { state.settings.logo = img; saveState(); renderRoute(); });
-    wireImageUpload('#upload-clock-scene-btn','#upload-clock-scene', img => { state.settings.countdownScene = img; saveState(); renderRoute(); });
-    wireImageUpload('#upload-clock-face-btn','#upload-clock-face', img => { state.settings.countdownWidget.clockImage = img; saveState(); renderSettings(qs('#view')); renderFloatingCountdown(); });
-    wireImageUpload('#upload-dog-btn','#upload-dog', img => { state.settings.countdownWidget.dogImage = img; saveState(); renderSettings(qs('#view')); renderFloatingCountdown(); });
-    qsa('[data-section-toggle]').forEach(box => box.onchange = () => { const id = box.dataset.sectionToggle; const set = new Set(state.settings.sections); box.checked ? set.add(id) : set.delete(id); state.settings.sections = [...set]; saveState(false); });
-  }
 
-  function labelForSection(id){ return ({map:'Oversigtskort',stats:'Statistik',latest:'Seneste besøg',top:'Bedst bedømte',wishlist:'Ønskeliste',routes:'Cykelruter'})[id] || id; }
+function bindSettingsHandlers(){
+  qs('#save-text-settings').onclick = () => {
+    state.settings.appName = qs('#set-app-name').value.trim() || 'Vores Camping';
+    state.settings.tagline = qs('#set-tagline').value.trim();
+    state.settings.greeting = qs('#set-greeting').value.trim();
+    state.settings.intro = qs('#set-intro').value.trim();
+    saveState(); toast('Tekster gemt.'); renderRoute();
+  };
+  qs('#save-family-settings').onclick = () => {
+    state.settings.family = {
+      fatherName: qs('#set-father-name').value.trim(),
+      fatherBirth: qs('#set-father-birth').value,
+      motherName: qs('#set-mother-name').value.trim(),
+      motherNick: qs('#set-mother-nick').value.trim(),
+      motherBirth: qs('#set-mother-birth').value,
+      dogName: qs('#set-dog-name').value.trim(),
+      dogBirth: qs('#set-dog-birth').value.trim(),
+    };
+    saveState(); toast('Familieoplysninger gemt.'); renderRoute();
+  };
+  qs('#save-countdown-settings').onclick = () => { state.settings.nextTripName = qs('#set-trip-name').value.trim(); state.settings.nextTripDate = fromLocalInputValue(qs('#set-trip-date').value); state.settings.showCountdown = qs('#set-show-countdown').checked; saveState(); toast('Nedtælling gemt.'); renderRoute(); };
+  qs('#save-hero-clock-settings').onclick = () => {
+    state.settings.heroClock = {
+      enabled: qs('#set-clock-enabled').checked,
+      showDate: qs('#set-clock-date-enabled').checked,
+      showWeather: qs('#set-clock-weather-enabled').checked,
+      useCurrentLocation: qs('#set-clock-location-enabled').checked,
+      title: qs('#set-clock-title').value.trim() || 'Lokal tid og vejr',
+      subtitle: qs('#set-clock-subtitle').value.trim() || 'Lige nu hvor I er'
+    };
+    saveState(); toast('Forsideuret er opdateret.'); refreshWeather(true); renderRoute();
+  };
+  qs('#save-style-settings').onclick = () => { state.settings.fontScale = Number(qs('#set-scale').value); state.settings.accent = qs('#set-accent').value; state.settings.compact = qs('#set-compact').checked; saveState(); toast('Layout og farver gemt.'); renderRoute(); };
+  qs('#save-map-prefs').onclick = () => { state.settings.mapStyle = qs('#set-map-style').value; state.settings.mapScope = qs('#set-map-scope').value; saveState(); toast('Kortvalg gemt.'); renderRoute(); };
+  qs('#save-route-defaults').onclick = () => {
+    state.settings.routeDefaults.profile = qs('#set-route-profile').value;
+    state.settings.routeDefaults.routeType = qs('#set-route-type').value;
+    state.settings.routeDefaults.surface = qs('#set-route-surface').value;
+    state.settings.routeDefaults.pauseMin = Number(qs('#set-route-pause').value || 0);
+    state.settings.routeDefaults.preferScenic = qs('#set-route-scenic').checked;
+    state.settings.routeDefaults.avoidTraffic = qs('#set-route-traffic').checked;
+    saveState(); toast('Standardindstillinger for cykelruter er gemt.');
+  };
+  qs('#save-categories-btn').onclick = () => {
+    state.categories = state.categories.map(cat => ({ ...cat, name: qs(`[data-cat-name="${cat.id}"]`)?.value.trim() || cat.name, icon: qs(`[data-cat-icon="${cat.id}"]`)?.value.trim() || cat.icon }));
+    saveState(); toast('Kategorier gemt.'); renderRoute();
+  };
+  qs('#add-category-btn').onclick = () => { const name=qs('#new-cat-name').value.trim(); if(!name) return; const icon=qs('#new-cat-icon').value.trim() || '⭐'; state.categories.push({id: uid(), name, icon}); saveState(); renderRoute(); };
+  qsa('[data-remove-category]').forEach(btn => btn.onclick = async () => { if(await confirmAction('Fjern kategori', 'Kategorien fjernes fra listen.')) { state.categories = state.categories.filter(c => c.id !== btn.dataset.removeCategory); saveState(); renderRoute(); } });
+  qs('#save-api-settings').onclick = () => {
+    secrets.orsKey = qs('#set-ors-key').value.trim();
+    secrets.googleMapsKey = qs('#set-google-key').value.trim();
+    saveSecrets(); saveState(false); toast('Kort og API-nøgler gemt lokalt på enheden.');
+  };
+  qs('#test-ors-btn').onclick = async () => {
+    secrets.orsKey = qs('#set-ors-key').value.trim(); saveSecrets();
+    setBusy(qs('#test-ors-btn'),true,'Tester…');
+    try { const result=await ors.search('Holstebro, Danmark',{size:1}); toast(result?.features?.length ? 'Forbindelsen til Openrouteservice virker.' : 'Forbindelsen svarede, men uden resultater.'); }
+    catch(err){ handleOrsError(err); }
+    finally { setBusy(qs('#test-ors-btn'),false,'Test Openrouteservice'); }
+  };
+  qs('#export-btn').onclick = exportBackup;
+  qs('#import-btn').onclick = () => qs('#import-file').click();
+  qs('#import-file').onchange = importBackup;
+  qs('#reset-data-btn').onclick = async () => { if(await confirmAction('Nulstil campingdata', 'Alle gemte campingdata slettes, men API-nøgler og appens faste billeder bevares.')) { state = seedState(); saveState(); toast('Campingdata nulstillet.'); navigate('overview'); } };
+  wireImageUpload('#upload-cover-btn','#upload-cover', img => { state.settings.coverImage = img; saveState(); renderRoute(); });
+  wireImageUpload('#upload-corner-btn','#upload-corner', img => { state.settings.cornerImage = img; saveState(); renderRoute(); });
+  wireImageUpload('#upload-logo-btn','#upload-logo', img => { state.settings.logo = img; saveState(); renderRoute(); });
+  qsa('[data-section-toggle]').forEach(box => box.onchange = () => { const id = box.dataset.sectionToggle; const set = new Set(state.settings.sections); box.checked ? set.add(id) : set.delete(id); state.settings.sections = [...set]; saveState(false); });
+}
+
+function labelForSection(id){ return ({map:'Oversigtskort',stats:'Statistik',latest:'Seneste besøg',top:'Bedst bedømte',wishlist:'Ønskeliste',routes:'Cykelruter'})[id] || id; }
   function wireImageUpload(buttonSel, inputSel, callback){ qs(buttonSel).onclick = ()=>qs(inputSel).click(); qs(inputSel).onchange = async e => { const f=e.target.files[0]; if(!f) return; callback(await compressImage(f)); toast('Billede gemt.'); }; }
 
-  function renderFloatingCountdown(){
-    const wrap = qs('#floating-countdown');
-    const route = currentRoute();
-    const widget = state.settings.countdownWidget || {};
-    const showOnThisPage = !widget.overviewOnly || route.name === 'overview';
-    if (!state.settings.showCountdown || !showOnThisPage) { wrap.classList.add('hidden'); wrap.innerHTML=''; return; }
-    wrap.classList.remove('hidden');
-    wrap.classList.toggle('is-minimized', Boolean(state.settings.countdownMinimized));
-    wrap.classList.toggle('is-unlocked', !widget.locked && route.name === 'overview');
-    const info = countdownInfo();
-    const animationMode = resolvedSisiAnimation(widget, info.days);
-    wrap.className = `floating-countdown sisi-mode-${animationMode}${state.settings.countdownMinimized ? ' is-minimized' : ''}${!widget.locked && route.name === 'overview' ? ' is-unlocked' : ''}`;
-    wrap.setAttribute('style', countdownWidgetStyle(widget));
-    wrap.innerHTML = `
-      <button class="countdown-toggle" type="button" data-countdown-toggle title="Minimér eller udvid nedtællingen">${state.settings.countdownMinimized ? '＋' : '−'}</button>
-      ${route.name === 'overview' ? `<button class="countdown-lock-btn" type="button" data-widget-lock title="Lås eller oplås placering">${widget.locked ? '🔒' : '🔓'}</button>` : ''}
-      <div class="scene" style="background-image:url('${state.settings.countdownScene || PRESET_IMAGES.scene}')"></div>
-      <div class="shade"></div>
-      ${widget.showBubble ? `<div class="dog-bubble">${state.settings.nextTripName ? esc(state.settings.nextTripName) : 'Næste tur'} <span>🐾</span></div>` : ''}
-      <div class="sisi-widget-wrap">
-        <div class="clock-overlay precise-clock">
-          <img class="clock-art" src="${widget.clockImage || PRESET_IMAGES.clockFace}" alt="Sisis nedtællingsur">
-          <div class="clock-digits-grid">
-            <span class="clock-digit clock-digit--days" data-countdown-days>${pad(info.days)}</span>
-            <span class="clock-digit clock-digit--hours" data-countdown-hours>${pad(info.hours)}</span>
-            <span class="clock-digit clock-digit--minutes" data-countdown-minutes>${pad(info.minutes)}</span>
-            <span class="clock-digit clock-digit--seconds" data-countdown-seconds>${pad(info.seconds)}</span>
-          </div>
-        </div>
-        <button class="sisi-dog-button" type="button" ${widget.clickCheer ? 'data-sisi-cheer' : ''} title="${widget.clickCheer ? 'Klik på Sisi for et jubelhop' : 'Sisi holder øje med nedtællingen'}">
-          <img class="sisi-dog" src="${widget.dogImage || PRESET_IMAGES.dogCutout}" alt="Sisi som sidder og kigger på uret">
-          <img class="sisi-tail-layer" aria-hidden="true" src="${widget.dogImage || PRESET_IMAGES.dogCutout}" alt="">
-          <span class="sisi-paw-sparkle" aria-hidden="true">🐾</span>
-        </button>
-      </div>
-      ${widget.showTripText ? `<div class="footer"><strong>${esc(state.settings.nextTripName)}</strong><span>${formatDate(state.settings.nextTripDate)}</span></div>` : ''}`;
-    if (route.name === 'overview') enableCountdownDragging(wrap);
-  }
 
-  function resolvedSisiAnimation(widget = {}, days = 99){
-    if (widget.animationMode === 'off') return 'off';
-    if (widget.autoExcitement) {
-      if (days <= 3) return 'excited';
-      if (days <= 14) return 'happy';
+async function refreshWeather(force = false){
+  const prefs = state.settings.heroClock || {};
+  if (prefs.enabled === false || prefs.showWeather === false) {
+    weatherState.summary = 'Vejrvisning er slået fra';
+    updateLiveInfoDisplays();
+    return;
+  }
+  const maxAge = 1000 * 60 * 20;
+  if (!force && weatherState.fetchedAt && (Date.now() - weatherState.fetchedAt) < maxAge) { updateLiveInfoDisplays(); return; }
+  weatherState.summary = 'Henter vejrudsigten…';
+  updateLiveInfoDisplays();
+  let loc = weatherState.coords;
+  if (prefs.useCurrentLocation !== false) loc = await getCurrentPosition() || weatherState.coords;
+  if (!loc) {
+    const fallback = state.campsites.find(site => site.coords?.lat && site.coords?.lng);
+    loc = fallback ? { lat: Number(fallback.coords.lat), lng: Number(fallback.coords.lng) } : null;
+    if (loc) weatherState.locationLabel = fallback.city ? `${fallback.city}, ${fallback.country}` : fallback.name;
+  }
+  if (!loc) {
+    weatherState.summary = 'Placering ikke tilgængelig';
+    weatherState.locationLabel = prefs.subtitle || 'Aktuel placering';
+    weatherState.fetchedAt = Date.now();
+    updateLiveInfoDisplays();
+    return;
+  }
+  weatherState.coords = loc;
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lng}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+    const res = await fetch(url);
+    const json = await res.json();
+    const current = json.current || {};
+    const daily = json.daily || {};
+    const desc = weatherCodeLabel(current.weather_code);
+    const minVal = Array.isArray(daily.temperature_2m_min) ? daily.temperature_2m_min[0] : null;
+    const maxVal = Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max[0] : null;
+    const pieces = [];
+    if (Number.isFinite(current.temperature_2m)) pieces.push(`${Math.round(current.temperature_2m)}°C`);
+    if (desc) pieces.push(desc);
+    if (Number.isFinite(current.wind_speed_10m)) pieces.push(`vind ${Math.round(current.wind_speed_10m)} km/t`);
+    if (Number.isFinite(minVal) && Number.isFinite(maxVal)) pieces.push(`i dag ${Math.round(minVal)}° / ${Math.round(maxVal)}°`);
+    weatherState.summary = pieces.join(' · ') || 'Vejrdata utilgængelige';
+    try {
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${loc.lat}&longitude=${loc.lng}&language=da`);
+      const geoJson = await geoRes.json();
+      const place = geoJson?.results?.[0];
+      weatherState.locationLabel = place ? [place.name, place.country].filter(Boolean).join(', ') : (prefs.subtitle || 'Aktuel placering');
+    } catch (_geo) {
+      weatherState.locationLabel = prefs.subtitle || 'Aktuel placering';
     }
-    return ['calm','happy','excited'].includes(widget.animationMode) ? widget.animationMode : 'happy';
+  } catch (err) {
+    console.error(err);
+    weatherState.summary = 'Kunne ikke hente vejret lige nu';
+    weatherState.locationLabel = prefs.subtitle || 'Aktuel placering';
   }
+  weatherState.fetchedAt = Date.now();
+  updateLiveInfoDisplays();
+}
 
-  function countdownWidgetStyle(widget = {}){
-    const anchor = String(widget.anchor || 'bottom-right');
-    const style = [`--widget-scale:${Number(widget.scale || 1)}`, `--widget-opacity:${Number(widget.opacity || 1)}`, `--sisi-speed:${Number(widget.animationSpeed || 1)}`];
-    const offsetX = `${Number(widget.offsetX || 0)}px`;
-    const offsetY = `${Number(widget.offsetY || 0)}px`;
-    if (anchor.includes('top')) style.push(`top:${offsetY}`, 'bottom:auto'); else style.push(`bottom:${offsetY}`, 'top:auto');
-    if (anchor.includes('left')) style.push(`left:${offsetX}`, 'right:auto'); else style.push(`right:${offsetX}`, 'left:auto');
-    style.push(`transform-origin:${anchor.includes('top') ? 'top' : 'bottom'} ${anchor.includes('left') ? 'left' : 'right'}`);
-    return style.join(';');
-  }
+function weatherCodeLabel(code){
+  const map = {0:'solrigt',1:'mest klart',2:'let skyet',3:'overskyet',45:'tåget',48:'rimtåge',51:'let støvregn',53:'støvregn',55:'kraftig støvregn',61:'let regn',63:'regn',65:'kraftig regn',71:'let sne',73:'sne',75:'kraftig sne',80:'byger',81:'regnbyger',82:'kraftige byger',95:'torden'};
+  return map[Number(code)] || 'skiftende vejr';
+}
 
-  function enableCountdownDragging(wrap){
-    const widget = state.settings.countdownWidget;
-    if (!wrap || widget.locked) return;
-    wrap.onpointerdown = event => {
-      if (event.target.closest('[data-countdown-toggle],[data-widget-lock]')) return;
-      const rect = wrap.getBoundingClientRect();
-      const startX = event.clientX;
-      const startY = event.clientY;
-      const anchorLeft = (widget.anchor || '').includes('left');
-      const anchorTop = (widget.anchor || '').includes('top');
-      const startOffsetX = Number(widget.offsetX || 0);
-      const startOffsetY = Number(widget.offsetY || 0);
-      wrap.setPointerCapture?.(event.pointerId);
-      const move = ev => {
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
-        widget.offsetX = Math.max(0, Math.round(startOffsetX + (anchorLeft ? dx : -dx)));
-        widget.offsetY = Math.max(0, Math.round(startOffsetY + (anchorTop ? dy : -dy)));
-        wrap.setAttribute('style', countdownWidgetStyle(widget));
-      };
-      const up = () => {
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
-        saveState(false);
-      };
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up, { once: true });
-    };
-  }
+function renderFloatingCountdown(){
+  const wrap = qs('#floating-countdown');
+  if (wrap) { wrap.classList.add('hidden'); wrap.innerHTML = ''; }
+}
 
-  function clockPreview(info){
-    const widget = state.settings.countdownWidget || {};
-    return `<div class="clock-circle preview-precise" style="background-image:url('${state.settings.countdownScene || PRESET_IMAGES.scene}');"><div class="clock-preview-stage"><img class="clock-art" src="${widget.clockImage || PRESET_IMAGES.clockFace}" alt="Ur"><div class="clock-digits-grid"><span data-countdown-days>${pad(info.days)}</span><span data-countdown-hours>${pad(info.hours)}</span><span data-countdown-minutes>${pad(info.minutes)}</span><span data-countdown-seconds>${pad(info.seconds)}</span></div><img class="sisi-dog" src="${widget.dogImage || PRESET_IMAGES.dogCutout}" alt="Sisi"></div></div><div class="subtle">Preview matcher nu den rigtige forside-widget med separate billeder af uret og Sisi.</div>`;
-  }
+function clockPreview(info){ return `<div class="subtle">Nedtællingen vises nu kun i sidemenuen.</div>`; }
 
-  function countdownInfo(){
-    const target = new Date(state.settings.nextTripDate || Date.now());
-    const diff = Math.max(0, target - new Date());
-    const days = Math.floor(diff / 86400000); const hours = Math.floor(diff % 86400000 / 3600000); const minutes = Math.floor(diff % 3600000 / 60000); const seconds = Math.floor(diff % 60000 / 1000);
-    return { days, hours, minutes, seconds };
-  }
-  function pad(v){ return String(v).padStart(2,'0'); }
-  function miniCountdown(info){ return `<div class="count-grid">${[['Dage','days'],['Timer','hours'],['Min','minutes'],['Sek','seconds']].map(([label,key])=>`<div class="count-chip"><div class="num" data-countdown-${key}>${pad(info[key])}</div><div class="lbl">${label}</div></div>`).join('')}</div>`; }
-  function updateCountdownDisplays(){
-    const info = countdownInfo();
-    const values = {days:info.days,hours:info.hours,minutes:info.minutes,seconds:info.seconds};
-    Object.entries(values).forEach(([key,value]) => qsa(`[data-countdown-${key}]`).forEach(el => { el.textContent=pad(value); }));
-  }
+function countdownInfo(){
+  const target = new Date(state.settings.nextTripDate || Date.now());
+  const diff = Math.max(0, target - new Date());
+  const days = Math.floor(diff / 86400000); const hours = Math.floor(diff % 86400000 / 3600000); const minutes = Math.floor(diff % 3600000 / 60000); const seconds = Math.floor(diff % 60000 / 1000);
+  return { days, hours, minutes, seconds };
+}
+function pad(v){ return String(v).padStart(2,'0'); }
+function miniCountdown(info){ return `<div class="count-grid">${[['Dage','days'],['Timer','hours'],['Min','minutes'],['Sek','seconds']].map(([label,key])=>`<div class="count-chip"><div class="num" data-countdown-${key}>${pad(info[key])}</div><div class="lbl">${label}</div></div>`).join('')}</div>`; }
+function updateLiveInfoDisplays(){
+  const info = countdownInfo();
+  const values = {days:info.days,hours:info.hours,minutes:info.minutes,seconds:info.seconds};
+  Object.entries(values).forEach(([key,value]) => qsa(`[data-countdown-${key}]`).forEach(el => { el.textContent=pad(value); }));
+  const now = new Date();
+  qsa('[data-live-clock-time]').forEach(el => el.textContent = now.toLocaleTimeString('da-DK',{hour:'2-digit', minute:'2-digit'}));
+  qsa('[data-live-clock-date]').forEach(el => {
+    const showDate = state.settings.heroClock?.showDate !== false;
+    el.textContent = showDate ? now.toLocaleDateString('da-DK',{weekday:'long', day:'numeric', month:'long', year:'numeric'}) : '';
+    el.style.display = showDate ? '' : 'none';
+  });
+  qsa('[data-live-weather]').forEach(el => {
+    const showWeather = state.settings.heroClock?.showWeather !== false;
+    el.textContent = showWeather ? weatherState.summary : '';
+    el.style.display = showWeather ? '' : 'none';
+  });
+  qsa('[data-live-location]').forEach(el => {
+    el.textContent = weatherState.locationLabel || state.settings.heroClock?.subtitle || 'Aktuel placering';
+  });
+}
 
-  function mapStyleButtons(){ return Object.entries(window.VCMaps.styles).slice(0,4).map(([k,v]) => `<button class="seg-btn ${state.settings.mapStyle===k?'active':''}" data-map-style="${k}">${esc(v.label)}</button>`).join(''); }
+function mapStyleButtons(){ return Object.entries(window.VCMaps.styles).slice(0,4).map(([k,v]) => `<button class="seg-btn ${state.settings.mapStyle===k?'active':''}" data-map-style="${k}">${esc(v.label)}</button>`).join(''); }
 
   function initMapOnce(id, sites, opts={}){
     const el = qs('#'+id);
@@ -1690,20 +1734,8 @@ ${trkpts}
     if (convert) { const s = getSite(convert.dataset.convert); if(s){ s.status='visited'; if(!s.visits.length) s.visits=[new Date().toISOString().slice(0,10)]; saveState(); toast('Ønskebesøg ændret til besøgt.'); renderRoute(); } return; }
     const addResult = e.target.closest('[data-add-result]');
     if (addResult) { navigate('add?status=' + addResult.dataset.status + '&prefillId=' + addResult.dataset.addResult); return; }
-    const countdownToggle = e.target.closest('[data-countdown-toggle]');
-    if (countdownToggle) { state.settings.countdownMinimized = !state.settings.countdownMinimized; saveState(false); renderFloatingCountdown(); return; }
-    const widgetLock = e.target.closest('[data-widget-lock]');
-    if (widgetLock) { state.settings.countdownWidget.locked = !state.settings.countdownWidget.locked; saveState(false); renderFloatingCountdown(); toast(state.settings.countdownWidget.locked ? 'Sisi er nu låst på forsiden.' : 'Sisi kan nu flyttes på forsiden.'); return; }
-    const sisiCheer = e.target.closest('[data-sisi-cheer]');
-    if (sisiCheer) {
-      const wrap = qs('#floating-countdown');
-      wrap.classList.remove('is-cheering');
-      void wrap.offsetWidth;
-      wrap.classList.add('is-cheering');
-      window.setTimeout(() => wrap.classList.remove('is-cheering'), 1200);
-      toast(countdownInfo().days <= 3 ? 'Sisi kan næsten ikke vente længere!' : 'Sisi holder øje med hvert eneste sekund.');
-      return;
-    }
+    const refreshWeatherBtn = e.target.closest('[data-refresh-weather]');
+    if (refreshWeatherBtn) { refreshWeather(true); toast('Vejret opdateres…'); return; }
   }
 
   function toLocalInputValue(iso){ if(!iso) return ''; const d=new Date(iso); if(Number.isNaN(+d)) return ''; const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
