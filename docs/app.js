@@ -1,27 +1,14 @@
 
 (() => {
-  const STORAGE_KEY = 'voresCampingState_v17';
-  const LEGACY_STORAGE_KEYS = ['voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
-  const CURRENT_VERSION = 17;
+  const STORAGE_KEY = 'voresCampingState_v18';
+  const LEGACY_STORAGE_KEYS = ['voresCampingState_v17','voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
+  const CURRENT_VERSION = 18;
   const PRESET_IMAGES = {
-    logo: 'assets/logo-main-v17.png',
-    logoLarge: 'assets/logo-main-v17.png',
+    logo: 'assets/logo-main-v18.png',
+    logoLarge: 'assets/logo-main-v18.png',
     cover: 'assets/cover-main.png',
     corner: 'assets/corner-mood.png',
-    scene: 'assets/sisi-clock-scene.png',
-    clockPreview: 'assets/sisi-clock-preview.png',
-    clockFace: 'assets/sisi-clock-face.png',
-    dogCutout: 'assets/sisi-dog.png',
-    campHero: 'assets/camp-hero.png',
-    campCutout: 'assets/camp-cutout.png',
-    style: 'assets/style-guide.png',
-    stickers: 'assets/stickers.png',
-    quickVisited: 'assets/quick-visited.png',
-    quickWish: 'assets/quick-wish.png',
-    quickBike: 'assets/quick-bike.png',
-    quickPhotos: 'assets/quick-photos.png',
-    quickFavorite: 'assets/quick-favorite.png',
-    quickRating: 'assets/quick-rating.png'
+    campHero: 'assets/camp-hero.png'
   };
   const DEFAULT_CATEGORIES = [
     { id: 'beliggenhed', name: 'Beliggenhed', icon: '📍' },
@@ -48,12 +35,12 @@
     addRoute: 'route-edit/new'
   };
   const QUICK_ACTION_META = {
-    search: { label: 'Find campingplads', icon: '⌕', image: '' },
-    addVisited: { label: 'Tilføj besøg', icon: '', image: PRESET_IMAGES.quickVisited },
-    addWish: { label: 'Tilføj ønske', icon: '', image: PRESET_IMAGES.quickWish },
-    bigMap: { label: 'Åbn stort kort', icon: '🗺️', image: '' },
-    settings: { label: 'Indstillinger', icon: '⚙️', image: '' },
-    addRoute: { label: 'Ny cykelrute', icon: '', image: PRESET_IMAGES.quickBike }
+    search: { label: 'Find campingplads', asset: 'assets/action-search-v18.svg' },
+    addVisited: { label: 'Tilføj besøg', asset: 'assets/action-visited-v18.svg' },
+    addWish: { label: 'Tilføj ønske', asset: 'assets/action-wish-v18.svg' },
+    addRoute: { label: 'Ny cykelrute', asset: 'assets/action-route-v18.svg' },
+    bigMap: { label: 'Åbn stort kort', asset: 'assets/action-map-v18.svg' },
+    settings: { label: 'Indstillinger', asset: 'assets/action-settings-v18.svg' }
   };
 
   let state = loadState();
@@ -66,7 +53,8 @@
     summary: 'Finder aktuel placering…',
     locationLabel: 'Aktuel placering',
     fetchedAt: 0,
-    coords: null
+    coords: null,
+    code: 0
   };
   const ors = window.VCORS.createClient({ getApiKey: () => secrets.orsKey || state?.settings?.api?.orsKey || '' });
   window.addEventListener('hashchange', renderRoute);
@@ -78,7 +66,6 @@
     migrateState();
     renderNav();
     renderBottomNav();
-    renderQuickDock();
     renderQuickDock();
     renderRoute();
     window.setInterval(updateLiveInfoDisplays, 1000);
@@ -102,7 +89,7 @@
 
   function loadSecrets(){
     try {
-      return JSON.parse(localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
+      return JSON.parse(localStorage.getItem('voresCampingSecrets_v18') || localStorage.getItem('voresCampingSecrets_v17') || localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
     } catch (_) {
       return {};
     }
@@ -110,7 +97,7 @@
 
   function saveSecrets(){
     try {
-      localStorage.setItem('voresCampingSecrets_v16', JSON.stringify(secrets));
+      localStorage.setItem('voresCampingSecrets_v18', JSON.stringify(secrets));
     } catch (err) {
       console.warn('API-nøgler kunne ikke gemmes lokalt.', err);
     }
@@ -126,7 +113,7 @@
       settings: {
         appName: 'Vores Camping',
         tagline: 'Stener og Vibekes campingunivers',
-        greeting: 'Hej Stener, Vibeke og Sisi',
+        greeting: '',
         intro: 'Her er jeres personlige camping-overblik',
         themeMode: 'light',
         accent: '#1f5f3c',
@@ -137,30 +124,10 @@
         showCountdown: true,
         nextTripName: 'Norge 2026',
         nextTripDate: `${nowYear+1}-07-15T08:00:00`,
-        countdownScene: PRESET_IMAGES.cover,
         coverImage: PRESET_IMAGES.cover,
         cornerImage: PRESET_IMAGES.corner,
         logo: PRESET_IMAGES.logo,
         heroImage: PRESET_IMAGES.cover,
-        clockTheme: 'wood',
-        clockBridgeImage: PRESET_IMAGES.corner,
-        countdownWidget: {
-          overviewOnly: true,
-          locked: true,
-          anchor: 'bottom-right',
-          offsetX: 18,
-          offsetY: 14,
-          scale: 1,
-          opacity: 1,
-          showBubble: true,
-          showTripText: true,
-          animationMode: 'happy',
-          animationSpeed: 1,
-          autoExcitement: true,
-          clickCheer: true,
-          clockImage: PRESET_IMAGES.clockFace,
-          dogImage: PRESET_IMAGES.dogCutout,
-        },
         family: {
           fatherName: 'Stener Sørensen',
           fatherBirth: '1952-11-11',
@@ -168,7 +135,10 @@
           motherNick: 'Vibse',
           motherBirth: '1960-03-20',
           dogName: 'Sisi',
-          dogBirth: '2020-01-01'
+          dogBirth: '2020-01-01',
+          motto: 'Vores ture, vores frihed, vores minder',
+          useNickname: true,
+          showBirthdays: true
         },
         heroClock: {
           enabled: true,
@@ -248,11 +218,15 @@
     state.settings = { ...defaults.settings, ...(state.settings || {}) };
     state.settings.api = { ...defaults.settings.api, ...(state.settings.api || {}) };
     state.settings.routeDefaults = { ...defaults.settings.routeDefaults, ...(state.settings.routeDefaults || {}) };
+    state.settings.family = { ...defaults.settings.family, ...(state.settings.family || {}) };
+    state.settings.heroClock = { ...defaults.settings.heroClock, ...(state.settings.heroClock || {}) };
     if (!window.VCMaps.styles[state.settings.mapStyle]) state.settings.mapStyle = 'liberty';
     if (!state.version || state.version < CURRENT_VERSION || /logo-badge-large|logo-main\.png/.test(String(state.settings.logo || ''))) state.settings.logo = PRESET_IMAGES.logo;
-    if (/sisi-clock-scene/.test(String(state.settings.countdownScene || ''))) state.settings.countdownScene = PRESET_IMAGES.cover;
-    if (!state.settings.countdownWidget.clockImage) state.settings.countdownWidget.clockImage = PRESET_IMAGES.clockFace;
-    if (!state.settings.countdownWidget.dogImage) state.settings.countdownWidget.dogImage = PRESET_IMAGES.dogCutout;
+    if (state.version < 18) {
+      if (['Hej Stener, Vibeke og Sisi','Godmorgen Sisi & Jan'].includes(state.settings.greeting)) state.settings.greeting = '';
+      if (['Her er jeres personlige camping-overblik','Her er jeres camping-overblik'].includes(state.settings.intro)) state.settings.intro = defaults.settings.intro;
+      if (!state.settings.family.motto) state.settings.family.motto = defaults.settings.family.motto;
+    }
     if (!Array.isArray(state.settings.sections)) state.settings.sections = [...defaults.settings.sections];
     if (!Array.isArray(state.categories) || !state.categories.length) state.categories = structuredClone(DEFAULT_CATEGORIES);
     if (!Array.isArray(state.campsites)) state.campsites = Array.isArray(state.campgrounds) ? state.campgrounds : Array.isArray(state.places) ? state.places : [];
@@ -361,6 +335,43 @@
     }
   }
 
+  function firstName(name=''){ return String(name).trim().split(/\s+/)[0] || ''; }
+  function familyMotherName(){
+    const family = state.settings.family || {};
+    return family.useNickname !== false && family.motherNick ? family.motherNick : firstName(family.motherName || 'Vibeke');
+  }
+  function personalGreeting(){
+    const configured = String(state.settings.greeting || '').trim();
+    if (configured) return configured;
+    const hour = new Date().getHours();
+    const salutation = hour < 10 ? 'Godmorgen' : hour < 17 ? 'God eftermiddag' : 'Godaften';
+    const family = state.settings.family || {};
+    return `${salutation} ${firstName(family.fatherName || 'Stener')} & ${familyMotherName()}`;
+  }
+  function ageFromBirth(value){
+    if (!value) return '';
+    const date = new Date(value.length === 4 ? `${value}-01-01` : value);
+    if (Number.isNaN(+date)) return '';
+    const now = new Date();
+    let age = now.getFullYear() - date.getFullYear();
+    const beforeBirthday = now.getMonth() < date.getMonth() || (now.getMonth() === date.getMonth() && now.getDate() < date.getDate());
+    if (beforeBirthday) age -= 1;
+    return Math.max(0, age);
+  }
+  function birthdayText(value, yearOnly=false){
+    if (!value) return '';
+    if (yearOnly || /^\d{4}$/.test(value)) return String(value).slice(0,4);
+    const date = new Date(value);
+    if (Number.isNaN(+date)) return value;
+    return date.toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'});
+  }
+  function familyMemberCard(kind, name, birth, icon, yearOnly=false){
+    const age = yearOnly ? '' : ageFromBirth(birth);
+    const birthLabel = birth ? (yearOnly ? `Født ${String(birth).slice(0,4)}` : birthdayText(birth,false)) : '';
+    return `<div class="family-member family-member--${kind}"><span class="family-member-icon">${icon}</span><div><small>${kind==='dog'?'Firbenet rejsemakker':kind==='father'?'Far og chauffør':'Mor og campingleder'}</small><strong>${esc(name)}</strong><span>${esc(birthLabel)}${age!=='' ? ` · ${age} år` : ''}</span></div></div>`;
+  }
+
+
 
 function renderNav(){
   const current = currentRoute().name;
@@ -369,46 +380,48 @@ function renderNav(){
   const family = state.settings.family || {};
   qs('#sidebar').innerHTML = `
     <div class="sidebar-card brand-card">
-      <div class="brand-logo"><img src="${state.settings.logo || PRESET_IMAGES.logoLarge}" alt="Logo"></div>
-      <div>
-        <h2 style="margin:0 0 4px;">${esc(state.settings.greeting)}</h2>
-        <p class="brand-sub">${esc(state.settings.intro)}</p>
+      <div class="brand-logo"><img src="${state.settings.logo || PRESET_IMAGES.logoLarge}" alt="Vores Camping-logo"></div>
+      <div class="brand-copy">
+        <span class="brand-kicker">${esc(state.settings.tagline)}</span>
+        <h2>${esc(personalGreeting())}</h2>
+        <p class="brand-sub">${esc(family.motto || state.settings.intro)}</p>
       </div>
-      <div class="meta-pills" style="margin:6px 0 0;">
-        <span class="chip">${esc(family.fatherName || 'Stener Sørensen')}</span>
-        <span class="chip">${esc(family.motherNick || family.motherName || 'Vibeke')}</span>
-        <span class="chip">🐾 ${esc(family.dogName || 'Sisi')}</span>
+      <div class="family-chip-row">
+        <span class="family-chip family-chip--stener">S · ${esc(firstName(family.fatherName || 'Stener'))}</span>
+        <span class="family-chip family-chip--vibse">V · ${esc(familyMotherName())}</span>
+        <span class="family-chip family-chip--sisi">🐾 ${esc(family.dogName || 'Sisi')}</span>
       </div>
       <div class="nav-list">
         ${NAV_ITEMS.map(([key,label,icon]) => `<button class="nav-item ${current===key?'active':''}" data-nav="${key}"><span class="icon">${icon}</span><span>${label}</span></button>`).join('')}
       </div>
     </div>
-    <div class="sidebar-card sidebar-mini">
-      <h3 style="margin-top:0;">Næste campingtur</h3>
+    <div class="sidebar-card sidebar-mini countdown-sidebar-card">
+      <div class="sidebar-section-title"><span>Næste campingtur</span><span>🏕️</span></div>
       ${miniCountdown(next)}
-      <div class="soft-divider" style="margin:12px 0;"></div>
-      <div class="subtle">${esc(state.settings.nextTripName)}<br>${formatDate(state.settings.nextTripDate)}</div>
+      <div class="soft-divider"></div>
+      <div class="next-trip-copy"><strong>${esc(state.settings.nextTripName)}</strong><span>${formatDate(state.settings.nextTripDate)}</span></div>
     </div>
-    <div class="sidebar-card sidebar-mini">
-      <h3 style="margin-top:0;">Familien bag appen</h3>
-      <div class="stack subtle personal-lines">
-        <div><strong>Far:</strong> ${esc(family.fatherName || 'Stener Sørensen')} · ${formatDate(family.fatherBirth)}</div>
-        <div><strong>Mor:</strong> ${esc(family.motherName || 'Vibeke Mejlvang')} ${family.motherNick ? `(${esc(family.motherNick)})` : ''} · ${formatDate(family.motherBirth)}</div>
-        <div><strong>Hund:</strong> ${esc(family.dogName || 'Sisi')} · ${family.dogBirth ? new Date(family.dogBirth).getFullYear() : '2020'}</div>
+    <div class="sidebar-card sidebar-mini family-sidebar-card">
+      <div class="sidebar-section-title"><span>Familien bag appen</span><span>♡</span></div>
+      <div class="personal-lines">
+        <div><span class="person-dot person-dot--father"></span><span>${esc(family.fatherName || 'Stener Sørensen')}</span><strong>${family.showBirthdays === false ? 'Far' : ageFromBirth(family.fatherBirth)+' år'}</strong></div>
+        <div><span class="person-dot person-dot--mother"></span><span>${esc(family.motherName || 'Vibeke Mejlvang')}</span><strong>${family.showBirthdays === false ? 'Mor' : ageFromBirth(family.motherBirth)+' år'}</strong></div>
+        <div><span class="person-dot person-dot--dog"></span><span>${esc(family.dogName || 'Sisi')}</span><strong>fra ${String(family.dogBirth || '2020').slice(0,4)}</strong></div>
       </div>
     </div>
     <div class="sidebar-card sidebar-mini">
-      <h3 style="margin-top:0;">Hurtige tal</h3>
-      <div class="table-list">
-        <div class="table-row"><span>Besøgte</span><strong>${s.visited}</strong><span>📍</span><span></span></div>
-        <div class="table-row"><span>Ønsker</span><strong>${s.wish}</strong><span>💛</span><span></span></div>
-        <div class="table-row"><span>Lande</span><strong>${s.countries}</strong><span>🌍</span><span></span></div>
-        <div class="table-row"><span>Cykelruter</span><strong>${s.routes}</strong><span>🚴</span><span></span></div>
+      <div class="sidebar-section-title"><span>Hurtige tal</span><span>↗</span></div>
+      <div class="mini-stat-grid">
+        <div><strong>${s.visited}</strong><span>Besøgte</span></div>
+        <div><strong>${s.wish}</strong><span>Ønsker</span></div>
+        <div><strong>${s.countries}</strong><span>Lande</span></div>
+        <div><strong>${s.routes}</strong><span>Ruter</span></div>
       </div>
     </div>`;
 }
 
 function renderBottomNav(){
+
 
     const current = currentRoute().name;
     qs('#bottom-nav').innerHTML = NAV_ITEMS.map(([key,label,icon]) => `<button class="${current===key?'active':''}" data-nav="${key}">${icon} ${label}</button>`).join('');
@@ -471,6 +484,7 @@ function renderBottomNav(){
   }
 
 
+
 function renderOverview(view){
   const family = state.settings.family || {};
   setHeader(state.settings.appName || 'Vores Camping', state.settings.intro);
@@ -485,19 +499,26 @@ function renderOverview(view){
   const recentRoute = routes[0];
   view.innerHTML = `
     <div class="view-grid overview-page ${state.settings.compact ? 'is-compact' : 'is-airy'}">
-      <section class="dashboard-hero card">
-        <div class="dashboard-hero-image" style="background-image:linear-gradient(90deg,rgba(20,45,29,.88),rgba(20,45,29,.34),rgba(20,45,29,.03)),url('${state.settings.coverImage || PRESET_IMAGES.cover}')">
-          <div class="dashboard-welcome">
+      <section class="dashboard-hero card dashboard-hero-v18">
+        <div class="dashboard-hero-image" style="background-image:linear-gradient(90deg,rgba(19,50,33,.93) 0%,rgba(19,50,33,.72) 38%,rgba(19,50,33,.16) 72%,rgba(19,50,33,.03) 100%),url('${state.settings.coverImage || PRESET_IMAGES.cover}')">
+          <div class="dashboard-welcome dashboard-welcome-v18">
+            <div class="hero-family-row">
+              <span class="hero-family-avatar hero-family-avatar--father">S</span>
+              <span class="hero-family-avatar hero-family-avatar--mother">V</span>
+              <span class="hero-family-avatar hero-family-avatar--dog">🐾</span>
+              <span>${esc(firstName(family.fatherName || 'Stener'))}, ${esc(familyMotherName())} & ${esc(family.dogName || 'Sisi')}</span>
+            </div>
             <span class="eyebrow">${esc(state.settings.tagline)}</span>
-            <h2>Velkommen tilbage, ${esc((family.fatherName || 'Stener').split(' ')[0])} & ${esc((family.motherNick || family.motherName || 'Vibeke').split(' ')[0])}</h2>
-            <p>Et varmt og personligt overblik over jeres ture, ønsker, vurderinger og cykeloplevelser – samlet i et roligt campingunivers.</p>
-            <div class="meta-pills">
-              <span class="chip">🏕️ ${esc(state.settings.nextTripName)}</span>
-              <span class="chip">🐾 ${esc(family.dogName || 'Sisi')} følger med</span>
-              <span class="chip">📅 Næste afgang ${formatDate(state.settings.nextTripDate)}</span>
+            <h2>${esc(personalGreeting())}</h2>
+            <p>${esc(family.motto || 'Vores ture, vores frihed, vores minder')}</p>
+            <div class="hero-personal-meta">
+              <span><b>Campingdagbog</b><small>Jeres minder samlet ét sted</small></span>
+              <span><b>${esc(state.settings.nextTripName)}</b><small>Næste tur · ${formatDate(state.settings.nextTripDate)}</small></span>
+              <span><b>${s.visited} steder</b><small>Besøgt og gemt</small></span>
             </div>
           </div>
-          <div class="hero-clock-card" id="hero-live-card">
+          ${state.settings.heroClock?.enabled === false ? '' : `<div class="hero-clock-card hero-clock-card-v18" id="hero-live-card">
+            <div class="weather-icon-orbit"><span data-live-weather-icon>☀️</span></div>
             <span class="eyebrow">${esc(state.settings.heroClock?.title || 'Lokal tid og vejr')}</span>
             <div class="hero-clock-time" data-live-clock-time>--:--</div>
             <div class="hero-clock-date" data-live-clock-date>Dato opdateres…</div>
@@ -505,40 +526,52 @@ function renderOverview(view){
               <strong data-live-location>${esc(state.settings.heroClock?.subtitle || 'Aktuel placering')}</strong>
               <span data-live-weather>Henter vejr…</span>
             </div>
-            <button class="ghost-btn compact-ghost" data-refresh-weather>Opdatér vejr</button>
-          </div>
+            <button class="ghost-btn compact-ghost" data-refresh-weather>↻ Opdatér vejr</button>
+          </div>`}
+          <img class="hero-brand-watermark" src="${state.settings.logo || PRESET_IMAGES.logo}" alt="" aria-hidden="true">
         </div>
       </section>
 
-      <section class="overview-pulse card">
-        <div class="pulse-intro"><span class="eyebrow dark">Campingpulsen</span><strong>Personligt og praktisk overblik</strong><span>Jeres vigtigste genveje ligger nu fast i bunden, mens forsiden fokuserer på overblik og stemning.</span></div>
-        <button class="pulse-item" data-nav="${nextWish ? 'detail/'+nextWish.id : 'wishlist'}"><span class="pulse-icon">💛</span><div><small>Næste ønskemål</small><strong>${esc(nextWish?.name || 'Tilføj et nyt ønske')}</strong><span>${nextWish?.plannedDate ? formatDate(nextWish.plannedDate) : 'Ingen dato valgt endnu'}</span></div></button>
-        <button class="pulse-item" data-nav="${bestPlace ? 'detail/'+bestPlace.id : 'top'}"><span class="pulse-icon">🏆</span><div><small>Jeres bedst bedømte</small><strong>${esc(bestPlace?.name || 'Bedøm jeres besøg')}</strong><span>${bestPlace?.average ? `${bestPlace.average.toFixed(1).replace('.',',')} stjerner` : 'Ingen vurdering endnu'}</span></div></button>
-        <button class="pulse-item" data-nav="${recentRoute ? 'route/'+recentRoute.id : 'route-edit/new'}"><span class="pulse-icon">🚴</span><div><small>Seneste cykelrute</small><strong>${esc(recentRoute?.name || 'Opret første rute')}</strong><span>${recentRoute?.distanceKm ? `${recentRoute.distanceKm} km · ${esc(recentRoute.difficulty)}` : 'Klar til et nyt eventyr'}</span></div></button>
+      <section class="family-story-strip card">
+        <div class="family-story-copy">
+          <span class="eyebrow dark">Helt jeres egen app</span>
+          <strong>Campinglivet med Stener, Vibse og Sisi</strong>
+          <span>${esc(state.settings.intro)}</span>
+        </div>
+        ${familyMemberCard('father', family.fatherName || 'Stener Sørensen', family.showBirthdays === false ? '' : family.fatherBirth, '🚙')}
+        ${familyMemberCard('mother', `${family.useNickname !== false && family.motherNick ? '('+family.motherNick+') ' : ''}${family.motherName || 'Vibeke Mejlvang'}`, family.showBirthdays === false ? '' : family.motherBirth, '☕')}
+        ${familyMemberCard('dog', family.dogName || 'Sisi', family.showBirthdays === false ? '' : (family.dogBirth || '2020'), '🐾', true)}
       </section>
 
-      ${sections.has('stats') ? `<section class="stats-row refined-stats">
+      <section class="overview-pulse card overview-pulse-v18">
+        <div class="pulse-intro"><span class="eyebrow dark">Campingpulsen</span><strong>Det næste kapitel i jeres rejsebog</strong><span>Genvejene bor fast i bunden. Her får I kun det vigtigste overblik — uden knap-kaos og campingplads-Tetris.</span></div>
+        <button class="pulse-item" data-nav="${nextWish ? 'detail/'+nextWish.id : 'wishlist'}"><span class="pulse-icon pulse-icon--wish">♥</span><div><small>Næste sted på ønskelisten</small><strong>${esc(nextWish?.name || 'Tilføj et nyt ønske')}</strong><span>${nextWish?.plannedDate ? formatDate(nextWish.plannedDate) : 'Ingen dato valgt endnu'}</span></div></button>
+        <button class="pulse-item" data-nav="${bestPlace ? 'detail/'+bestPlace.id : 'top'}"><span class="pulse-icon pulse-icon--top">★</span><div><small>Stener & Vibses favorit</small><strong>${esc(bestPlace?.name || 'Bedøm jeres besøg')}</strong><span>${bestPlace?.average ? `${bestPlace.average.toFixed(1).replace('.',',')} stjerner` : 'Ingen vurdering endnu'}</span></div></button>
+        <button class="pulse-item" data-nav="${recentRoute ? 'route/'+recentRoute.id : 'route-edit/new'}"><span class="pulse-icon pulse-icon--route">⌁</span><div><small>Seneste tur på to hjul</small><strong>${esc(recentRoute?.name || 'Opret første rute')}</strong><span>${recentRoute?.distanceKm ? `${recentRoute.distanceKm} km · ${esc(recentRoute.difficulty)}` : 'Klar til et nyt eventyr'}</span></div></button>
+      </section>
+
+      ${sections.has('stats') ? `<section class="stats-row refined-stats refined-stats-v18">
         ${statCard(s.visited,'Besøgte campingpladser','✓')}
         ${statCard(s.wish,'Steder på ønskelisten','♥','status-wish')}
         ${statCard(s.countries,'Besøgte lande','◎')}
-        ${statCard(s.routes,'Gemte cykelruter','🚲')}
+        ${statCard(s.routes,'Gemte cykelruter','⌁')}
       </section>` : ''}
 
-      ${sections.has('map') ? `<section class="map-card card overview-map-card">
-        <div class="map-card-heading"><div><span class="eyebrow dark">Jeres campingkort</span><h2>Besøgte steder og nye drømme</h2></div><div class="map-legend"><span><i class="legend-dot visited"></i> Besøgt</span><span><i class="legend-dot wish"></i> Vil besøge</span></div></div>
+      ${sections.has('map') ? `<section class="map-card card overview-map-card overview-map-card-v18">
+        <div class="map-card-heading"><div><span class="eyebrow dark">Stener & Vibses rejsekort</span><h2>Besøgte steder og kommende drømme</h2><p class="subtle">Grøn er minder. Gul er nye eventyr, der stadig står og banker på campingdøren.</p></div><div class="map-legend"><span><i class="legend-dot visited"></i> Besøgt</span><span><i class="legend-dot wish"></i> Vil besøge</span></div></div>
         <div id="overview-map" class="map-holder"></div>
         <div class="map-bottom-bar"><div class="seg-group">${mapStyleButtons()}</div><button class="primary-btn" data-nav="map">Åbn stort kort</button></div>
       </section>` : ''}
 
-      ${(sections.has('latest') || sections.has('top') || sections.has('wishlist')) ? `<section class="dashboard-content-grid">
-        ${sections.has('latest') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Senest</span><h3>Campingbesøg</h3></div><button class="text-btn" data-nav="visited">Se alle →</button></div>${compactList(latest)}</div>` : ''}
-        ${sections.has('top') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Favoritter</span><h3>Bedst bedømte</h3></div><button class="text-btn" data-nav="top">Se rangliste →</button></div>${compactList(best, true)}</div>` : ''}
+      ${(sections.has('latest') || sections.has('top') || sections.has('wishlist')) ? `<section class="dashboard-content-grid dashboard-content-grid-v18">
+        ${sections.has('latest') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Senest i dagbogen</span><h3>Campingbesøg</h3></div><button class="text-btn" data-nav="visited">Se alle →</button></div>${compactList(latest)}</div>` : ''}
+        ${sections.has('top') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Jeres favoritter</span><h3>Bedst bedømte</h3></div><button class="text-btn" data-nav="top">Se rangliste →</button></div>${compactList(best, true)}</div>` : ''}
         ${sections.has('wishlist') ? `<div class="list-card card"><div class="section-head"><div><span class="eyebrow dark">Næste eventyr</span><h3>Fra ønskelisten</h3></div><button class="text-btn" data-nav="wishlist">Se alle →</button></div>${compactList(wishes)}</div>` : ''}
       </section>` : ''}
 
-      ${sections.has('routes') ? `<section class="grid-2 overview-bottom-grid">
+      ${sections.has('routes') ? `<section class="grid-2 overview-bottom-grid overview-bottom-grid-v18">
         <div class="card-section card"><div class="section-head"><div><span class="eyebrow dark">På to hjul</span><h3>Udvalgte cykelruter</h3></div><button class="ghost-btn" data-nav="route-edit/new">Opret rute</button></div>${routesList(routes)}</div>
-        <div class="mood-card card" style="background-image:linear-gradient(90deg,rgba(20,45,29,.05),rgba(20,45,29,.42)),url('${state.settings.cornerImage || PRESET_IMAGES.corner}')"><div class="mood-card-copy"><span class="eyebrow">Campinglykke</span><strong>${esc(family.fatherName || 'Stener Sørensen')} · ${esc(family.motherName || 'Vibeke Mejlvang')} · ${esc(family.dogName || 'Sisi')}</strong></div></div>
+        <div class="mood-card card mood-card-v18" style="background-image:linear-gradient(90deg,rgba(20,45,29,.04),rgba(20,45,29,.52)),url('${state.settings.cornerImage || PRESET_IMAGES.corner}')"><div class="mood-card-copy"><span class="eyebrow">Jeres campingmotto</span><strong>${esc(family.motto || 'Vores ture, vores frihed, vores minder')}</strong><span>${esc(firstName(family.fatherName || 'Stener'))} · ${esc(familyMotherName())} · ${esc(family.dogName || 'Sisi')}</span></div></div>
       </section>` : ''}
     </div>`;
   if (sections.has('map')) initMapOnce('overview-map', state.campsites.map(siteWithComputed), { fitAll:true });
@@ -557,18 +590,10 @@ function countdownMood(days){
     return [['Dage','days'],['Timer','hours'],['Min','minutes'],['Sek','seconds']].map(([label,key]) => `<div class="count-cell"><strong data-countdown-${key}>${pad(info[key])}</strong><span>${label}</span></div>`).join('');
   }
 
-  function quickTile(action){ const meta=QUICK_ACTION_META[action]||{label:action,icon:'•',image:''}; return `<button class="quick-tile quick-tile--${action}" data-quick="${action}">${meta.image ? `<img class="quick-tile-image" src="${meta.image}" alt="${esc(meta.label)}">` : `<div class="big-icon">${meta.icon || '•'}</div>`}<div>${esc(meta.label)}</div></button>`; }
-  function quickDockButton(action){ const meta=QUICK_ACTION_META[action]||{label:action}; return `<button class="quick-dock-btn quick-dock-btn--${action}" data-quick="${action}"><span class="quick-dock-icon">${quickActionIconSvg(action)}</span><span class="quick-dock-label">${esc(meta.label)}</span></button>`; }
-  function quickActionIconSvg(action){
-    const icons = {
-      search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>`,
-      addVisited:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6-5.1 6-10a6 6 0 1 0-12 0c0 4.9 6 10 6 10Z"/><path d="m9.5 11 1.6 1.8 3-3.3"/></svg>`,
-      addWish:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-6.7-4.1-8.6-8.2C1.7 8 3.5 5 6.8 5c2 0 3.2 1 4.2 2.3C12 6 13.2 5 15.2 5 18.5 5 20.3 8 18.6 11.8 16.7 15.9 12 20 12 20Z"/></svg>`,
-      addRoute:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17 9 9h4l3 8"/><path d="M10 9H7.5"/><path d="M13 9h3.5"/></svg>`,
-      bigMap:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Z"/><path d="M9 4v13.5"/><path d="M15 6.5V20"/></svg>`,
-      settings:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8 14 5l2.3-.3 1 2.1 2 1.2-.6 2.2.6 2.2-2 1.2-1 2.1L14 19l-2 1.2L10 19l-2.3.3-1-2.1-2-1.2.6-2.2-.6-2.2 2-1.2 1-2.1L10 5l2-1.2Z"/><circle cx="12" cy="12" r="3.2"/></svg>`
-    };
-    return icons[action] || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>';
+  function quickDockButton(action){
+    const meta=QUICK_ACTION_META[action] || { label:action, asset:'assets/action-settings-v18.svg' };
+    const active=quickActionIsActive(action);
+    return `<button class="quick-dock-btn quick-dock-btn--${action}${active?' is-active':''}" data-quick="${action}" title="${esc(meta.label)}" ${active?'aria-current="page"':''}><span class="quick-dock-icon"><img src="${meta.asset}" alt=""></span><span class="quick-dock-label">${esc(meta.label)}</span></button>`;
   }
   function statCard(value, label, icon, cls=''){ return `<div class="stat-card card ${cls}"><div class="value">${value}</div><div>${label}</div><div class="big-icon">${icon}</div></div>`; }
   function stars(avg){ const r = Math.round(avg||0); return `<span class="rating">${'★'.repeat(r)}${'☆'.repeat(Math.max(0,5-r))}</span>`; }
@@ -776,7 +801,7 @@ function renderSettings(view){
           <h3>Appnavn og forsidetekster</h3>
           <label><span class="field-label">Appnavn</span><input class="field" id="set-app-name" value="${esc(state.settings.appName)}"></label>
           <label><span class="field-label">Undertitel</span><input class="field" id="set-tagline" value="${esc(state.settings.tagline)}"></label>
-          <label><span class="field-label">Hilsen</span><input class="field" id="set-greeting" value="${esc(state.settings.greeting)}"></label>
+          <label><span class="field-label">Fast hilsen (tom = automatisk efter tidspunkt)</span><input class="field" id="set-greeting" value="${esc(state.settings.greeting)}" placeholder="Fx Velkommen tilbage, Stener & Vibse"></label>
           <label><span class="field-label">Forsidetekst</span><input class="field" id="set-intro" value="${esc(state.settings.intro)}"></label>
           <button class="primary-btn" id="save-text-settings">Gem tekster</button>
         </div>
@@ -796,6 +821,11 @@ function renderSettings(view){
             <label><span class="field-label">Hund</span><input class="field" id="set-dog-name" value="${esc(family.dogName || '')}"></label>
           </div>
           <label><span class="field-label">Sisis år / fødselsdato</span><input class="field" id="set-dog-birth" value="${esc(family.dogBirth || '')}" placeholder="fx 2020 eller 2020-01-01"></label>
+          <label><span class="field-label">Jeres personlige campingmotto</span><input class="field" id="set-family-motto" value="${esc(family.motto || '')}" placeholder="Vores ture, vores frihed, vores minder"></label>
+          <div class="stack">
+            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-use-nickname" ${family.useNickname !== false ? 'checked' : ''}> Brug kælenavnet Vibse i appens personlige tekster</label>
+            <label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="set-show-birthdays" ${family.showBirthdays !== false ? 'checked' : ''}> Vis fødselsdatoer og alder i de personlige familiekort</label>
+          </div>
           <button class="primary-btn" id="save-family-settings">Gem familieoplysninger</button>
         </div>
 
@@ -1411,6 +1441,9 @@ function bindSettingsHandlers(){
       motherBirth: qs('#set-mother-birth').value,
       dogName: qs('#set-dog-name').value.trim(),
       dogBirth: qs('#set-dog-birth').value.trim(),
+      motto: qs('#set-family-motto').value.trim() || 'Vores ture, vores frihed, vores minder',
+      useNickname: qs('#set-use-nickname').checked,
+      showBirthdays: qs('#set-show-birthdays').checked,
     };
     saveState(); toast('Familieoplysninger gemt.'); renderRoute();
   };
@@ -1481,11 +1514,12 @@ async function refreshWeather(force = false){
   weatherState.summary = 'Henter vejrudsigten…';
   updateLiveInfoDisplays();
   let loc = weatherState.coords;
+  let usedFallback = false;
   if (prefs.useCurrentLocation !== false) loc = await getCurrentPosition() || weatherState.coords;
   if (!loc) {
     const fallback = state.campsites.find(site => site.coords?.lat && site.coords?.lng);
     loc = fallback ? { lat: Number(fallback.coords.lat), lng: Number(fallback.coords.lng) } : null;
-    if (loc) weatherState.locationLabel = fallback.city ? `${fallback.city}, ${fallback.country}` : fallback.name;
+    if (loc) { usedFallback = true; weatherState.locationLabel = fallback.city ? `${fallback.city}, ${fallback.country}` : fallback.name; }
   }
   if (!loc) {
     weatherState.summary = 'Placering ikke tilgængelig';
@@ -1498,6 +1532,7 @@ async function refreshWeather(force = false){
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lng}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error(`Vejrtjenesten svarede med ${res.status}`);
     const json = await res.json();
     const current = json.current || {};
     const daily = json.daily || {};
@@ -1510,14 +1545,8 @@ async function refreshWeather(force = false){
     if (Number.isFinite(current.wind_speed_10m)) pieces.push(`vind ${Math.round(current.wind_speed_10m)} km/t`);
     if (Number.isFinite(minVal) && Number.isFinite(maxVal)) pieces.push(`i dag ${Math.round(minVal)}° / ${Math.round(maxVal)}°`);
     weatherState.summary = pieces.join(' · ') || 'Vejrdata utilgængelige';
-    try {
-      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${loc.lat}&longitude=${loc.lng}&language=da`);
-      const geoJson = await geoRes.json();
-      const place = geoJson?.results?.[0];
-      weatherState.locationLabel = place ? [place.name, place.country].filter(Boolean).join(', ') : (prefs.subtitle || 'Aktuel placering');
-    } catch (_geo) {
-      weatherState.locationLabel = prefs.subtitle || 'Aktuel placering';
-    }
+    weatherState.code = Number(current.weather_code || 0);
+    weatherState.locationLabel = usedFallback ? weatherState.locationLabel : (prefs.useCurrentLocation !== false ? 'Din aktuelle placering' : (prefs.subtitle || 'Valgt placering'));
   } catch (err) {
     console.error(err);
     weatherState.summary = 'Kunne ikke hente vejret lige nu';
@@ -1532,12 +1561,17 @@ function weatherCodeLabel(code){
   return map[Number(code)] || 'skiftende vejr';
 }
 
-function renderFloatingCountdown(){
-  const wrap = qs('#floating-countdown');
-  if (wrap) { wrap.classList.add('hidden'); wrap.innerHTML = ''; }
+function weatherIcon(code){
+  const n = Number(code);
+  if ([0].includes(n)) return '☀️';
+  if ([1,2].includes(n)) return '🌤️';
+  if ([3].includes(n)) return '☁️';
+  if ([45,48].includes(n)) return '🌫️';
+  if ([51,53,55,61,63,65,80,81,82].includes(n)) return '🌧️';
+  if ([71,73,75].includes(n)) return '🌨️';
+  if ([95].includes(n)) return '⛈️';
+  return '🌦️';
 }
-
-function clockPreview(info){ return `<div class="subtle">Nedtællingen vises nu kun i sidemenuen.</div>`; }
 
 function countdownInfo(){
   const target = new Date(state.settings.nextTripDate || Date.now());
@@ -1566,6 +1600,7 @@ function updateLiveInfoDisplays(){
   qsa('[data-live-location]').forEach(el => {
     el.textContent = weatherState.locationLabel || state.settings.heroClock?.subtitle || 'Aktuel placering';
   });
+  qsa('[data-live-weather-icon]').forEach(el => { el.textContent = weatherIcon(weatherState.code); });
 }
 
 function mapStyleButtons(){ return Object.entries(window.VCMaps.styles).slice(0,4).map(([k,v]) => `<button class="seg-btn ${state.settings.mapStyle===k?'active':''}" data-map-style="${k}">${esc(v.label)}</button>`).join(''); }

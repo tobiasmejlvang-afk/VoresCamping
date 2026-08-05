@@ -1,109 +1,46 @@
-# Test- og fejlfindingsrapport – Vores Camping v16
+# Test- og fejlfindingsrapport – Vores Camping v18
 
-Test gennemført den 5. august 2026.
+Test udført den 5. august 2026.
 
 ## Resultat
 
-Version 16 bestod den gennemførte syntaks-, side-, funktions- og responsivitetstest uden registrerede JavaScript-fejl i testforløbet.
+Den gennemførte statiske fil-, syntaks- og strukturtest bestod **40 af 40 kontroller**.
 
-## JavaScript og filer
+## Beståede kontroller
 
-- `docs/app.js`: syntaks godkendt med Node.js.
-- `docs/maps.js`: syntaks godkendt med Node.js.
-- `docs/ors.js`: syntaks godkendt med Node.js.
+- `docs/app.js`: JavaScript-syntaks godkendt med Node.js.
+- `docs/maps.js`: JavaScript-syntaks godkendt med Node.js.
+- `docs/ors.js`: JavaScript-syntaks godkendt med Node.js.
 - `manifest.webmanifest`: gyldig JSON.
-- Alle centrale filer er til stede.
+- Alle centrale filer findes.
 - `.nojekyll` findes i `/docs`.
-- Alle registrerede asset-referencer peger på eksisterende filer.
-- Ingen hardkodet API-nøgle blev fundet.
+- Ingen dublerede statiske id’er i `index.html`.
+- Alle fundne asset-referencer peger på eksisterende filer.
+- Alle seks hurtighandlinger findes i appens kode.
+- Alle seks nye v18-SVG-ikoner findes.
+- Stener, Vibeke/Vibse og Sisis personlige oplysninger findes i standarddataene.
+- Den flydende Sisi-ursektion er fjernet fra HTML.
+- De tre Sisi-ur-assets er fjernet.
+- Nedtællingen findes fortsat i sidemenuen.
+- Forsidekortet indeholder klokkeslæt, dato og vejrvisning.
+- Forecast-endpointet til vejrvisningen er indbygget.
 - CSS-klammer er balancerede.
-- Ingen dublerede statiske id'er i `index.html`.
+- Der blev ikke fundet en hardkodet Openrouteservice-nøgle.
 
-## Sidetest
+## Funktioner gennemgået i koden
 
-Følgende 11 app-ruter blev åbnet i en isoleret browsertest:
+- Automatisk personlig hilsen efter tidspunkt på dagen.
+- Fast brugerdefineret hilsen som valgfri erstatning.
+- Visning af kælenavnet Vibse.
+- Beregning af alder for Stener og Vibeke.
+- Sisi vises med fødselsår frem for en falsk præcis fødselsdag.
+- Aktiv markering i bundens hurtighandlingsdock.
+- Vejrikon baseret på WMO-vejrkode.
+- Reserveposition fra en gemt campingplads, hvis enhedens placering ikke kan hentes.
+- Migrering fra tidligere versioner til version 18.
 
-1. Overblik
-2. Besøgte campingpladser
-3. Oversigtskort
-4. Bedst bedømte
-5. Vil besøge
-6. Indstillinger
-7. Campingpladssøgning
-8. Tilføj campingplads
-9. Campingpladsens detaljevisning
-10. Cykelrutens detaljevisning
-11. Avanceret cykelruteeditor
+## Begrænsning
 
-Resultat:
+Det isolerede browsermiljø i denne session blokerede lokal sideindlæsning og kunne derfor ikke bruges til en ny automatisk skærmbilledetest. Jeg har derfor ikke påstået, at version 18 er browsertestet. Syntaks-, fil- og strukturkontrollerne er gennemført, men den endelige visuelle kontrol bør udføres ved at åbne `docs/index.html` gennem GitHub Pages eller en normal lokal webserver.
 
-- Korrekt sidetitel på alle 11 ruter.
-- Fejlbanner forblev skjult på alle ruter.
-- Ingen `pageerror`-hændelser.
-- Ingen fejlmeddelelser i browserens konsol.
-
-## Knapper og handlinger
-
-Alle seks hurtig-handlinger blev aktiveret og kontrolleret:
-
-- Find campingplads
-- Tilføj besøg
-- Tilføj ønske
-- Åbn stort kort
-- Ny cykelrute
-- Indstillinger
-
-Yderligere kontrolleret:
-
-- Sisi-widgeten vises på Overblik.
-- Sisi-widgeten skjules på Indstillinger, når “Kun på forsiden” er aktiv.
-- Lås/op­lås-knappen ændrer widgetens låsetilstand.
-- Klik på Sisi udløser jubelanimationen.
-- Animationsvalg og hastighed gemmes i version 16-dataformatet.
-- Duplikering af cykelrute opretter en ny kopi.
-- GPX-eksport udløser en `.gpx`-fil.
-- Linket til GitHub-guiden findes på Indstillinger.
-
-## Responsivitet
-
-Overblik, Indstillinger og Cykelruteeditor blev testet ved:
-
-- 1440 px bredde
-- 900 px bredde
-- 700 px bredde
-
-Resultat: **ingen vandret overflydning** i de ni kombinationer.
-
-## Sisi og nedtællingen
-
-Kontrolleret i koden og browsertesten:
-
-- Dage, timer, minutter og sekunder er separate dynamiske felter.
-- Tallene opdateres hvert sekund.
-- Uret og Sisi bruger separate billedlag.
-- Widgeten kan placeres i fire hjørner.
-- Størrelse, afstand, gennemsigtighed og animation kan justeres.
-- Automatisk mere ivrig animation tæt på måldatoen.
-- `prefers-reduced-motion` respekteres.
-
-## Cykelruter
-
-Kontrollerede udvidelser:
-
-- Ruteprofil
-- Rutetype
-- Underlag
-- Pausetid
-- Naturskøn prioritering
-- Forsøg på at undgå trafik
-- Højdepunkter og stop
-- Ekstra noter
-- GPX-eksport
-- Ruteduplikering
-- Eksisterende ORS-værktøjer til ruteberegning, snap, isokroner, POI og højdedata
-
-## Begrænsninger i testen
-
-Live kortfliser og rigtige Openrouteservice-svar blev ikke testet med brugerens personlige API-nøgle. Kort- og rutegrænsefladen blev browsertestet med en lokal MapLibre-erstatning, mens ORS-klientens JavaScript blev syntakskontrolleret. Den endelige live-kontrol udføres med knappen **Test Openrouteservice** efter udgivelse.
-
-Billederne i `PREVIEW` er layoutforhåndsvisninger. Kortfeltet bruger en test-erstatning og viser derfor ikke levende kortfliser i forhåndsvisningen.
+Live kortfliser, geoplacering, vejr og Openrouteservice afhænger desuden af netværk, browserens placeringstilladelse og brugerens egen ORS-nøgle.
