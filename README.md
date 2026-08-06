@@ -1,31 +1,23 @@
-# Vores Camping v22 – ren nybygning
+# Vores Camping v23
 
-Denne udgave er bygget fra bunden som en ny statisk webapp.
+Vores Camping v23 er en statisk, personlig campingapp klar til GitHub Pages fra `main`-branchens `/docs`-mappe.
 
-## Vigtigt
+## Nyt i v23
 
-- Ingen kode fra de tidligere appversioner er videreført.
-- Ingen automatisk migrering af gamle data.
-- Appen bruger sin egen nye localStorage-nøgle: `voresCamping_clean_v22`.
-- Gamle appdata bliver derfor ikke indlæst eller overtaget.
-- Kun de personlige billedaktiver og Openrouteservice-referencepakken er genbrugt.
+- Fem Ferie-Vagt-figurer er isoleret fra deres sorte baggrunde og indbygget som aktive designelementer.
+- Ferie Vagten har fået en ny kommandoside, kontroltavle, arbejdsgang og tydelig ferieknap.
+- Ferie Album har fået et mere personligt albumdesign med Ferie Vagten som hjælper.
+- Forsiden, venstremenuen, topmenuen, kort, bokse og formularer er finjusteret med tættere afstande og bedre visuel balance.
+- Den vedhæftede `openrouteservice-2.zip` er inkluderet som den nye referencepakke.
+- ORS-klienten understøtter nu autocomplete, almindelig og struktureret geokodning, reverse geokodning, GeoJSON-ruter, GPX, snap, isokroner, matrix, POI, højdedata og optimering.
+- Ferie Vagten kan hente lokale POI-forslag via Openrouteservice, når en API-nøgle er gemt.
 
-## Udgivelse på GitHub Pages
+## Udgivelse
 
-1. Pak ZIP-filen ud.
-2. Upload projektets indhold til repositoryets `main`-branch.
-3. Sørg for at mappen `docs/` ligger i roden.
-4. Gå til **Settings → Pages**.
-5. Vælg **Deploy from a branch**.
-6. Vælg **main** og **/docs**.
-7. Gem.
+1. Slet den gamle `/docs`-mappe i repositoryet.
+2. Upload hele `/docs`-mappen fra denne version.
+3. Behold `.nojekyll` i `/docs`.
+4. Vælg GitHub Pages: `main` og `/docs`.
+5. Åbn `status.html`, når GitHub Pages er færdig med at bygge.
 
-Der er ingen npm-installation, intet build-trin og ingen brugeroprettet GitHub Action.
-
-## Første opstart
-
-Appen starter tom for campingpladser, ruter, ferier og billeder. Personprofilerne for Stener, Vibeke/Vibse og Sisi er oprettet som personlige standarder, men kan redigeres under **Indstillinger → Elementer**.
-
-## Openrouteservice
-
-Indsæt API-nøglen under **Indstillinger → Ruteplanlægning**. Den separate `openrouteservice.zip` med referenceudvidelser ligger i projektets rod.
+Der kræves ingen npm-installation, build-proces eller GitHub Action.

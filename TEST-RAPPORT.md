@@ -1,17 +1,24 @@
-# Testrapport – Vores Camping v22
+# Testrapport – Vores Camping v23
 
-## Kontroller udført
+## Statiske kontroller
 
-- `docs/app.js`: JavaScript-syntaks godkendt med Node.
-- `docs/maps.js`: JavaScript-syntaks godkendt med Node.
-- `docs/ors.js`: JavaScript-syntaks godkendt med Node.
+- `app.js`: JavaScript-syntaks godkendt.
+- `maps.js`: JavaScript-syntaks godkendt.
+- `ors.js`: JavaScript-syntaks godkendt.
 - `manifest.webmanifest`: gyldig JSON.
-- Alle statiske lokale asset-referencer kontrolleret.
-- ZIP-struktur kontrolleret.
-- Ingen henvisninger til gamle localStorage-nøgler.
-- Ingen migrationskode fra ældre versioner.
-- Ingen hardkodet Openrouteservice API-nøgle.
+- Ferie-Vagt-billeder: PNG-filer med gennemsigtig baggrund.
+- Openrouteservice-referencepakke: inkluderet både i projektroden og under `/docs/resources`.
+- `.nojekyll`, `_config.yml`, `404.html` og `status.html`: inkluderet.
 
-## Browserbemærkning
+## Runtime-test
 
-Det isolerede Chromium-miljø i arbejdscontaineren kunne ikke afslutte en stabil headless rendering og hang på miljøets D-Bus/zygote-lag. Derfor er der ikke vedlagt en falsk visuel browsergodkendelse. Den endelige livekontrol af kort, geolocation, vejr og Openrouteservice bør foretages efter upload til GitHub Pages.
+Testet i isoleret Chromium med lokal lagerplads simuleret:
+
+- 11 hoved-, formular- og redigeringsruter.
+- Alle 24 indstillingsundersider.
+- Start og afslutning af Ferie Vagten.
+- Ingen registrerede JavaScript-fejl eller tomme visninger.
+
+## Eksterne funktioner
+
+Live vejr, geolocation, MapLibre-kort og Openrouteservice kræver internetadgang. ORS-funktioner kræver brugerens egen API-nøgle.
