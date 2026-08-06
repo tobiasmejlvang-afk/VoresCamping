@@ -1,8 +1,8 @@
 
 (() => {
-  const STORAGE_KEY = 'voresCampingState_v18';
-  const LEGACY_STORAGE_KEYS = ['voresCampingState_v17','voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
-  const CURRENT_VERSION = 18;
+  const STORAGE_KEY = 'voresCampingState_v19';
+  const LEGACY_STORAGE_KEYS = ['voresCampingState_v18','voresCampingState_v17','voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
+  const CURRENT_VERSION = 19;
   const PRESET_IMAGES = {
     logo: 'assets/logo-main-v18.png',
     logoLarge: 'assets/logo-main-v18.png',
@@ -89,7 +89,7 @@
 
   function loadSecrets(){
     try {
-      return JSON.parse(localStorage.getItem('voresCampingSecrets_v18') || localStorage.getItem('voresCampingSecrets_v17') || localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
+      return JSON.parse(localStorage.getItem('voresCampingSecrets_v19') || localStorage.getItem('voresCampingSecrets_v18') || localStorage.getItem('voresCampingSecrets_v17') || localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
     } catch (_) {
       return {};
     }
@@ -97,7 +97,7 @@
 
   function saveSecrets(){
     try {
-      localStorage.setItem('voresCampingSecrets_v18', JSON.stringify(secrets));
+      localStorage.setItem('voresCampingSecrets_v19', JSON.stringify(secrets));
     } catch (err) {
       console.warn('API-nøgler kunne ikke gemmes lokalt.', err);
     }
@@ -155,7 +155,23 @@
           pauseMin: 20,
           avoidTraffic: false,
           preferScenic: true,
+          defaultBikeType: 'Almindelig cykel',
+          defaultRangeStartMin: 180,
+          defaultRangeEndMin: 60,
         },
+        pageSections: {
+          overview: ['hero','family','pulse','stats','map','lists','routes'],
+          visited: ['filters','list'],
+          map: ['controls','map','tips'],
+          top: ['podium','categories'],
+          wishlist: ['filters','list'],
+          detail: ['main','map'],
+          route: ['main','map']
+        },
+        moodPlacements: {
+          overview: 'bottom', visited: 'off', map: 'off', top: 'side', wishlist: 'bottom', detail: 'side', route: 'bottom'
+        },
+        compactPages: true,
         sections: [
           'map','stats','latest','top','wishlist','routes'
         ],
@@ -183,6 +199,15 @@
         { id:'r2', siteId:'site1', name:'Kystvejen Rute', start:'Thyholm', end:'Kyststien', waypoints:[], difficulty:'Familievenlig', description:'Let tur med kig til vandet.', distanceKm:62, durationMin:210, googleMapsUrl:'', geojson:null },
         { id:'r3', siteId:'site2', name:'Stien Åres rundt', start:'Cochem', end:'Mosel', waypoints:[], difficulty:'Let', description:'Rundtur i området.', distanceKm:44, durationMin:150, googleMapsUrl:'', geojson:null },
         { id:'r4', siteId:'site4', name:'Klitstien Rute', start:'Århus', end:'Skovkanten', waypoints:[], difficulty:'Udfordrende', description:'Mere kuperet rute.', distanceKm:52, durationMin:190, googleMapsUrl:'', geojson:null },
+      ],
+      people: [
+        {id:'person_stener',name:'Stener Sørensen',kind:'person',role:'Appens campister',birthDate:'1952-11-11',ownerId:'',notes:'Far og fast campist',image:''},
+        {id:'person_vibse',name:'Vibeke Mejlvang',kind:'person',role:'Appens campister',birthDate:'1960-03-20',ownerId:'',notes:'Mor, kaldet Vibse',image:''},
+        {id:'pet_sisi',name:'Sisi',kind:'animal',role:'Kæledyr',birthDate:'2020',ownerId:'person_stener',notes:'Fast campinghund',image:''}
+      ],
+      bikes: [
+        {id:'bike_stener',name:'Steners cykel',type:'Elcykel',ownerId:'person_stener',notes:''},
+        {id:'bike_vibse',name:'Vibses cykel',type:'Elcykel',ownerId:'person_vibse',notes:''}
       ],
       ui: { lastRoute: 'overview', sortVisited:'latest', searchVisited:'', mapFilter:'all', wishFilter:'all' }
     };
@@ -218,6 +243,8 @@
     state.settings = { ...defaults.settings, ...(state.settings || {}) };
     state.settings.api = { ...defaults.settings.api, ...(state.settings.api || {}) };
     state.settings.routeDefaults = { ...defaults.settings.routeDefaults, ...(state.settings.routeDefaults || {}) };
+    state.settings.pageSections = { ...defaults.settings.pageSections, ...(state.settings.pageSections || {}) };
+    state.settings.moodPlacements = { ...defaults.settings.moodPlacements, ...(state.settings.moodPlacements || {}) };
     state.settings.family = { ...defaults.settings.family, ...(state.settings.family || {}) };
     state.settings.heroClock = { ...defaults.settings.heroClock, ...(state.settings.heroClock || {}) };
     if (!window.VCMaps.styles[state.settings.mapStyle]) state.settings.mapStyle = 'liberty';
@@ -231,6 +258,8 @@
     if (!Array.isArray(state.categories) || !state.categories.length) state.categories = structuredClone(DEFAULT_CATEGORIES);
     if (!Array.isArray(state.campsites)) state.campsites = Array.isArray(state.campgrounds) ? state.campgrounds : Array.isArray(state.places) ? state.places : [];
     if (!Array.isArray(state.routes)) state.routes = Array.isArray(state.cycleRoutes) ? state.cycleRoutes : [];
+    if (!Array.isArray(state.people)) state.people = structuredClone(defaults.people || []);
+    if (!Array.isArray(state.bikes)) state.bikes = structuredClone(defaults.bikes || []);
     state.campsites = state.campsites.map(site => makeSite(site));
     state.routes = state.routes.map(route => ({
       id: route.id || uid(), siteId: route.siteId || '', name: route.name || 'Ny cykelrute',
@@ -242,6 +271,10 @@
       surface: route.surface || state.settings.routeDefaults?.surface || 'Blandet', routeType: route.routeType || state.settings.routeDefaults?.routeType || 'Rundtur',
       pauseMin: Number(route.pauseMin ?? state.settings.routeDefaults?.pauseMin ?? 20), roundTrip: route.roundTrip ?? true, preferScenic: route.preferScenic ?? state.settings.routeDefaults?.preferScenic ?? true,
       avoidTraffic: route.avoidTraffic ?? state.settings.routeDefaults?.avoidTraffic ?? false, notes: route.notes || '', highlights: Array.isArray(route.highlights) ? route.highlights : [],
+      date: route.date || '', images: Array.isArray(route.images) ? route.images : [],
+      bikeIds: Array.isArray(route.bikeIds) ? route.bikeIds : [], participantIds: Array.isArray(route.participantIds) ? route.participantIds : [],
+      ebikeRanges: route.ebikeRanges && typeof route.ebikeRanges === 'object' ? route.ebikeRanges : {},
+      stopDetails: Array.isArray(route.stopDetails) ? route.stopDetails : [],
     }));
     state.ui = { ...defaults.ui, ...(state.ui || {}) };
     if (state.settings.api?.orsKey && !secrets.orsKey) secrets.orsKey = state.settings.api.orsKey;
@@ -395,12 +428,6 @@ function renderNav(){
         ${NAV_ITEMS.map(([key,label,icon]) => `<button class="nav-item ${current===key?'active':''}" data-nav="${key}"><span class="icon">${icon}</span><span>${label}</span></button>`).join('')}
       </div>
     </div>
-    <div class="sidebar-card sidebar-mini countdown-sidebar-card">
-      <div class="sidebar-section-title"><span>Næste campingtur</span><span>🏕️</span></div>
-      ${miniCountdown(next)}
-      <div class="soft-divider"></div>
-      <div class="next-trip-copy"><strong>${esc(state.settings.nextTripName)}</strong><span>${formatDate(state.settings.nextTripDate)}</span></div>
-    </div>
     <div class="sidebar-card sidebar-mini family-sidebar-card">
       <div class="sidebar-section-title"><span>Familien bag appen</span><span>♡</span></div>
       <div class="personal-lines">
@@ -471,6 +498,7 @@ function renderBottomNav(){
       else if (route.name === 'route') renderRouteDetail(view, route.id);
       else if (route.name === 'route-edit') renderAdvancedRouteEditor(view, route.id, route.params.siteId || '');
       else renderOverview(view);
+      try { applyV19Layout(route.name, view); } catch (layoutError) { console.error('Sidelayout kunne ikke opdateres', layoutError); }
       try { renderQuickDock(); } catch (dockError) { console.error('Hurtighandlinger kunne ikke opdateres', dockError); }
       window.requestAnimationFrame(updateLiveInfoDisplays);
     } catch (err) {
@@ -1793,4 +1821,264 @@ ${trkpts}
 
   function toLocalInputValue(iso){ if(!iso) return ''; const d=new Date(iso); if(Number.isNaN(+d)) return ''; const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
   function fromLocalInputValue(v){ return v ? new Date(v).toISOString() : ''; }
+
+  // ===== Version 19: udvidede ruter, personer, sektioner og samlet indstillingscenter =====
+  const V19_SETTING_TABS = [
+    ['overview-forside','Overblik & Forside','⌂'],
+    ['oprettelser','Oprettelser & Tilføjelser','＋'],
+    ['rute-kort','Ruteplanlægning & Kort','⌖'],
+    ['camping-oensker','Campingpladser & Ønsker','⛺'],
+    ['cykel-oplevelser','Cykelruter & Oplevelser','🚲'],
+    ['stjerner','Stjerner & Bedømmelse','★'],
+    ['sektioner','Sektioner & Elementer','▦'],
+    ['illustrationer','Illustrationer & Billeder','▧'],
+    ['udseende','Udseende & Farver','◐'],
+    ['system','System','⚙']
+  ];
+
+  function renderQuickDock(){
+    const dock = qs('#quick-dock');
+    if (!dock) return;
+    const next = countdownInfo();
+    const actions = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+    dock.innerHTML = `<div class="dock-countdown" title="Næste campingtur: ${esc(state.settings.nextTripName)}">
+      <span class="dock-countdown-title">Næste tur</span>
+      <div class="dock-countdown-cells">
+        <span><b data-countdown-days>${pad(next.days)}</b><small>d</small></span>
+        <span><b data-countdown-hours>${pad(next.hours)}</b><small>t</small></span>
+        <span><b data-countdown-minutes>${pad(next.minutes)}</b><small>m</small></span>
+        <span><b data-countdown-seconds>${pad(next.seconds)}</b><small>s</small></span>
+      </div>
+    </div>${actions.map(action => quickDockButton(action)).join('')}`;
+  }
+
+  function applyV19Layout(page, view){
+    if (!view) return;
+    const grid = view.querySelector(':scope > .view-grid') || view;
+    const classMap = [
+      ['dashboard-hero','hero'],['family-story-strip','family'],['overview-pulse','pulse'],['stats-row','stats'],
+      ['overview-map-card','map'],['dashboard-content-grid','lists'],['overview-bottom-grid','routes']
+    ];
+    [...grid.children].forEach(child => {
+      const hit = classMap.find(([cls]) => child.classList.contains(cls));
+      if (hit) child.dataset.sectionBlock = hit[1];
+    });
+    const order = state.settings.pageSections?.[page];
+    if (Array.isArray(order)) order.forEach(key => {
+      const node = grid.querySelector(`:scope > [data-section-block="${key}"]`);
+      if (node) grid.appendChild(node);
+    });
+    const detailGrid = grid.querySelector(':scope > .detail-grid');
+    if (detailGrid && (page === 'detail' || page === 'route')) {
+      const main = detailGrid.querySelector(':scope > .detail-main');
+      const rail = detailGrid.querySelector(':scope > .summary-rail');
+      if (main) main.dataset.sectionBlock = 'main';
+      if (rail) rail.dataset.sectionBlock = 'map';
+      const majorOrder = state.settings.pageSections?.[page] || ['main','map'];
+      majorOrder.forEach(key => {
+        const node = detailGrid.querySelector(`:scope > [data-section-block="${key}"]`);
+        if (node) detailGrid.appendChild(node);
+      });
+    }
+    grid.querySelectorAll(':scope > .mood-placement-v19').forEach(el => el.remove());
+    const placement = state.settings.moodPlacements?.[page] || 'off';
+    if (placement !== 'off') {
+      const mood = document.createElement('section');
+      mood.className = `mood-placement-v19 card mood-placement--${placement}`;
+      mood.style.backgroundImage = `linear-gradient(90deg,rgba(24,53,35,.12),rgba(24,53,35,.55)),url('${state.settings.cornerImage || PRESET_IMAGES.corner}')`;
+      mood.innerHTML = `<div><span class="eyebrow">Stemning</span><strong>${esc(state.settings.family?.motto || 'Vores ture, vores frihed, vores minder')}</strong></div>`;
+      placement === 'top' ? grid.prepend(mood) : grid.append(mood);
+    }
+  }
+
+  function renderSettings(view){
+    const tab = currentRoute().id || 'overview-forside';
+    const title = V19_SETTING_TABS.find(item => item[0] === tab)?.[1] || 'Overblik & Forside';
+    setHeader('Indstillinger', `${title} · samlet styring af appen`);
+    view.innerHTML = `<div class="settings-shell-v19">
+      <aside class="settings-tabs card">${V19_SETTING_TABS.map(([id,label,icon]) => `<button class="settings-tab ${tab===id?'active':''}" data-nav="settings/${id}"><span>${icon}</span><span>${label}</span></button>`).join('')}</aside>
+      <section class="settings-content-v19">${renderSettingsPanelV19(tab)}</section>
+    </div>`;
+    bindSettingsHandlers();
+  }
+
+  function renderSettingsPanelV19(tab){
+    const family = state.settings.family || {};
+    const heroClock = state.settings.heroClock || {};
+    const routeDefaults = state.settings.routeDefaults || {};
+    if (tab === 'overview-forside') return `<div class="settings-grid compact-settings">
+      <div class="form-section card"><h3>Appnavn og forsidetekster</h3>
+        <label><span class="field-label">Appnavn</span><input class="field" id="set-app-name" value="${esc(state.settings.appName)}"></label>
+        <label><span class="field-label">Undertitel</span><input class="field" id="set-tagline" value="${esc(state.settings.tagline)}"></label>
+        <label><span class="field-label">Fast hilsen</span><input class="field" id="set-greeting" value="${esc(state.settings.greeting)}" placeholder="Tom = automatisk hilsen"></label>
+        <label><span class="field-label">Forsidetekst</span><input class="field" id="set-intro" value="${esc(state.settings.intro)}"></label>
+        <button class="primary-btn" id="save-text-settings">Gem tekster</button></div>
+      <div class="form-section card"><h3>Næste campingtur</h3>
+        <label><span class="field-label">Navn på turen</span><input class="field" id="set-trip-name" value="${esc(state.settings.nextTripName)}"></label>
+        <label><span class="field-label">Afgang</span><input type="datetime-local" class="field" id="set-trip-date" value="${toLocalInputValue(state.settings.nextTripDate)}"></label>
+        <label class="check-row"><input type="checkbox" id="set-show-countdown" ${state.settings.showCountdown?'checked':''}> Vis nedtælling i den fastlåste bundmenu</label>
+        <button class="primary-btn" id="save-countdown-settings">Gem nedtælling</button></div>
+      <div class="form-section card"><h3>Familie og personligt præg</h3>
+        <label><span class="field-label">Campingmotto</span><input class="field" id="set-family-motto" value="${esc(family.motto || '')}"></label>
+        <div class="field-row two"><label><span class="field-label">Far</span><input class="field" id="set-father-name" value="${esc(family.fatherName || '')}"></label><label><span class="field-label">Fødselsdag</span><input type="date" class="field" id="set-father-birth" value="${esc(family.fatherBirth || '')}"></label></div>
+        <div class="field-row two"><label><span class="field-label">Mor</span><input class="field" id="set-mother-name" value="${esc(family.motherName || '')}"></label><label><span class="field-label">Kælenavn</span><input class="field" id="set-mother-nick" value="${esc(family.motherNick || '')}"></label></div>
+        <div class="field-row two"><label><span class="field-label">Mors fødselsdag</span><input type="date" class="field" id="set-mother-birth" value="${esc(family.motherBirth || '')}"></label><label><span class="field-label">Hund</span><input class="field" id="set-dog-name" value="${esc(family.dogName || '')}"></label></div>
+        <label><span class="field-label">Hundens år / fødselsdato</span><input class="field" id="set-dog-birth" value="${esc(family.dogBirth || '')}"></label>
+        <label class="check-row"><input type="checkbox" id="set-use-nickname" ${family.useNickname!==false?'checked':''}> Brug kælenavn i appen</label>
+        <label class="check-row"><input type="checkbox" id="set-show-birthdays" ${family.showBirthdays!==false?'checked':''}> Vis fødselsdato og alder</label>
+        <button class="primary-btn" id="save-family-settings">Gem familieoplysninger</button></div>
+      <div class="form-section card"><h3>Ur, dato og vejr</h3>
+        <label><span class="field-label">Titel</span><input class="field" id="set-clock-title" value="${esc(heroClock.title || '')}"></label>
+        <label><span class="field-label">Placeringstekst</span><input class="field" id="set-clock-subtitle" value="${esc(heroClock.subtitle || '')}"></label>
+        <label class="check-row"><input type="checkbox" id="set-clock-enabled" ${heroClock.enabled!==false?'checked':''}> Vis urkort på forsiden</label>
+        <label class="check-row"><input type="checkbox" id="set-clock-date-enabled" ${heroClock.showDate!==false?'checked':''}> Vis dato</label>
+        <label class="check-row"><input type="checkbox" id="set-clock-weather-enabled" ${heroClock.showWeather!==false?'checked':''}> Vis vejr</label>
+        <label class="check-row"><input type="checkbox" id="set-clock-location-enabled" ${heroClock.useCurrentLocation!==false?'checked':''}> Brug aktuel placering</label>
+        <button class="primary-btn" id="save-hero-clock-settings">Gem ur og vejr</button></div>
+    </div>`;
+
+    if (tab === 'oprettelser') return `<div class="settings-grid compact-settings">
+      <div class="form-section card full-span"><div class="section-head"><div><h3>Personer og dyr</h3><p class="subtle">Opret campister, familie, gæster, andre campister, kæledyr og kæledyrsejere.</p></div><span class="badge">${state.people.length} profiler</span></div>
+        <div class="entity-grid">${state.people.map(personCardV19).join('') || '<div class="empty">Ingen profiler endnu.</div>'}</div>
+        <div class="soft-divider"></div>
+        <div class="field-row three"><input class="field" id="new-person-name" placeholder="Navn"><select class="field" id="new-person-kind"><option value="person">Person</option><option value="animal">Dyr</option></select><select class="field" id="new-person-role">${roleOptionsV19()}</select></div>
+        <div class="field-row two"><input class="field" id="new-person-birth" placeholder="Fødselsdato eller år"><select class="field" id="new-person-owner"><option value="">Ingen ejer</option>${state.people.filter(p=>p.kind==='person').map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+        <button class="primary-btn" id="add-person-btn">Opret person eller dyr</button></div>
+      <div class="form-section card full-span"><div class="section-head"><div><h3>Cykler</h3><p class="subtle">Cykler kan senere vælges enkeltvis på hver rute.</p></div><span class="badge">${state.bikes.length} cykler</span></div>
+        <div class="entity-grid">${state.bikes.map(bikeCardV19).join('') || '<div class="empty">Ingen cykler endnu.</div>'}</div>
+        <div class="field-row three"><input class="field" id="new-bike-name" placeholder="Navn på cykel"><select class="field" id="new-bike-type"><option>Almindelig cykel</option><option>Elcykel</option><option>Landevejscykel</option><option>Mountainbike</option><option>Foldbar cykel</option></select><select class="field" id="new-bike-owner"><option value="">Ingen fast ejer</option>${state.people.filter(p=>p.kind==='person').map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+        <button class="primary-btn" id="add-bike-btn">Tilføj cykel</button></div>
+    </div>`;
+
+    if (tab === 'rute-kort') return `<div class="settings-grid compact-settings">
+      <div class="form-section card"><h3>Kort</h3>
+        <label><span class="field-label">Kortstil</span><select id="set-map-style" class="field">${Object.entries(window.VCMaps.styles).map(([k,v]) => `<option value="${k}" ${state.settings.mapStyle===k?'selected':''}>${esc(v.label)}</option>`).join('')}</select></label>
+        <label><span class="field-label">Startvisning</span><select id="set-map-scope" class="field"><option value="europe" ${state.settings.mapScope==='europe'?'selected':''}>Europa</option><option value="world" ${state.settings.mapScope==='world'?'selected':''}>Verden</option></select></label>
+        <button class="primary-btn" id="save-map-prefs">Gem kortvalg</button></div>
+      <div class="form-section card"><h3>Openrouteservice</h3>
+        <label><span class="field-label">ORS API-nøgle</span><input id="set-ors-key" class="field" value="${esc(secrets.orsKey||'')}"></label>
+        <label><span class="field-label">Google Maps API-nøgle (valgfri)</span><input id="set-google-key" class="field" value="${esc(secrets.googleMapsKey||'')}"></label>
+        <div class="action-row"><button class="primary-btn" id="save-api-settings">Gem nøgler</button><button class="ghost-btn" id="test-ors-btn">Test ORS</button></div>
+        <div class="panel">Udvidelser: autocomplete, struktureret søgning, reverse geokodning, directions, snap, isokroner, matrix, POI, elevation og optimering.</div></div>
+      <div class="form-section card full-span"><h3>Standarder for ruteplanlægning</h3>
+        <div class="field-row three"><label><span class="field-label">Profil</span><select id="set-route-profile" class="field">${routeProfileOptionsV19(routeDefaults.profile)}</select></label><label><span class="field-label">Rutetype</span><select id="set-route-type" class="field"><option ${routeDefaults.routeType==='Rundtur'?'selected':''}>Rundtur</option><option ${routeDefaults.routeType==='Tur/retur'?'selected':''}>Tur/retur</option><option ${routeDefaults.routeType==='Fra A til B'?'selected':''}>Fra A til B</option></select></label><label><span class="field-label">Underlag</span><select id="set-route-surface" class="field"><option ${routeDefaults.surface==='Asfalt'?'selected':''}>Asfalt</option><option ${routeDefaults.surface==='Grus'?'selected':''}>Grus</option><option ${routeDefaults.surface==='Blandet'?'selected':''}>Blandet</option><option ${routeDefaults.surface==='Skovsti'?'selected':''}>Skovsti</option></select></label></div>
+        <div class="field-row three"><label><span class="field-label">Pausestop</span><input type="number" class="field" id="set-route-pause" value="${routeDefaults.pauseMin||20}"></label><label><span class="field-label">Elcykel start-rækkevidde</span><select id="set-route-range-start" class="field">${rangeOptionsV19(routeDefaults.defaultRangeStartMin||180)}</select></label><label><span class="field-label">Elcykel slut-rækkevidde</span><select id="set-route-range-end" class="field">${rangeOptionsV19(routeDefaults.defaultRangeEndMin||60)}</select></label></div>
+        <label class="check-row"><input type="checkbox" id="set-route-scenic" ${routeDefaults.preferScenic?'checked':''}> Prioritér naturskøn rute</label><label class="check-row"><input type="checkbox" id="set-route-traffic" ${routeDefaults.avoidTraffic?'checked':''}> Undgå trafik når muligt</label>
+        <button class="primary-btn" id="save-route-defaults">Gem rutestandarder</button></div>
+    </div>`;
+
+    if (tab === 'camping-oensker') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Campingpladser & ønsker</h3><div class="stats-row">${statCard(state.campsites.filter(s=>s.status==='visited').length,'Besøgte','✓')}${statCard(state.campsites.filter(s=>s.status==='wish').length,'Ønsker','♥')}</div><div class="panel">Oprettelse, redigering, status, besøgsdatoer, ønskedatoer, tags og kontaktoplysninger styres fortsat fra campingpladsens formular. Her samles de globale valg.</div><label class="check-row"><input type="checkbox" id="set-compact-pages" ${state.settings.compactPages!==false?'checked':''}> Brug kompakte lister og formularer</label><button class="primary-btn" id="save-campsite-settings">Gem visning</button></div></div>`;
+
+    if (tab === 'cykel-oplevelser') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Cykelruter & oplevelser</h3><div class="panel">Ruter kan nu gemme dato, flere cykler, elcykel-rækkevidde i 5-minutters trin, deltagere, rutebilleder og billeder ved hvert stop.</div><div class="table-list">${state.routes.map(r=>`<div class="table-row"><span>${esc(r.name)}</span><span>${formatDate(r.date)||'Ingen dato'}</span><span>${(r.bikeIds||[]).length} cykler · ${(r.images||[]).length} billeder</span><button class="mini-btn" data-nav="route-edit/${r.id}">Redigér</button></div>`).join('')||'<div class="empty">Ingen ruter endnu.</div>'}</div><button class="primary-btn" data-nav="route-edit/new">Opret ny cykelrute</button></div></div>`;
+
+    if (tab === 'stjerner') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Stjerner & bedømmelse</h3><div id="category-list" class="table-list">${state.categories.map(cat => `<div class="table-row"><input class="field" value="${esc(cat.name)}" data-cat-name="${cat.id}"><input class="field" value="${esc(cat.icon)}" data-cat-icon="${cat.id}"><span></span><button class="mini-btn" data-remove-category="${cat.id}">Fjern</button></div>`).join('')}</div><div class="field-row two"><input id="new-cat-name" class="field" placeholder="Ny kategori"><input id="new-cat-icon" class="field" placeholder="Ikon"></div><div class="action-row"><button class="ghost-btn" id="add-category-btn">Tilføj kategori</button><button class="primary-btn" id="save-categories-btn">Gem kategorier</button></div></div></div>`;
+
+    if (tab === 'sektioner') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Sektioner & elementer</h3><p class="subtle">Flyt sektionerne op og ned. Overblikssiden understøtter den mest detaljerede rækkefølge.</p>${pageOrderEditorV19('overview','Overblik')}${pageOrderEditorV19('detail','Campingpladsens detalje')}${pageOrderEditorV19('route','Cykelrute')}</div><div class="form-section card full-span"><h3>Stemningsbilleder på siderne</h3><div class="mood-placement-grid">${['overview','visited','map','top','wishlist','detail','route'].map(page=>`<label><span class="field-label">${pageLabelV19(page)}</span><select class="field" data-mood-page="${page}">${['off','top','bottom','side'].map(value=>`<option value="${value}" ${state.settings.moodPlacements?.[page]===value?'selected':''}>${({off:'Skjult',top:'Øverst',bottom:'Nederst',side:'Side/hjørne'})[value]}</option>`).join('')}</select></label>`).join('')}</div><button class="primary-btn" id="save-section-settings">Gem sektioner og placeringer</button></div></div>`;
+
+    if (tab === 'illustrationer') return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Logo</h3><div class="image-setting-preview"><img src="${state.settings.logo}"></div><button class="ghost-btn" id="upload-logo-btn">Skift logo</button><input type="file" class="hidden-file" id="upload-logo" accept="image/*"></div><div class="form-section card"><h3>Cover</h3><div class="image-setting-preview"><img src="${state.settings.coverImage}"></div><button class="ghost-btn" id="upload-cover-btn">Skift cover</button><input type="file" class="hidden-file" id="upload-cover" accept="image/*"></div><div class="form-section card"><h3>Stemningsbillede</h3><div class="image-setting-preview"><img src="${state.settings.cornerImage}"></div><button class="ghost-btn" id="upload-corner-btn">Skift stemningsbillede</button><input type="file" class="hidden-file" id="upload-corner" accept="image/*"></div></div>`;
+
+    if (tab === 'udseende') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Udseende & farver</h3><label><span class="field-label">Størrelsesskalering</span><input type="range" min="0.88" max="1.18" step="0.01" value="${state.settings.fontScale}" id="set-scale"></label><label><span class="field-label">Farvepalette</span><select id="set-accent" class="field"><option value="#1f5f3c" ${state.settings.accent==='#1f5f3c'?'selected':''}>Skovgrøn</option><option value="#4e6b3a" ${state.settings.accent==='#4e6b3a'?'selected':''}>Olivengrøn</option><option value="#b6782d" ${state.settings.accent==='#b6782d'?'selected':''}>Dæmpet orange</option><option value="#7d6b3f" ${state.settings.accent==='#7d6b3f'?'selected':''}>Sandbrun</option></select></label><label class="check-row"><input type="checkbox" id="set-compact" ${state.settings.compact?'checked':''}> Kompakt forside</label><button class="primary-btn" id="save-style-settings">Gem udseende</button></div></div>`;
+
+    return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Sikkerhedskopi</h3><div class="action-row"><button class="primary-btn" id="export-btn">Eksportér backup</button><button class="ghost-btn" id="import-btn">Importér backup</button><input type="file" class="hidden-file" id="import-file" accept="application/json"></div><p class="subtle">API-nøgler udelades automatisk.</p></div><div class="form-section card"><h3>System</h3><div class="panel">Version 19 · Statisk GitHub Pages-app · data gemmes lokalt.</div><a class="ghost-btn" href="github-guide.html" target="_blank">GitHub-guide</a><button class="danger-btn" id="reset-data-btn">Nulstil campingdata</button></div></div>`;
+  }
+
+  function bindSettingsHandlers(){
+    const on=(id,event,fn)=>{const el=qs('#'+id); if(el) el.addEventListener(event,fn);};
+    on('save-text-settings','click',()=>{state.settings.appName=qs('#set-app-name').value.trim()||'Vores Camping';state.settings.tagline=qs('#set-tagline').value.trim();state.settings.greeting=qs('#set-greeting').value.trim();state.settings.intro=qs('#set-intro').value.trim();saveState();toast('Tekster gemt.');renderRoute();});
+    on('save-countdown-settings','click',()=>{state.settings.nextTripName=qs('#set-trip-name').value.trim();state.settings.nextTripDate=fromLocalInputValue(qs('#set-trip-date').value);state.settings.showCountdown=qs('#set-show-countdown').checked;saveState();toast('Nedtælling gemt.');renderRoute();});
+    on('save-family-settings','click',()=>{const f=state.settings.family;f.fatherName=qs('#set-father-name').value.trim();f.fatherBirth=qs('#set-father-birth').value;f.motherName=qs('#set-mother-name').value.trim();f.motherNick=qs('#set-mother-nick').value.trim();f.motherBirth=qs('#set-mother-birth').value;f.dogName=qs('#set-dog-name').value.trim();f.dogBirth=qs('#set-dog-birth').value.trim();f.motto=qs('#set-family-motto').value.trim();f.useNickname=qs('#set-use-nickname').checked;f.showBirthdays=qs('#set-show-birthdays').checked;saveState();toast('Familieoplysninger gemt.');renderRoute();});
+    on('save-hero-clock-settings','click',()=>{state.settings.heroClock={...state.settings.heroClock,title:qs('#set-clock-title').value.trim(),subtitle:qs('#set-clock-subtitle').value.trim(),enabled:qs('#set-clock-enabled').checked,showDate:qs('#set-clock-date-enabled').checked,showWeather:qs('#set-clock-weather-enabled').checked,useCurrentLocation:qs('#set-clock-location-enabled').checked};saveState();toast('Ur og vejr gemt.');renderRoute();});
+    on('add-person-btn','click',()=>{const name=qs('#new-person-name').value.trim();if(!name)return toast('Skriv et navn.');state.people.push({id:uid(),name,kind:qs('#new-person-kind').value,role:qs('#new-person-role').value,birthDate:qs('#new-person-birth').value.trim(),ownerId:qs('#new-person-owner').value,notes:'',image:''});saveState();renderRoute();});
+    qsa('[data-remove-person]').forEach(btn=>btn.onclick=async()=>{if(await confirmAction('Fjern profil','Profilen fjernes fra appen.')){state.people=state.people.filter(p=>p.id!==btn.dataset.removePerson);state.bikes.forEach(b=>{if(b.ownerId===btn.dataset.removePerson)b.ownerId='';});saveState();renderRoute();}});
+    qsa('[data-person-image]').forEach(input=>input.onchange=async e=>{const person=state.people.find(p=>p.id===input.dataset.personImage);const file=e.target.files[0];if(person&&file){person.image=await compressImage(file,900,.8);saveState();renderRoute();}});
+    on('add-bike-btn','click',()=>{const name=qs('#new-bike-name').value.trim();if(!name)return toast('Skriv et navn til cyklen.');state.bikes.push({id:uid(),name,type:qs('#new-bike-type').value,ownerId:qs('#new-bike-owner').value,notes:''});saveState();renderRoute();});
+    qsa('[data-remove-bike]').forEach(btn=>btn.onclick=async()=>{if(await confirmAction('Fjern cykel','Cyklen fjernes fra listen.')){state.bikes=state.bikes.filter(b=>b.id!==btn.dataset.removeBike);state.routes.forEach(r=>r.bikeIds=(r.bikeIds||[]).filter(id=>id!==btn.dataset.removeBike));saveState();renderRoute();}});
+    on('save-map-prefs','click',()=>{state.settings.mapStyle=qs('#set-map-style').value;state.settings.mapScope=qs('#set-map-scope').value;saveState();toast('Kortvalg gemt.');});
+    on('save-api-settings','click',()=>{secrets.orsKey=qs('#set-ors-key').value.trim();secrets.googleMapsKey=qs('#set-google-key').value.trim();saveSecrets();toast('API-nøgler gemt lokalt.');});
+    on('test-ors-btn','click',async()=>{secrets.orsKey=qs('#set-ors-key').value.trim();saveSecrets();try{await ors.testConnection();toast('Openrouteservice virker.');}catch(err){handleOrsError(err);}});
+    on('save-route-defaults','click',()=>{const r=state.settings.routeDefaults;r.profile=qs('#set-route-profile').value;r.routeType=qs('#set-route-type').value;r.surface=qs('#set-route-surface').value;r.pauseMin=Number(qs('#set-route-pause').value||0);r.defaultRangeStartMin=Number(qs('#set-route-range-start').value||180);r.defaultRangeEndMin=Number(qs('#set-route-range-end').value||60);r.preferScenic=qs('#set-route-scenic').checked;r.avoidTraffic=qs('#set-route-traffic').checked;saveState();toast('Rutestandarder gemt.');});
+    on('save-campsite-settings','click',()=>{state.settings.compactPages=qs('#set-compact-pages').checked;saveState();toast('Campingpladsvisning gemt.');});
+    on('save-categories-btn','click',()=>{state.categories=state.categories.map(cat=>({...cat,name:qs(`[data-cat-name="${cat.id}"]`)?.value.trim()||cat.name,icon:qs(`[data-cat-icon="${cat.id}"]`)?.value.trim()||cat.icon}));saveState();toast('Kategorier gemt.');renderRoute();});
+    on('add-category-btn','click',()=>{const name=qs('#new-cat-name').value.trim();if(!name)return;state.categories.push({id:uid(),name,icon:qs('#new-cat-icon').value.trim()||'⭐'});saveState();renderRoute();});
+    qsa('[data-remove-category]').forEach(btn=>btn.onclick=()=>{state.categories=state.categories.filter(c=>c.id!==btn.dataset.removeCategory);saveState();renderRoute();});
+    qsa('[data-order-up],[data-order-down]').forEach(btn=>btn.onclick=()=>{const page=btn.dataset.page,key=btn.dataset.key,arr=state.settings.pageSections[page]||[];const i=arr.indexOf(key);const dir=btn.hasAttribute('data-order-up')?-1:1;const j=i+dir;if(i>=0&&j>=0&&j<arr.length){[arr[i],arr[j]]=[arr[j],arr[i]];saveState(false);renderRoute();}});
+    on('save-section-settings','click',()=>{qsa('[data-mood-page]').forEach(sel=>state.settings.moodPlacements[sel.dataset.moodPage]=sel.value);saveState();toast('Sektioner og stemningsbilleder gemt.');});
+    on('save-style-settings','click',()=>{state.settings.fontScale=Number(qs('#set-scale').value);state.settings.accent=qs('#set-accent').value;state.settings.compact=qs('#set-compact').checked;saveState();toast('Udseende gemt.');renderRoute();});
+    if(qs('#upload-logo-btn'))wireImageUpload('#upload-logo-btn','#upload-logo',img=>{state.settings.logo=img;saveState();renderRoute();});
+    if(qs('#upload-cover-btn'))wireImageUpload('#upload-cover-btn','#upload-cover',img=>{state.settings.coverImage=img;saveState();renderRoute();});
+    if(qs('#upload-corner-btn'))wireImageUpload('#upload-corner-btn','#upload-corner',img=>{state.settings.cornerImage=img;saveState();renderRoute();});
+    on('export-btn','click',exportBackup);on('import-btn','click',()=>qs('#import-file').click());on('import-file','change',importBackup);
+    on('reset-data-btn','click',async()=>{if(await confirmAction('Nulstil data','Alle campingdata slettes.')){state=seedState();migrateState();renderRoute();}});
+  }
+
+  function roleOptionsV19(selected=''){return ['Appens campister','Familie','Gæst/besøgende','Campist på campingplads','Kæledyr','Kæledyrs ejer'].map(role=>`<option ${selected===role?'selected':''}>${role}</option>`).join('');}
+  function entityImageV19(entity){return entity.image?`<img src="${entity.image}" alt="">`:`<span>${entity.kind==='animal'?'🐾':'👤'}</span>`;}
+  function personCardV19(person){const owner=state.people.find(p=>p.id===person.ownerId);return `<article class="entity-card"><div class="entity-avatar">${entityImageV19(person)}</div><div><strong>${esc(person.name)}</strong><span>${esc(person.role)}${owner?` · Ejer: ${esc(owner.name)}`:''}</span><small>${esc(person.birthDate||'Ingen dato')}</small></div><label class="mini-btn">Billede<input type="file" hidden accept="image/*" data-person-image="${person.id}"></label><button class="mini-btn" data-remove-person="${person.id}">Fjern</button></article>`;}
+  function bikeCardV19(bike){const owner=state.people.find(p=>p.id===bike.ownerId);return `<article class="entity-card"><div class="entity-avatar">${bike.type==='Elcykel'?'⚡':'🚲'}</div><div><strong>${esc(bike.name)}</strong><span>${esc(bike.type)}</span><small>${owner?`Ejer: ${esc(owner.name)}`:'Ingen fast ejer'}</small></div><button class="mini-btn" data-remove-bike="${bike.id}">Fjern</button></article>`;}
+  function routeProfileOptionsV19(selected){const items=[['cycling-regular','Almindelig cykel'],['cycling-electric','Elcykel'],['cycling-road','Landevej'],['cycling-mountain','Mountainbike'],['foot-walking','Gang / gåtur']];return items.map(([v,l])=>`<option value="${v}" ${selected===v?'selected':''}>${l}</option>`).join('');}
+  function rangeOptionsV19(selected=0){let html='';for(let i=0;i<=360;i+=5)html+=`<option value="${i}" ${Number(selected)===i?'selected':''}>${i} min</option>`;return html;}
+  function pageLabelV19(page){return ({overview:'Overblik',visited:'Besøgte',map:'Kort',top:'Bedst bedømte',wishlist:'Ønskeliste',detail:'Campingpladsdetalje',route:'Cykelrute'})[page]||page;}
+  function pageOrderEditorV19(page,label){const arr=state.settings.pageSections?.[page]||[];return `<div class="order-editor"><h4>${label}</h4>${arr.map((key,i)=>`<div class="order-row"><span>${i+1}</span><strong>${sectionLabelV19(key)}</strong><div><button class="mini-btn" data-order-up data-page="${page}" data-key="${key}">↑</button><button class="mini-btn" data-order-down data-page="${page}" data-key="${key}">↓</button></div></div>`).join('')||'<div class="subtle">Standardrækkefølge bruges.</div>'}</div>`;}
+  function sectionLabelV19(key){return ({hero:'Cover & ur',family:'Familie',pulse:'Campingpuls',stats:'Statistik',map:'Kort',lists:'Lister',routes:'Cykelruter',main:'Hovedindhold',map:'Kort / sidepanel',summary:'Ruteoversigt',media:'Billeder',stops:'Stop',info:'Information',ratings:'Bedømmelser',gallery:'Galleri',attractions:'Seværdigheder'})[key]||key;}
+
+  function ensureRouteV19(route){
+    if (!route) return null;
+    route.date=route.date||'';route.images=Array.isArray(route.images)?route.images:[];route.bikeIds=Array.isArray(route.bikeIds)?route.bikeIds:[];route.participantIds=Array.isArray(route.participantIds)?route.participantIds:[];route.ebikeRanges=route.ebikeRanges&&typeof route.ebikeRanges==='object'?route.ebikeRanges:{};route.stopDetails=Array.isArray(route.stopDetails)?route.stopDetails:[];
+    return route;
+  }
+  function syncStopDetailsV19(route,points){const old=route.stopDetails||[];route.stopDetails=(points||[]).map((p,i)=>({...old[i],id:old[i]?.id||uid(),pointIndex:i,label:old[i]?.label||p.label||(i===0?'Start':i===points.length-1?'Mål':`Stop ${i}`),note:old[i]?.note||'',images:Array.isArray(old[i]?.images)?old[i].images:[]}));return route.stopDetails;}
+  function renderRouteMediaV19(route){return `<div class="route-media-grid">${(route.images||[]).map((src,i)=>`<figure><img src="${src}" alt="Rutebillede"><button type="button" data-remove-route-image="${i}">×</button></figure>`).join('')||'<div class="empty">Ingen rutebilleder endnu.</div>'}</div>`;}
+  function renderStopEditorsV19(route){return (route.stopDetails||[]).map((stop,i)=>`<article class="stop-editor-card"><div class="section-head"><strong>${i===0?'Start':i===route.stopDetails.length-1?'Mål':`Stop ${i}`}</strong><span class="badge">${i+1}</span></div><input class="field" data-stop-label="${i}" value="${esc(stop.label||'')}"><textarea data-stop-note="${i}" placeholder="Noter til stoppet">${esc(stop.note||'')}</textarea><div class="stop-images">${(stop.images||[]).map((src,j)=>`<figure><img src="${src}"><button type="button" data-remove-stop-image="${i}:${j}">×</button></figure>`).join('')}</div><label class="ghost-btn small-upload">Tilføj billede<input hidden type="file" accept="image/*" data-stop-image="${i}"></label></article>`).join('');}
+  function bikeSelectionV19(route){return state.bikes.map(bike=>{const checked=route.bikeIds.includes(bike.id);const range=route.ebikeRanges[bike.id]||{startMin:state.settings.routeDefaults.defaultRangeStartMin||180,endMin:state.settings.routeDefaults.defaultRangeEndMin||60};return `<article class="bike-select-card ${checked?'selected':''}"><label class="check-row"><input type="checkbox" data-route-bike="${bike.id}" ${checked?'checked':''}><strong>${bike.type==='Elcykel'?'⚡':'🚲'} ${esc(bike.name)}</strong><span>${esc(bike.type)}</span></label>${bike.type==='Elcykel'?`<div class="field-row two"><label><span class="field-label">Rækkevidde ved start</span><select class="field" data-bike-start="${bike.id}">${rangeOptionsV19(range.startMin)}</select></label><label><span class="field-label">Rækkevidde ved slut</span><select class="field" data-bike-end="${bike.id}">${rangeOptionsV19(range.endMin)}</select></label></div>`:''}</article>`;}).join('')||'<div class="empty">Opret cykler under Indstillinger → Oprettelser & Tilføjelser.</div>';}
+
+  function renderAdvancedRouteEditor(view,id,siteIdParam=''){
+    const isNew=id==='new'||!getRoute(id);const original=isNew?null:getRoute(id);const route=ensureRouteV19(original?structuredClone(original):{id:uid(),siteId:siteIdParam||state.campsites[0]?.id||'',name:'Ny cykelrute',date:new Date().toISOString().slice(0,10),start:'',end:'',waypoints:[],points:[],profile:state.settings.routeDefaults.profile||'cycling-regular',difficulty:'Let',description:'',distanceKm:'',durationMin:'',ascentM:'',descentM:'',googleMapsUrl:'',geojson:null,isochrone:null,surface:state.settings.routeDefaults.surface||'Blandet',routeType:state.settings.routeDefaults.routeType||'Rundtur',pauseMin:state.settings.routeDefaults.pauseMin||20,roundTrip:true,preferScenic:true,avoidTraffic:false,notes:'',highlights:[],images:[],bikeIds:[],participantIds:[],ebikeRanges:{},stopDetails:[]});
+    const site=getSite(route.siteId);if(!route.points.length&&site?.coords?.lat){route.points=[{lng:Number(site.coords.lng),lat:Number(site.coords.lat),label:'Start'},{lng:Number(site.coords.lng)+.06,lat:Number(site.coords.lat)+.025,label:'Mål'}];}syncStopDetailsV19(route,route.points);
+    setHeader(isNew?'Opret cykelrute':`Redigér ${route.name}`,'Dato, cykler, elcykel-rækkevidde, stopbilleder og Openrouteservice');
+    view.innerHTML=`<div class="route-editor-layout route-editor-v19"><section class="route-editor-panel card"><div class="section-head"><div><span class="eyebrow dark">Ruteværksted v19</span><h2>${esc(route.name)}</h2></div><span class="route-status" id="route-status">Klar</span></div>
+      <div class="route-form-tabs"><a href="#route-basic">Grunddata</a><a href="#route-bikes">Cykler</a><a href="#route-media">Billeder</a><a href="#route-stops">Stop</a></div>
+      <div class="stack" id="route-basic"><div class="field-row three"><label><span class="field-label">Dato</span><input type="date" id="route-date" class="field" value="${esc(route.date)}"></label><label><span class="field-label">Rutenavn</span><input id="route-name" class="field" value="${esc(route.name)}"></label><label><span class="field-label">Campingplads</span><select id="route-site" class="field"><option value="">Ingen</option>${state.campsites.map(s=>`<option value="${s.id}" ${route.siteId===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label></div>
+      <div class="field-row three"><label><span class="field-label">Profil</span><select id="route-profile" class="field">${routeProfileOptionsV19(route.profile)}</select></label><label><span class="field-label">Sværhedsgrad</span><select id="route-difficulty" class="field"><option ${route.difficulty==='Let'?'selected':''}>Let</option><option ${route.difficulty==='Familievenlig'?'selected':''}>Familievenlig</option><option ${route.difficulty==='Middel'?'selected':''}>Middel</option><option ${route.difficulty==='Udfordrende'?'selected':''}>Udfordrende</option><option ${route.difficulty==='Naturskøn'?'selected':''}>Naturskøn</option></select></label><label><span class="field-label">Rutetype</span><select id="route-type" class="field"><option ${route.routeType==='Rundtur'?'selected':''}>Rundtur</option><option ${route.routeType==='Tur/retur'?'selected':''}>Tur/retur</option><option ${route.routeType==='Fra A til B'?'selected':''}>Fra A til B</option></select></label></div>
+      <div class="field-row two"><input id="route-start" class="field" value="${esc(route.start)}" placeholder="Startnavn"><input id="route-end" class="field" value="${esc(route.end)}" placeholder="Slutnavn"></div><textarea id="route-description" placeholder="Beskrivelse">${esc(route.description)}</textarea><textarea id="route-notes" placeholder="Private rutenoter">${esc(route.notes)}</textarea><input id="route-google" class="field" value="${esc(route.googleMapsUrl)}" placeholder="Delt Google Maps-link"></div>
+      <section id="route-bikes" class="route-subsection"><div class="section-head"><h3>Cykler og deltagere</h3><button class="text-btn" data-nav="settings/oprettelser">Administrér under Indstillinger</button></div><div class="bike-selection-grid">${bikeSelectionV19(route)}</div><div class="participant-grid">${state.people.map(p=>`<label class="chip-check"><input type="checkbox" data-route-person="${p.id}" ${route.participantIds.includes(p.id)?'checked':''}>${p.kind==='animal'?'🐾':'👤'} ${esc(p.name)}</label>`).join('')}</div></section>
+      <section id="route-media" class="route-subsection"><div class="section-head"><h3>Rutebilleder</h3><label class="ghost-btn">Tilføj billeder<input hidden multiple type="file" accept="image/*" id="route-images-input"></label></div><div id="route-media-wrap">${renderRouteMediaV19(route)}</div></section>
+      <section id="route-stops" class="route-subsection"><div class="section-head"><h3>Stop, noter og billeder</h3><span class="badge" id="stop-count">${route.stopDetails.length}</span></div><div id="route-stops-wrap" class="stop-editor-grid">${renderStopEditorsV19(route)}</div></section>
+      <div class="route-editor-actions"><button class="primary-btn" id="calculate-route-btn">Beregn rute</button><button class="ghost-btn" id="snap-route-btn">Fastgør til vej</button><button class="ghost-btn" id="route-range-btn">Vis elcykel-rækkevidde</button><button class="ghost-btn" id="route-matrix-btn">Beregn stopmatrix</button><button class="ghost-btn" id="route-optimize-btn">Optimér stoprækkefølge</button><button class="ghost-btn" id="route-current-btn">Min placering</button><button class="ghost-btn" id="route-undo-btn">Fjern sidste</button><button class="danger-btn subtle-danger" id="route-clear-btn">Ryd</button></div><div id="route-tool-results" class="stack"></div>
+      <div class="route-save-bar"><button class="primary-btn warm" id="save-route-btn">Gem rute</button><button class="ghost-btn" id="route-export-gpx-btn">Eksportér GPX</button><button class="ghost-btn" data-nav="${original?'route/'+original.id:'overview'}">Annuller</button>${original?'<button class="danger-btn" id="delete-route-btn">Slet</button>':''}</div></section>
+      <section class="route-map-panel card"><div class="route-map-toolbar"><strong>Interaktivt rutekort</strong><div class="route-live-metrics"><span><strong id="live-distance">${route.distanceKm||'—'}</strong> km</span><span><strong id="live-duration">${route.durationMin||'—'}</strong> min</span><span><strong id="live-points">${route.points.length}</strong> punkter</span></div></div><div id="route-editor-map" class="map-holder route-editor-map"></div></section></div>`;
+    const setStatus=(t,k='')=>{const el=qs('#route-status');el.textContent=t;el.dataset.kind=k;};
+    const refreshStops=()=>{collectStopFieldsV19(route);syncStopDetailsV19(route,activeRouteEditor.getPoints());qs('#route-stops-wrap').innerHTML=renderStopEditorsV19(route);qs('#stop-count').textContent=route.stopDetails.length;bindRouteMediaHandlersV19(route,refreshStops);};
+    activeRouteEditor=window.VCMaps.createRouteEditor('route-editor-map',{points:route.points,routeGeoJSON:route.geojson,styleKey:state.settings.mapStyle,clickToAdd:true,onChange:points=>{route.points=points;route.geojson=null;qs('#live-points').textContent=points.length;setStatus('Ændret','changed');refreshStops();}});
+    bindRouteMediaHandlersV19(route,refreshStops);
+    qs('#route-current-btn').onclick=async()=>{const loc=await getCurrentPosition();if(loc)activeRouteEditor.addPoint({...loc,label:'Min placering'});};qs('#route-undo-btn').onclick=()=>activeRouteEditor.removeLast();qs('#route-clear-btn').onclick=()=>activeRouteEditor.clear();
+    qs('#calculate-route-btn').onclick=async()=>{const points=activeRouteEditor.getPoints();if(points.length<2)return toast('Tilføj start og mål.');setBusy(qs('#calculate-route-btn'),true,'Beregner…');try{const profile=qs('#route-profile').value;const result=await ors.directions(points.map(p=>[+p.lng,+p.lat]),profile,{extraBody:{preference:route.preferScenic?'recommended':'fastest'}});const summary=result?.features?.[0]?.properties?.summary||{};route.geojson=result;route.distanceKm=(Number(summary.distance||0)/1000).toFixed(1);route.durationMin=Math.round(Number(summary.duration||0)/60);route.ascentM=Math.round(Number(result?.features?.[0]?.properties?.ascent||0));activeRouteEditor.setRouteGeoJSON(result);qs('#live-distance').textContent=route.distanceKm;qs('#live-duration').textContent=route.durationMin;setStatus('Beregnet','ok');}catch(err){handleOrsError(err);setStatus('Fejl','error');}finally{setBusy(qs('#calculate-route-btn'),false,'Beregn rute');}};
+    qs('#snap-route-btn').onclick=async()=>{const pts=activeRouteEditor.getPoints();if(!pts.length)return;try{const res=await ors.snap(pts.map(p=>[+p.lng,+p.lat]),qs('#route-profile').value,500);const snapped=(res.features||[]).map((f,i)=>({lng:+f.geometry.coordinates[0],lat:+f.geometry.coordinates[1],label:pts[i]?.label}));if(snapped.length)activeRouteEditor.setPoints(snapped);}catch(err){handleOrsError(err);}};
+    qs('#route-range-btn').onclick=async()=>{const pts=activeRouteEditor.getPoints();if(pts.length<2)return toast('Ruten mangler start og mål.');collectBikeRangesV19(route);const ebikes=state.bikes.filter(b=>route.bikeIds.includes(b.id)&&b.type==='Elcykel');if(!ebikes.length)return toast('Vælg mindst én elcykel.');const start=Math.min(...ebikes.map(b=>route.ebikeRanges[b.id]?.startMin||0));const end=Math.min(...ebikes.map(b=>route.ebikeRanges[b.id]?.endMin||0));try{const profile='cycling-electric';const a=await ors.isochrones([[pts[0].lng,pts[0].lat]],profile,[start*60]);const b=await ors.isochrones([[pts.at(-1).lng,pts.at(-1).lat]],profile,[end*60],{locationType:'destination'});window.VCMaps.upsertGeoJSONFill(activeRouteEditor.map,'ebike-start-range',a);window.VCMaps.upsertGeoJSONFill(activeRouteEditor.map,'ebike-end-range',b);toast(`Fælles sikker rækkevidde: start ${start} min · slut ${end} min.`);}catch(err){handleOrsError(err);}};
+    qs('#route-matrix-btn').onclick=async()=>{const pts=activeRouteEditor.getPoints();if(pts.length<2)return;try{const matrix=await ors.matrix(pts.map(p=>[+p.lng,+p.lat]),qs('#route-profile').value);qs('#route-tool-results').innerHTML=`<div class="panel"><h3>Stopmatrix</h3><p>${pts.length} punkter · ${matrix.durations?.length||0} rækker beregnet.</p></div>`;}catch(err){handleOrsError(err);}};
+    qs('#route-optimize-btn').onclick=async()=>{const pts=activeRouteEditor.getPoints();if(pts.length<4)return toast('Der skal være mindst to mellempunkter.');try{const matrix=await ors.matrix(pts.map(p=>[+p.lng,+p.lat]),qs('#route-profile').value);const order=greedyStopOrderV19(matrix.durations||[],pts.length);activeRouteEditor.setPoints(order.map(i=>pts[i]));toast('Mellempunkterne er sorteret efter korteste næste strækning.');}catch(err){handleOrsError(err);}};
+    qs('#save-route-btn').onclick=()=>{route.date=qs('#route-date').value;route.siteId=qs('#route-site').value;route.name=qs('#route-name').value.trim()||'Ny cykelrute';route.profile=qs('#route-profile').value;route.difficulty=qs('#route-difficulty').value;route.routeType=qs('#route-type').value;route.start=qs('#route-start').value.trim();route.end=qs('#route-end').value.trim();route.description=qs('#route-description').value.trim();route.notes=qs('#route-notes').value.trim();route.googleMapsUrl=qs('#route-google').value.trim();route.points=activeRouteEditor.getPoints();route.participantIds=qsa('[data-route-person]:checked').map(el=>el.dataset.routePerson);route.bikeIds=qsa('[data-route-bike]:checked').map(el=>el.dataset.routeBike);collectBikeRangesV19(route);collectStopFieldsV19(route);state.campsites.forEach(c=>c.routeIds=(c.routeIds||[]).filter(rid=>rid!==route.id));if(original)Object.assign(original,route);else state.routes.push(route);if(route.siteId){const s=getSite(route.siteId);if(s&&!s.routeIds.includes(route.id))s.routeIds.push(route.id);}saveState();toast('Ruten er gemt.');navigate('route/'+route.id);};
+    qs('#route-export-gpx-btn').onclick=()=>{route.points=activeRouteEditor.getPoints();downloadRouteGpx(route);};if(original)qs('#delete-route-btn').onclick=async()=>{if(await confirmAction('Slet rute','Ruten fjernes permanent.')){state.routes=state.routes.filter(r=>r.id!==route.id);saveState();navigate('overview');}};
+  }
+
+  function bindRouteMediaHandlersV19(route,refresh){
+    const input=qs('#route-images-input');if(input&&!input.dataset.bound){input.dataset.bound='1';input.onchange=async e=>{for(const file of e.target.files)route.images.push(await compressImage(file,1400,.8));qs('#route-media-wrap').innerHTML=renderRouteMediaV19(route);bindRouteMediaHandlersV19(route,refresh);};}
+    qsa('[data-remove-route-image]').forEach(btn=>btn.onclick=()=>{route.images.splice(Number(btn.dataset.removeRouteImage),1);qs('#route-media-wrap').innerHTML=renderRouteMediaV19(route);bindRouteMediaHandlersV19(route,refresh);});
+    qsa('[data-stop-image]').forEach(input=>input.onchange=async e=>{const stop=route.stopDetails[Number(input.dataset.stopImage)];for(const file of e.target.files)stop.images.push(await compressImage(file,1100,.78));refresh();});
+    qsa('[data-remove-stop-image]').forEach(btn=>btn.onclick=()=>{const [i,j]=btn.dataset.removeStopImage.split(':').map(Number);route.stopDetails[i].images.splice(j,1);refresh();});
+  }
+  function collectBikeRangesV19(route){route.ebikeRanges={...route.ebikeRanges};qsa('[data-route-bike]:checked').forEach(el=>{const id=el.dataset.routeBike;const bike=state.bikes.find(b=>b.id===id);if(bike?.type==='Elcykel')route.ebikeRanges[id]={startMin:Number(qs(`[data-bike-start="${id}"]`)?.value||0),endMin:Number(qs(`[data-bike-end="${id}"]`)?.value||0)};});}
+  function collectStopFieldsV19(route){qsa('[data-stop-label]').forEach(el=>route.stopDetails[Number(el.dataset.stopLabel)].label=el.value.trim());qsa('[data-stop-note]').forEach(el=>route.stopDetails[Number(el.dataset.stopNote)].note=el.value.trim());}
+  function greedyStopOrderV19(matrix,n){const remaining=[...Array(n).keys()].slice(1,-1),order=[0];let current=0;while(remaining.length){remaining.sort((a,b)=>(matrix[current]?.[a]??Infinity)-(matrix[current]?.[b]??Infinity));current=remaining.shift();order.push(current);}order.push(n-1);return order;}
+
+  function renderRouteDetail(view,id){
+    const route=ensureRouteV19(getRoute(id));if(!route)return navigate('overview');const site=getSite(route.siteId);const bikes=state.bikes.filter(b=>route.bikeIds.includes(b.id));const participants=state.people.filter(p=>route.participantIds.includes(p.id));setHeader(route.name,'Cykelrute med dato, cykler, billeder og stop');
+    view.innerHTML=`<div class="detail-grid route-detail-page"><section class="detail-main"><div class="route-banner card"><div><span class="eyebrow">Cykelrute · ${formatDate(route.date)||'Dato ikke valgt'}</span><h2>${esc(route.name)}</h2><p>${esc(site?.name||'Fritstående rute')} · ${esc(route.start||'Start')} → ${esc(route.end||'Mål')}</p></div><div class="action-row"><button class="primary-btn" data-nav="route-edit/${route.id}">Redigér</button><button class="glass-btn" id="share-route-btn">Del</button></div></div>
+      <div class="route-metrics"><div class="metric-card"><span>Dato</span><strong>${formatDate(route.date)||'—'}</strong></div><div class="metric-card"><span>Afstand</span><strong>${route.distanceKm||'—'} km</strong></div><div class="metric-card"><span>Tid</span><strong>${route.durationMin||'—'} min</strong></div><div class="metric-card"><span>Cykler</span><strong>${bikes.length}</strong></div><div class="metric-card"><span>Deltagere</span><strong>${participants.length}</strong></div></div>
+      <section class="card-section card"><h3>Cykler og elcykel-rækkevidde</h3><div class="table-list">${bikes.map(b=>{const r=route.ebikeRanges[b.id];return `<div class="table-row"><span>${b.type==='Elcykel'?'⚡':'🚲'} ${esc(b.name)}</span><span>${esc(b.type)}</span><span>${r?`Start ${r.startMin} min · slut ${r.endMin} min`:''}</span><span></span></div>`;}).join('')||'<div class="empty">Ingen cykler valgt.</div>'}</div><div class="inline-list">${participants.map(p=>`<span class="chip">${p.kind==='animal'?'🐾':'👤'} ${esc(p.name)}</span>`).join('')}</div></section>
+      <section class="card-section card"><h3>Billeder fra ruten</h3>${renderRouteMediaV19(route)}</section>
+      <section class="card-section card"><h3>Stop og minder</h3><div class="stop-detail-grid">${(route.stopDetails||[]).map((s,i)=>`<article class="stop-detail-card"><strong>${i===0?'Start':i===route.stopDetails.length-1?'Mål':`Stop ${i}`}: ${esc(s.label)}</strong><p>${esc(s.note||'Ingen note')}</p><div class="stop-images">${(s.images||[]).map(src=>`<img src="${src}">`).join('')}</div></article>`).join('')}</div></section>
+      <section class="card-section card"><div class="action-row">${route.googleMapsUrl?`<a class="ghost-btn" href="${safeUrl(route.googleMapsUrl)}" target="_blank">Google Maps</a>`:''}<button class="ghost-btn" id="route-detail-export-btn">Eksportér GPX</button></div></section></section><aside class="summary-rail"><div class="card-section card sticky-map-card"><h3>Rutens kort</h3><div id="route-map" class="map-holder route-detail-map"></div></div></aside></div>`;
+    const fallback=route.points?.length>=2?pointsToGeoJSON(route.points):null;initMapOnce('route-map',site?[siteWithComputed(site)]:[],{styleKey:state.settings.mapStyle,fitAll:false,routeGeoJSON:route.geojson||fallback,routePoints:route.points||[]});qs('#share-route-btn').onclick=()=>shareRoute(route);qs('#route-detail-export-btn').onclick=()=>downloadRouteGpx(route);
+  }
+
 })();

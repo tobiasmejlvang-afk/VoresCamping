@@ -4,7 +4,7 @@ Denne guide bruger GitHub Pages med `main`-branchens `/docs`-mappe. Der skal ikk
 
 ## A. Opdatér et eksisterende repository
 
-1. Pak `Vores-Camping-v16.zip` ud på computeren.
+1. Pak `Vores-Camping-v19.zip` ud på computeren.
 2. Åbn dit eksisterende repository på GitHub.
 3. Gå ind i repositoryets nuværende `docs`-mappe.
 4. Fjern de gamle appfiler i `docs`, hvis de skal erstattes helt.
@@ -24,7 +24,7 @@ docs/
 ```
 
 6. Vælg **Commit directly to the main branch**.
-7. Skriv eksempelvis commit-beskeden `Opdater Vores Camping til version 16`.
+7. Skriv eksempelvis commit-beskeden `Opdater Vores Camping til version 19`.
 8. Tryk **Commit changes**.
 
 ## B. Aktivér GitHub Pages
@@ -45,7 +45,7 @@ Kontrollér følgende:
 
 - Forsiden åbner uden hvid skærm.
 - Logoet vises i venstre menu.
-- Sisi og uret vises kun på forsiden.
+- Nedtællingen vises i den faste bundmenu.
 - Hurtigknapperne åbner de rigtige sider.
 - Kortet indlæses.
 - Du kan åbne Indstillinger.

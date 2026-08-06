@@ -161,6 +161,34 @@
         return request('geocode', `/reverse?${query}`, { authInQuery: true });
       },
 
+      async searchStructured(fields = {}, options = {}) {
+        const query = queryString({
+          address: fields.address,
+          neighbourhood: fields.neighbourhood,
+          borough: fields.borough,
+          locality: fields.city || fields.locality,
+          county: fields.county,
+          region: fields.region,
+          postalcode: fields.postcode || fields.postalcode,
+          country: fields.country,
+          size: options.size || 10,
+          lang: options.lang || 'da',
+        });
+        return request('geocode', `/search/structured?${query}`, { authInQuery: true });
+      },
+
+      async directionsGet(coordinates, profile = 'cycling-regular', options = {}) {
+        if (!Array.isArray(coordinates) || coordinates.length < 2) throw new Error('En rute kræver mindst et start- og slutpunkt.');
+        const query = queryString({
+          api_key: String(getKey() || '').trim(),
+          start: coordinates[0].join(','),
+          end: coordinates[coordinates.length - 1].join(','),
+          preference: options.preference || 'recommended',
+          language: options.language || 'da',
+        });
+        return request('core', `/v2/directions/${encodeURIComponent(profile)}/geojson?${query}`, { authInQuery: true });
+      },
+
       async directions(coordinates, profile = 'cycling-regular', options = {}) {
         if (!Array.isArray(coordinates) || coordinates.length < 2) {
           throw new Error('En rute kræver mindst et start- og slutpunkt.');
@@ -178,11 +206,16 @@
         });
       },
 
-      async snap(locations, profile = 'cycling-regular', radius = 350) {
-        return request('core', `/v2/snap/${encodeURIComponent(profile)}/geojson`, {
+      async snap(locations, profile = 'cycling-regular', radius = 350, format = 'geojson') {
+        const safeFormat = format === 'json' ? 'json' : 'geojson';
+        return request('core', `/v2/snap/${encodeURIComponent(profile)}/${safeFormat}`, {
           method: 'POST',
           body: { locations, radius },
         });
+      },
+
+      async snapJson(locations, profile = 'cycling-regular', radius = 350) {
+        return this.snap(locations, profile, radius, 'json');
       },
 
       async isochrones(locations, profile = 'cycling-regular', ranges = [900, 1800], options = {}) {
@@ -234,8 +267,22 @@
         });
       },
 
-      async optimize(jobs, vehicles) {
-        return request('optimization', '', { method: 'POST', body: { jobs, vehicles } });
+      async optimize(jobs, vehicles, options = {}) {
+        return request('optimization', '', { method: 'POST', body: { jobs, vehicles, ...options } });
+      },
+
+      async ebikeRange(startLocation, endLocation, startMinutes, endMinutes, options = {}) {
+        const profile = options.profile || 'cycling-electric';
+        const start = await this.isochrones([startLocation], profile, [Math.max(5, Number(startMinutes) || 5) * 60], { locationType: 'start' });
+        const end = await this.isochrones([endLocation], profile, [Math.max(5, Number(endMinutes) || 5) * 60], { locationType: 'destination' });
+        return { start, end };
+      },
+
+      async serviceCheck() {
+        const result = { geocode: false, directions: false, checkedAt: new Date().toISOString() };
+        const geocode = await this.testConnection();
+        result.geocode = Boolean(geocode);
+        return result;
       },
     };
   }
