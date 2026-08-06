@@ -2081,4 +2081,362 @@ ${trkpts}
     const fallback=route.points?.length>=2?pointsToGeoJSON(route.points):null;initMapOnce('route-map',site?[siteWithComputed(site)]:[],{styleKey:state.settings.mapStyle,fitAll:false,routeGeoJSON:route.geojson||fallback,routePoints:route.points||[]});qs('#share-route-btn').onclick=()=>shareRoute(route);qs('#route-detail-export-btn').onclick=()=>downloadRouteGpx(route);
   }
 
+
+  // ===== Version 20 patch: Ferie-album, ferie-vagt, topmenu og personlig sidebar =====
+  try {
+    PRESET_IMAGES.logo = 'assets/logo-main-v20.png';
+    PRESET_IMAGES.logoLarge = 'assets/logo-main-v20.png';
+  } catch (_) {}
+
+  if (!NAV_ITEMS.some(item => item[0] === 'album')) {
+    NAV_ITEMS.splice(Math.max(0, NAV_ITEMS.length - 1), 0, ['album', 'Ferie Albummet', '📚']);
+  }
+  state.version = 20;
+  state.settings = state.settings || {};
+  state.settings.logo = PRESET_IMAGES.logo;
+  state.settings.heroImage = state.settings.heroImage || PRESET_IMAGES.cover;
+  state.settings.actionIcons = state.settings.actionIcons || {};
+  state.settings.vacationGuard = state.settings.vacationGuard || {
+    active: false,
+    tripLabel: state.settings.nextTripName || 'Næste ferie',
+    autoCollect: true,
+    showLocalTips: true,
+    lastActivatedAt: ''
+  };
+  state.settings.layout = state.settings.layout || { sidebarWidth: 340 };
+  state.settings.pageSections = state.settings.pageSections || {};
+  state.settings.moodPlacements = state.settings.moodPlacements || {};
+  state.holidayAlbum = Array.isArray(state.holidayAlbum) ? state.holidayAlbum : [];
+  saveState();
+
+  QUICK_ACTION_META.search.asset = state.settings.actionIcons.search || QUICK_ACTION_META.search.asset;
+  QUICK_ACTION_META.addVisited.asset = state.settings.actionIcons.addVisited || QUICK_ACTION_META.addVisited.asset;
+  QUICK_ACTION_META.addWish.asset = state.settings.actionIcons.addWish || QUICK_ACTION_META.addWish.asset;
+  QUICK_ACTION_META.addRoute.asset = state.settings.actionIcons.addRoute || QUICK_ACTION_META.addRoute.asset;
+  QUICK_ACTION_META.bigMap.asset = state.settings.actionIcons.bigMap || QUICK_ACTION_META.bigMap.asset;
+  QUICK_ACTION_META.settings.asset = state.settings.actionIcons.settings || QUICK_ACTION_META.settings.asset;
+
+  V19_SETTING_TABS.length = 0;
+  V19_SETTING_TABS.push(
+    ['overview-forside','Overblik & Forside','⌂'],
+    ['oprettelser','Oprettelser & Tilføjelser','＋'],
+    ['rute-kort','Ruteplanlægning & Kort','⌖'],
+    ['campingpladser','Campingpladser','⛺'],
+    ['besoeg-oensker','Besøg & Ønsker','♥'],
+    ['cykelruter','Cykelruter','🚲'],
+    ['oplevelser','Oplevelser','✨'],
+    ['stjerner','Stjerner & Bedømmelse','★'],
+    ['sektioner','Sektioner & Elementer','▦'],
+    ['illustrationer','Illustrationer & Billeder','▧'],
+    ['udseende','Udseende & Farver','◐'],
+    ['system','System','⚙']
+  );
+
+  const setHeaderV19 = setHeader;
+  setHeader = function(title, subtitle){
+    setHeaderV19(title, subtitle);
+    renderTopbarNavV20();
+  };
+
+  const renderRouteV19 = renderRoute;
+  renderRoute = function(){
+    const route = currentRoute();
+    if (route.name === 'album') {
+      clearError();
+      cleanupActiveMaps();
+      renderNav();
+      renderBottomNav();
+      const view = qs('#view');
+      document.body.dataset.route = route.name;
+      state.ui.lastRoute = route.name;
+      setHeader('Ferie Albummet', 'Alle feriebilleder samlet og systematiseret');
+      renderHolidayAlbumV20(view);
+      try { renderQuickDock(); } catch (_) {}
+      window.requestAnimationFrame(updateLiveInfoDisplays);
+      return;
+    }
+    renderRouteV19();
+  };
+
+  function renderTopbarNavV20(){
+    const current = currentRoute().name;
+    const host = qs('.topbar-actions');
+    if (!host) return;
+    host.innerHTML = `<nav class="top-main-nav">${NAV_ITEMS.map(([key,label,icon]) => `<button class="top-main-nav__btn ${current===key?'active':''}" data-nav="${key}"><span>${icon}</span><span>${label}</span></button>`).join('')}</nav>`;
+  }
+
+  function renderNav(){
+    const current = currentRoute().name;
+    const family = state.settings.family || {};
+    const next = countdownInfo();
+    const s = stats();
+    const vg = state.settings.vacationGuard || {};
+    const actions = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+    qs('#sidebar').innerHTML = `
+      <div class="sidebar-card brand-card brand-card-v20">
+        <div class="brand-logo brand-logo--transparent"><img src="${state.settings.logo || PRESET_IMAGES.logo}" alt="Vores Camping-logo"></div>
+        <div class="brand-copy">
+          <span class="brand-kicker">${esc(state.settings.tagline || 'Vores Camping')}</span>
+          <h2>${esc(state.settings.appName || 'Vores Camping')}</h2>
+          <p class="brand-sub">“${esc(family.motto || 'Vores ture, vores frihed, vores minder')}”</p>
+          <p class="brand-quote">Godaften ${esc(firstName(family.fatherName || 'Stener'))} & ${esc(familyMotherName())} – campinglivet kalder igen.</p>
+        </div>
+        <div class="family-chip-row">
+          <span class="family-chip family-chip--stener">S · ${esc(firstName(family.fatherName || 'Stener'))}</span>
+          <span class="family-chip family-chip--vibse">V · ${esc(familyMotherName())}</span>
+          <span class="family-chip family-chip--sisi">🐾 ${esc(family.dogName || 'Sisi')}</span>
+        </div>
+      </div>
+      <div class="sidebar-card sidebar-mini side-quick-panel">
+        <div class="sidebar-section-title"><span>Hurtig-handlinger</span><span>⚡</span></div>
+        <div class="side-quick-list">${actions.map(sidebarQuickButtonV20).join('')}</div>
+        <div class="vacation-toggle-box ${vg.active ? 'is-active' : ''}">
+          <button class="primary-btn ${vg.active ? 'light' : ''}" id="toggle-vacation-guard-side">${vg.active ? 'Ferie-Vagt er aktiv' : 'Aktivér Ferie-Vagt'}</button>
+          <button class="ghost-btn" data-nav="album">Åbn Ferie Albummet</button>
+        </div>
+      </div>
+      <div class="sidebar-card sidebar-mini countdown-sidebar-card-v20">
+        <div class="sidebar-section-title"><span>Næste campingtur</span><span>🏕️</span></div>
+        <div class="count-grid count-grid-v20">${countdownCells(next)}</div>
+        <div class="subtle small">${esc(state.settings.nextTripName || 'Næste tur')} · ${formatDate(state.settings.nextTripDate)}</div>
+      </div>
+      <div class="sidebar-card sidebar-mini">
+        <div class="sidebar-section-title"><span>Små nøgletal</span><span>↗</span></div>
+        <div class="mini-stat-grid">
+          <div><strong>${s.visited}</strong><span>Besøgte</span></div>
+          <div><strong>${s.wish}</strong><span>Ønsker</span></div>
+          <div><strong>${s.routes}</strong><span>Ruter</span></div>
+          <div><strong>${countAlbumItemsV20()}</strong><span>Albumfotos</span></div>
+        </div>
+      </div>
+      <div class="sidebar-card sidebar-mini side-nav-panel">
+        <div class="sidebar-section-title"><span>Hovedsider</span><span>☰</span></div>
+        <div class="nav-list">${NAV_ITEMS.map(([key,label,icon]) => `<button class="nav-item ${current===key?'active':''}" data-nav="${key}"><span class="icon">${icon}</span><span>${label}</span></button>`).join('')}</div>
+      </div>`;
+
+    const toggleBtn = qs('#toggle-vacation-guard-side');
+    if (toggleBtn) toggleBtn.onclick = () => toggleVacationGuardV20();
+  }
+
+  function sidebarQuickButtonV20(action){
+    const meta = QUICK_ACTION_META[action] || { label: action, asset: 'assets/action-settings-v18.svg' };
+    const custom = state.settings.actionIcons?.[action];
+    const icon = custom || meta.asset;
+    const active = quickActionIsActive(action);
+    return `<button class="side-quick-btn ${active?'is-active':''}" data-quick="${action}"><span class="side-quick-btn__icon"><img src="${icon}" alt=""></span><span class="side-quick-btn__text"><strong>${esc(meta.label)}</strong><small>${sideQuickDescriptionV20(action)}</small></span></button>`;
+  }
+
+  function sideQuickDescriptionV20(action){
+    return ({
+      search: 'Find og tilføj nye steder',
+      addVisited: 'Registrér et nyt besøg',
+      addWish: 'Gem næste drømmested',
+      addRoute: 'Planlæg cykelrute',
+      bigMap: 'Se alle punkter på kortet',
+      settings: 'Alt samlet ét sted'
+    })[action] || '';
+  }
+
+  function quickDockButton(action){
+    const meta = QUICK_ACTION_META[action] || { label:action, asset:'assets/action-settings-v18.svg' };
+    const icon = state.settings.actionIcons?.[action] || meta.asset;
+    const active = quickActionIsActive(action);
+    return `<button class="quick-dock-btn quick-dock-btn--${action}${active?' is-active':''}" data-quick="${action}" title="${esc(meta.label)}" ${active?'aria-current="page"':''}><span class="quick-dock-icon"><img src="${icon}" alt=""></span><span class="quick-dock-label">${esc(meta.label)}</span></button>`;
+  }
+
+  function renderQuickDock(){
+    const dock = qs('#quick-dock');
+    if (!dock) return;
+    const actions = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+    dock.innerHTML = actions.map(action => quickDockButton(action)).join('');
+  }
+
+  function renderBottomNav(){
+    const current = currentRoute().name;
+    qs('#bottom-nav').innerHTML = NAV_ITEMS.map(([key,label,icon]) => `<button class="${current===key?'active':''}" data-nav="${key}">${icon} ${label}</button>`).join('');
+  }
+
+  const renderOverviewV19 = renderOverview;
+  renderOverview = function(view){
+    renderOverviewV19(view);
+    enhanceOverviewV20(view);
+  };
+
+  function enhanceOverviewV20(view){
+    const hero = view.querySelector('.dashboard-welcome-v18') || view.querySelector('.dashboard-welcome');
+    if (hero && !hero.querySelector('.hero-action-strip-v20')) {
+      const box = document.createElement('div');
+      box.className = 'hero-action-strip-v20';
+      const active = !!state.settings.vacationGuard?.active;
+      box.innerHTML = `
+        <div class="hero-action-strip-v20__buttons">
+          <button class="primary-btn" id="toggle-vacation-guard-main">${active ? 'Ferie-Vagt aktiv' : 'Aktivér Ferie-Vagt'}</button>
+          <button class="secondary-btn" data-nav="album">Ferie Albummet</button>
+        </div>
+        <div class="hero-action-strip-v20__note">Når Ferie-Vagten er aktiv, samler appen billeder i feriealbummet og viser små lokale ferie-tip.</div>`;
+      hero.appendChild(box);
+      const btn = qs('#toggle-vacation-guard-main');
+      if (btn) btn.onclick = () => toggleVacationGuardV20();
+    }
+    const pulse = view.querySelector('.overview-pulse');
+    if (pulse && state.settings.vacationGuard?.active && !view.querySelector('.holiday-tips-card-v20')) {
+      const tips = document.createElement('section');
+      tips.className = 'card holiday-tips-card-v20';
+      tips.innerHTML = `<div class="section-head"><div><span class="eyebrow dark">Ferie-Vagt</span><h3>Små tips i området</h3></div><button class="ghost-btn" data-nav="album">Se albummet</button></div><div class="holiday-tips-grid">${buildHolidayTipsV20().map(t => `<article class="holiday-tip"><strong>${esc(t.title)}</strong><p>${esc(t.text)}</p></article>`).join('')}</div>`;
+      pulse.insertAdjacentElement('afterend', tips);
+    }
+  }
+
+  function buildHolidayTipsV20(){
+    const visited = state.campsites.filter(site => site.status === 'visited');
+    const near = visited[0];
+    const attractionTips = (near?.attractions || []).slice(0, 3).map(a => ({ title: a.name, text: a.description || 'Oplevelse i området.' }));
+    const generic = [
+      { title: 'Lokal seværdighed', text: near ? `Udforsk området omkring ${near.city || near.name}. Kig efter lokale markeder, havne eller naturstier.` : 'Prøv lokale seværdigheder, små bymidter og udsigtspunkter i nærheden.' },
+      { title: 'Pause på cykelturen', text: 'Planlæg et lille kaffestop eller picnic på næste rute og føj billeder direkte til feriealbummet.' },
+      { title: 'Aftenidé', text: 'Gem solnedgangsbilleder, stemningsfotos og små minder under hele ferien – albummet holder styr på dem.' }
+    ];
+    return [...attractionTips, ...generic].slice(0, 4);
+  }
+
+  function toggleVacationGuardV20(){
+    const vg = state.settings.vacationGuard || (state.settings.vacationGuard = {});
+    vg.active = !vg.active;
+    vg.lastActivatedAt = vg.active ? new Date().toISOString() : vg.lastActivatedAt;
+    saveState();
+    toast(vg.active ? 'Ferie-Vagten er aktiveret.' : 'Ferie-Vagten er slået fra.');
+    renderRoute();
+  }
+
+  function collectHolidayAlbumItemsV20(){
+    const items = [];
+    const pushItem = (src, meta={}) => {
+      if (!src) return;
+      items.push({
+        id: meta.id || uid('album'),
+        src,
+        title: meta.title || 'Feriebillede',
+        date: meta.date || meta.createdAt || '',
+        source: meta.source || 'App',
+        note: meta.note || '',
+        location: meta.location || ''
+      });
+    };
+
+    (state.holidayAlbum || []).forEach(item => pushItem(item.src, item));
+    state.campsites.forEach(site => (site.images || []).forEach((src, idx) => pushItem(src, { id:`site-${site.id}-${idx}`, title: site.name, date: site.latestVisit || site.plannedDate || '', source: 'Campingplads', location: countryLine(site), note: site.notes || '' })));
+    state.routes.forEach(route => {
+      (route.images || []).forEach((src, idx) => pushItem(src, { id:`route-${route.id}-${idx}`, title: route.name, date: route.date || '', source: 'Cykelrute', location: `${route.start || 'Start'} → ${route.end || 'Mål'}`, note: route.description || '' }));
+      (route.stopDetails || []).forEach((stop, stopIndex) => (stop.images || []).forEach((src, imgIndex) => pushItem(src, { id:`stop-${route.id}-${stopIndex}-${imgIndex}`, title: `${route.name} · ${stop.label || ('Stop ' + (stopIndex+1))}`, date: route.date || '', source: 'Stop', location: stop.label || '', note: stop.note || '' })));
+    });
+
+    const seen = new Set();
+    return items.filter(item => {
+      const key = `${item.source}|${item.title}|${item.src.slice(0,64)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
+  }
+
+  function countAlbumItemsV20(){ return collectHolidayAlbumItemsV20().length; }
+
+  async function addAlbumUploadsV20(fileList){
+    for (const file of [...fileList]) {
+      state.holidayAlbum.push({
+        id: uid('album'),
+        src: await compressImage(file, 1600, .82),
+        title: file.name.replace(/\.[^.]+$/,''),
+        date: new Date().toISOString().slice(0,10),
+        source: 'Ferie Albummet',
+        note: ''
+      });
+    }
+    saveState();
+    renderRoute();
+  }
+
+  function renderHolidayAlbumV20(view){
+    const items = collectHolidayAlbumItemsV20();
+    const active = !!state.settings.vacationGuard?.active;
+    view.innerHTML = `<div class="view-grid holiday-album-page-v20">
+      <section class="card holiday-album-hero-v20">
+        <div>
+          <span class="eyebrow dark">Ferie Albummet</span>
+          <h2>Alle minder samlet i 100% system</h2>
+          <p class="subtle">Ferie-Vagten hjælper med at samle billeder fra campingpladser, cykelruter, stop og egne uploads.</p>
+        </div>
+        <div class="action-row">
+          <button class="primary-btn" id="toggle-vacation-guard-album">${active ? 'Ferie-Vagt aktiv' : 'Aktivér Ferie-Vagt'}</button>
+          <button class="ghost-btn" id="album-upload-trigger">Tilføj billeder</button>
+          <input type="file" multiple accept="image/*" id="album-upload-input" class="hidden-file">
+        </div>
+      </section>
+      <section class="stats-row refined-stats">
+        ${statCard(items.length,'Albumbilleder','📷')}
+        ${statCard(state.routes.length,'Cykelruter','🚲')}
+        ${statCard(state.campsites.length,'Campingpladser','⛺')}
+        ${statCard(active ? 'On' : 'Off','Ferie-Vagt','✨')}
+      </section>
+      <section class="card holiday-album-grid-card-v20">
+        <div class="section-head"><div><h3>Feriebilleder</h3><p class="subtle">Sorterede billeder fra hele appen.</p></div></div>
+        <div class="holiday-album-grid">${items.map(item => `<article class="album-photo-card"><img src="${item.src}" alt="${esc(item.title)}"><div class="album-photo-card__body"><strong>${esc(item.title)}</strong><span>${esc(item.source)}${item.location?` · ${esc(item.location)}`:''}</span><small>${formatDate(item.date) || 'Ingen dato'}</small></div></article>`).join('') || '<div class="empty">Albummet er tomt endnu. Upload billeder eller tilføj dem på ruter og campingpladser.</div>'}</div>
+      </section>
+    </div>`;
+    const upBtn = qs('#album-upload-trigger');
+    const upInput = qs('#album-upload-input');
+    if (upBtn && upInput) upBtn.onclick = () => upInput.click();
+    if (upInput) upInput.onchange = e => addAlbumUploadsV20(e.target.files || []);
+    const t = qs('#toggle-vacation-guard-album'); if (t) t.onclick = () => toggleVacationGuardV20();
+  }
+
+  const renderSettingsPanelBaseV19 = renderSettingsPanelV19;
+  renderSettingsPanelV19 = function(tab){
+    if (tab === 'campingpladser') {
+      const visited = state.campsites.filter(s=>s.status==='visited').length;
+      const wish = state.campsites.filter(s=>s.status==='wish').length;
+      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Campingpladser</h3><div class="stats-row">${statCard(visited,'Besøgte','✓')}${statCard(wish,'Ønsker','♥')}${statCard(state.campsites.length,'I alt','⛺')}${statCard(state.routes.filter(r=>r.siteId).length,'Ruter koblet til pladser','⌁')}</div><div class="panel">Her samles de overordnede valg for campingpladser. Opret og redigér fortsat pladserne fra appens hovedsider.</div><label class="check-row"><input type="checkbox" id="set-compact-pages" ${state.settings.compactPages!==false?'checked':''}> Brug kompakte lister og formularer</label><button class="primary-btn" id="save-campsite-settings">Gem visning</button></div></div>`;
+    }
+    if (tab === 'besoeg-oensker') {
+      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Besøg & ønsker</h3><div class="table-list">${state.campsites.map(site=>`<div class="table-row"><span>${esc(site.name)}</span><span>${site.status==='visited'?'Besøgt':'Ønske'}</span><span>${site.status==='visited'?(formatDate(site.latestVisit)||'—'):(formatDate(site.plannedDate)||'—')}</span><button class="mini-btn" data-nav="detail/${site.id}">Åbn</button></div>`).join('')}</div></div></div>`;
+    }
+    if (tab === 'cykelruter') return renderSettingsPanelBaseV19('cykel-oplevelser');
+    if (tab === 'oplevelser') {
+      const vg = state.settings.vacationGuard || {};
+      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Oplevelser & Ferie-Vagt</h3><label><span class="field-label">Ferienavn</span><input class="field" id="set-vg-trip-label" value="${esc(vg.tripLabel || state.settings.nextTripName || '')}"></label><label class="check-row"><input type="checkbox" id="set-vg-active" ${vg.active?'checked':''}> Ferie-Vagten er aktiv</label><label class="check-row"><input type="checkbox" id="set-vg-auto" ${vg.autoCollect!==false?'checked':''}> Saml automatisk billeder til feriealbummet</label><label class="check-row"><input type="checkbox" id="set-vg-tips" ${vg.showLocalTips!==false?'checked':''}> Vis små tips og forslag i området</label><div class="panel">Albummet samler billeder fra feriealbumuploads, campingpladser, cykelruter og stop.</div><div class="action-row"><button class="primary-btn" id="save-vg-settings">Gem Ferie-Vagt</button><button class="ghost-btn" data-nav="album">Åbn Ferie Albummet</button></div></div></div>`;
+    }
+    if (tab === 'illustrationer') {
+      const quicks = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+      return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Logo</h3><div class="image-setting-preview"><img src="${state.settings.logo || PRESET_IMAGES.logo}"></div><button class="ghost-btn" id="upload-logo-btn">Skift logo</button><input type="file" class="hidden-file" id="upload-logo" accept="image/*"></div><div class="form-section card"><h3>Cover</h3><div class="image-setting-preview"><img src="${state.settings.coverImage}"></div><button class="ghost-btn" id="upload-cover-btn">Skift cover</button><input type="file" class="hidden-file" id="upload-cover" accept="image/*"></div><div class="form-section card"><h3>Stemningsbillede</h3><div class="image-setting-preview"><img src="${state.settings.cornerImage}"></div><button class="ghost-btn" id="upload-corner-btn">Skift stemningsbillede</button><input type="file" class="hidden-file" id="upload-corner" accept="image/*"></div><div class="form-section card full-span"><h3>Hurtig-handlings ikoner</h3><div class="quick-icon-grid-v20">${quicks.map(action => `<div class="quick-icon-card-v20"><div class="quick-icon-card-v20__head"><img src="${state.settings.actionIcons?.[action] || QUICK_ACTION_META[action].asset}" alt=""><strong>${esc(QUICK_ACTION_META[action].label)}</strong></div><button class="ghost-btn" data-trigger-icon-upload="${action}">Skift ikon</button><input type="file" class="hidden-file" id="upload-icon-${action}" data-upload-icon="${action}" accept="image/*"></div>`).join('')}</div></div></div>`;
+    }
+    if (tab === 'system') {
+      return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Sikkerhedskopi</h3><div class="action-row"><button class="primary-btn" id="export-btn">Eksportér backup</button><button class="ghost-btn" id="import-btn">Importér backup</button><input type="file" class="hidden-file" id="import-file" accept="application/json"></div><p class="subtle">API-nøgler udelades automatisk.</p></div><div class="form-section card"><h3>System</h3><div class="panel">Version 20 · Personlig campingapp · data gemmes lokalt og kan udgives direkte via GitHub Pages.</div><a class="ghost-btn" href="github-guide.html" target="_blank">GitHub-guide</a><button class="danger-btn" id="reset-data-btn">Nulstil campingdata</button></div></div>`;
+    }
+    const map = { 'overview-forside':'overview-forside', 'oprettelser':'oprettelser', 'rute-kort':'rute-kort', 'stjerner':'stjerner', 'sektioner':'sektioner', 'udseende':'udseende' };
+    return renderSettingsPanelBaseV19(map[tab] || tab);
+  };
+
+  const bindSettingsHandlersBaseV19 = bindSettingsHandlers;
+  bindSettingsHandlers = function(){
+    bindSettingsHandlersBaseV19();
+    qsa('[data-trigger-icon-upload]').forEach(btn => btn.onclick = () => qs('#upload-icon-' + btn.dataset.triggerIconUpload)?.click());
+    qsa('[data-upload-icon]').forEach(input => input.onchange = async e => {
+      const file = e.target.files?.[0]; if (!file) return;
+      const action = input.dataset.uploadIcon;
+      state.settings.actionIcons[action] = await compressImage(file, 256, .92);
+      saveState(); toast('Ikon opdateret.'); renderRoute();
+    });
+    const saveVg = qs('#save-vg-settings');
+    if (saveVg) saveVg.onclick = () => {
+      const vg = state.settings.vacationGuard || (state.settings.vacationGuard = {});
+      vg.tripLabel = qs('#set-vg-trip-label')?.value.trim() || state.settings.nextTripName || 'Ferie';
+      vg.active = !!qs('#set-vg-active')?.checked;
+      vg.autoCollect = !!qs('#set-vg-auto')?.checked;
+      vg.showLocalTips = !!qs('#set-vg-tips')?.checked;
+      saveState(); toast('Ferie-Vagten er gemt.'); renderRoute();
+    };
+  };
+
+  renderRoute();
+
 })();

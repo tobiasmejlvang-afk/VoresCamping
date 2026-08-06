@@ -1,6 +1,6 @@
 {
   "name": "Vores Camping",
-  "short_name": "Camping",
+  "short_name": "Vores Camping",
   "description": "Stener, Vibse og Sisis personlige campingdagbog, rejsekort og cykelrute-app",
   "start_url": "./index.html#overview",
   "display": "standalone",
