@@ -1,34 +1,19 @@
-# Vores Camping v21
+# Vores Camping v21.1
 
-En personlig dansk campingdagbog til Stener, Vibeke og Sisi. Appen er en statisk webapp, som kan udgives direkte fra `main`-branchens `/docs`-mappe på GitHub Pages.
+Fejlrettet udgave af v21, klar til GitHub Pages direkte fra `main`-branchens `/docs`-mappe.
 
-## Centrale funktioner
-
-- Campingpladser, besøg, ønsker og ranglister
-- MapLibre/OpenFreeMap-kort
-- Openrouteservice-ruteplanlægning
-- Cykelruter med flere cykler, elcykler og batterirækkevidde
-- Ferie Vagten
-- Ferie Album med automatisk organisering
-- Personer, gæster, campister, dyr og ejere
-- Lokale billeder og sikkerhedskopier
-- Omfattende indstillingscenter
-
-## Udgivelse på GitHub Pages
+## Installation på GitHub
 
 1. Pak ZIP-filen ud.
-2. Upload indholdet af projektmappen til dit repository.
-3. Sørg for, at `docs/index.html` ligger i `main`-branchens `/docs`-mappe.
-4. Åbn **Settings → Pages** på GitHub.
-5. Vælg **Deploy from a branch**, `main` og `/docs`.
-6. Gem og vent på udgivelsen.
+2. Erstat repositoryets eksisterende `/docs`-mappe med den nye `/docs`-mappe.
+3. Commit ændringerne direkte til `main`.
+4. Kontrollér under **Settings → Pages**, at siden udgives fra `main` og `/docs`.
+5. Åbn siden i et privat vindue første gang eller genindlæs uden cache.
 
-Der kræves ingen npm-installation, intet build-trin og ingen brugeroprettet GitHub Action.
+## Tabletikon
 
-## Nyt app-ikon på tablet
+Fjern den eksisterende installerede genvej/app fra tabletten og installer siden igen, hvis det gamle ikon stadig vises. Operativsystemet gemmer ofte PWA-ikoner meget stædigt.
 
-Hvis appen allerede er installeret på tabletten, kan det gamle ikon være gemt i enhedens cache. Fjern den installerede genvej/app og installer den igen fra GitHub Pages, så `icon-192-v21.png` og `icon-512-v21.png` bliver brugt.
+## Data
 
-## API-nøgle
-
-Openrouteservice-nøglen indtastes under **Indstillinger → Ruteplanlægning**. Nøglen gemmes kun lokalt og fjernes fra eksporterede sikkerhedskopier.
+Eksisterende campingdata bevares. Version 21.1 bruger fortsat v21-lageret og migrerer manglende indstillinger automatisk.

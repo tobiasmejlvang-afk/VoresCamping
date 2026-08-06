@@ -1,29 +1,46 @@
-# Testrapport – Vores Camping v21
+# Testrapport – Vores Camping v21.1
 
-## Beståede kontroller
+## Fejl fundet
 
-- `docs/app.js`: JavaScript-syntaks godkendt med Node.
-- `docs/maps.js`: JavaScript-syntaks godkendt med Node.
-- `docs/ors.js`: JavaScript-syntaks godkendt med Node.
-- `docs/manifest.webmanifest`: gyldig JSON.
-- Nye logo- og ikonfiler findes.
-- Logoets alfakanal indeholder gennemsigtighed.
-- Nye stjerne-, kort- og ruteikoner findes.
-- Openrouteservice-pakken er inkluderet.
-- Indeksfilen bruger versionsnummer 21 på CSS og JavaScript.
-- Manifestet peger på v21-appikonerne.
-- ZIP-strukturen kan udlæses uden fejl.
+Den oprindelige v21-fil gav denne opstartsfejl:
 
-## Funktioner kontrolleret statisk
+```text
+TypeError: state.settings.menuOrder is not iterable
+at orderedNavItemsV21
+at renderNav
+at init
+```
 
-- Selvstændige ruter til Ferie Album og Ferie Vagten.
-- Ferieknap på forside og i venstremenu.
-- Automatisk tilknytning af campingplads-, rute- og stopbilleder til aktiv ferie.
-- Redigering af personer og dyr.
-- Upload af hurtig-handlingsikoner, stjerneikon, kortmarkører og ruteikoner.
-- Cykelrutedato, flere cykler, elcykelvalg, fem-minutters rækkevidde og billeder.
-- Alle 23 ønskede indstillingsfaner er oprettet.
+Fejlen skyldtes forkert rækkefølge i initialiseringen.
+
+## Udførte kontroller
+
+- JavaScript-syntaks:
+  - `docs/app.js` bestået
+  - `docs/maps.js` bestået
+  - `docs/ors.js` bestået
+- Manifest JSON valideret.
+- Alle lokale `assets/...`-referencer kontrolleret: 0 manglende filer.
+- Statiske HTML-id'er kontrolleret: 0 dubletter.
+- Manifestikoner kontrolleret og fundet.
+- Openrouteservice-ZIP testet uden komprimeringsfejl.
+- Opstart testet med:
+  - helt ny lokal tilstand
+  - ældre/minimal lokal tilstand uden v21-indstillinger
+- Følgende visninger blev kørt gennem en isoleret JavaScript-test:
+  - Overblik
+  - Besøgte
+  - Kort
+  - Bedst bedømte
+  - Ønsker
+  - Ferie Album
+  - Ferie Vagten
+  - Søgning
+  - Ruteeditor
+  - Campingpladsdetalje
+  - Cykelrutedetalje
+  - alle 23 undersider under Indstillinger
 
 ## Begrænsning
 
-Det tilgængelige Chromium-program afsluttede ikke stabilt i det isolerede miljø, selv på en tom testside. Derfor er der ikke vedlagt en påstået visuel browsertest. Live kort, lokation, vejr og Openrouteservice bør slutkontrolleres efter upload til GitHub Pages.
+Det isolerede Chromium-miljø kunne ikke gennemføre en stabil grafisk rendering af lokale sider. Live kort, vejr, geolokation og Openrouteservice bør derfor slutkontrolleres efter upload til GitHub Pages.

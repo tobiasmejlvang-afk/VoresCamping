@@ -57,11 +57,10 @@
     code: 0
   };
   const ors = window.VCORS.createClient({ getApiKey: () => secrets.orsKey || state?.settings?.api?.orsKey || '' });
-  window.addEventListener('hashchange', renderRoute);
-  document.addEventListener('click', handleGlobalClicks);
-  init();
 
   function init(){
+    window.addEventListener('hashchange', renderRoute);
+    document.addEventListener('click', handleGlobalClicks);
     cleanupServiceWorkers();
     migrateState();
     renderNav();
@@ -247,6 +246,40 @@
     state.settings.moodPlacements = { ...defaults.settings.moodPlacements, ...(state.settings.moodPlacements || {}) };
     state.settings.family = { ...defaults.settings.family, ...(state.settings.family || {}) };
     state.settings.heroClock = { ...defaults.settings.heroClock, ...(state.settings.heroClock || {}) };
+    state.settings.actionIcons = state.settings.actionIcons && typeof state.settings.actionIcons === 'object' ? state.settings.actionIcons : {};
+    state.settings.ratingIcons = { star: 'assets/rating-star-v21.svg', ...(state.settings.ratingIcons || {}) };
+    state.settings.mapIcons = {
+      visited: 'assets/map-visited-v21.svg',
+      wish: 'assets/map-wish-v21.svg',
+      start: 'assets/route-start-v21.svg',
+      via: 'assets/route-via-v21.svg',
+      end: 'assets/route-end-v21.svg',
+      ...(state.settings.mapIcons || {})
+    };
+    state.settings.menuOrder = Array.isArray(state.settings.menuOrder) ? state.settings.menuOrder : ['overview','visited','map','top','wishlist','album','vacation-guard','settings'];
+    state.settings.menuHidden = Array.isArray(state.settings.menuHidden) ? state.settings.menuHidden : [];
+    state.settings.ui = {
+      cardRadius: 20, pageGap: 14, cardPadding: 16, sidebarWidth: 352,
+      panelShadow: 'soft', panelBorder: true, compactPages: true,
+      ...(state.settings.ui || {})
+    };
+    state.settings.cover = {
+      position: 'center', showClock: true, showWeather: true, showTips: true,
+      ...(state.settings.cover || {})
+    };
+    state.settings.album = {
+      autoGroupByDay: true, showCaptions: true, compactCards: true,
+      includeCampsiteImages: true, includeRouteImages: true, includeStopImages: true,
+      ...(state.settings.album || {})
+    };
+    state.settings.vacationGuard = {
+      active: false, tripLabel: state.settings.nextTripName || 'Næste ferie',
+      autoCollect: true, showLocalTips: true, dailySummary: true,
+      ...(state.settings.vacationGuard || {})
+    };
+    state.vacations = Array.isArray(state.vacations) ? state.vacations : [];
+    state.albumMeta = state.albumMeta && typeof state.albumMeta === 'object' ? state.albumMeta : {};
+    state.holidayAlbum = Array.isArray(state.holidayAlbum) ? state.holidayAlbum : [];
     if (!window.VCMaps.styles[state.settings.mapStyle]) state.settings.mapStyle = 'liberty';
     if (!state.version || state.version < CURRENT_VERSION || /logo-badge-large|logo-main\.png/.test(String(state.settings.logo || ''))) state.settings.logo = PRESET_IMAGES.logo;
     if (state.version < 18) {
@@ -2438,7 +2471,6 @@ ${trkpts}
     };
   };
 
-  renderRoute();
 
 
   // ===== Version 20.1: intelligent Ferie-Vagt, automatisk album og kompakt layout =====
@@ -2792,7 +2824,6 @@ ${trkpts}
     };
   };
 
-  renderRoute();
 
   // ===== Version 21: separat Ferie Album og Ferie Vagten, kompakt layout og samlet indstillingscenter =====
   state.version = 21;
@@ -3270,7 +3301,6 @@ ${trkpts}
     window.VC_MAP_ICONS={...state.settings.mapIcons};
   };
 
-  applyThemeVars();
-  renderRoute();
 
+  init();
 })();
