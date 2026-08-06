@@ -1,11 +1,11 @@
 
 (() => {
-  const STORAGE_KEY = 'voresCampingState_v201';
-  const LEGACY_STORAGE_KEYS = ['voresCampingState_v20','voresCampingState_v19','voresCampingState_v18','voresCampingState_v17','voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
-  const CURRENT_VERSION = 20.1;
+  const STORAGE_KEY = 'voresCampingState_v21';
+  const LEGACY_STORAGE_KEYS = ['voresCampingState_v201','voresCampingState_v20','voresCampingState_v19','voresCampingState_v18','voresCampingState_v17','voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
+  const CURRENT_VERSION = 21;
   const PRESET_IMAGES = {
-    logo: 'assets/logo-main-v18.png',
-    logoLarge: 'assets/logo-main-v18.png',
+    logo: 'assets/logo-main-v21.png',
+    logoLarge: 'assets/logo-main-v21.png',
     cover: 'assets/cover-main.png',
     corner: 'assets/corner-mood.png',
     campHero: 'assets/camp-hero.png'
@@ -89,7 +89,7 @@
 
   function loadSecrets(){
     try {
-      return JSON.parse(localStorage.getItem('voresCampingSecrets_v201') || localStorage.getItem('voresCampingSecrets_v20') || localStorage.getItem('voresCampingSecrets_v19') || localStorage.getItem('voresCampingSecrets_v18') || localStorage.getItem('voresCampingSecrets_v17') || localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
+      return JSON.parse(localStorage.getItem('voresCampingSecrets_v21') || localStorage.getItem('voresCampingSecrets_v201') || localStorage.getItem('voresCampingSecrets_v20') || localStorage.getItem('voresCampingSecrets_v19') || localStorage.getItem('voresCampingSecrets_v18') || localStorage.getItem('voresCampingSecrets_v17') || localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
     } catch (_) {
       return {};
     }
@@ -97,7 +97,7 @@
 
   function saveSecrets(){
     try {
-      localStorage.setItem('voresCampingSecrets_v201', JSON.stringify(secrets));
+      localStorage.setItem('voresCampingSecrets_v21', JSON.stringify(secrets));
     } catch (err) {
       console.warn('API-nøgler kunne ikke gemmes lokalt.', err);
     }
@@ -201,8 +201,8 @@
         { id:'r4', siteId:'site4', name:'Klitstien Rute', start:'Århus', end:'Skovkanten', waypoints:[], difficulty:'Udfordrende', description:'Mere kuperet rute.', distanceKm:52, durationMin:190, googleMapsUrl:'', geojson:null },
       ],
       people: [
-        {id:'person_stener',name:'Stener Sørensen',kind:'person',role:'Appens campister',birthDate:'1952-11-11',ownerId:'',notes:'Far og fast campist',image:''},
-        {id:'person_vibse',name:'Vibeke Mejlvang',kind:'person',role:'Appens campister',birthDate:'1960-03-20',ownerId:'',notes:'Mor, kaldet Vibse',image:''},
+        {id:'person_stener',name:'Stener Sørensen',kind:'person',role:'Appens campister',birthDate:'1952-11-11',ownerId:'',notes:'Stener Sørensen – fast campist',image:''},
+        {id:'person_vibse',name:'Vibeke Mejlvang',kind:'person',role:'Appens campister',birthDate:'1960-03-20',ownerId:'',notes:'Vibeke Mejlvang – kaldet Vibse',image:''},
         {id:'pet_sisi',name:'Sisi',kind:'animal',role:'Kæledyr',birthDate:'2020',ownerId:'person_stener',notes:'Fast campinghund',image:''}
       ],
       bikes: [
@@ -401,7 +401,7 @@
   function familyMemberCard(kind, name, birth, icon, yearOnly=false){
     const age = yearOnly ? '' : ageFromBirth(birth);
     const birthLabel = birth ? (yearOnly ? `Født ${String(birth).slice(0,4)}` : birthdayText(birth,false)) : '';
-    return `<div class="family-member family-member--${kind}"><span class="family-member-icon">${icon}</span><div><small>${kind==='dog'?'Firbenet rejsemakker':kind==='father'?'Far og chauffør':'Mor og campingleder'}</small><strong>${esc(name)}</strong><span>${esc(birthLabel)}${age!=='' ? ` · ${age} år` : ''}</span></div></div>`;
+    return `<div class="family-member family-member--${kind}"><span class="family-member-icon">${icon}</span><div><small>${kind==='dog'?'Firbenet rejsemakker':kind==='father'?'Stener Sørensen':'Vibeke Mejlvang'}</small><strong>${esc(name)}</strong><span>${esc(birthLabel)}${age!=='' ? ` · ${age} år` : ''}</span></div></div>`;
   }
 
 
@@ -855,11 +855,11 @@ function renderSettings(view){
         <div class="form-section card">
           <h3>Familie og personligt præg</h3>
           <div class="field-row two">
-            <label><span class="field-label">Far</span><input class="field" id="set-father-name" value="${esc(family.fatherName || '')}"></label>
+            <label><span class="field-label">Stener Sørensen</span><input class="field" id="set-father-name" value="${esc(family.fatherName || '')}"></label>
             <label><span class="field-label">Fødselsdag</span><input type="date" class="field" id="set-father-birth" value="${esc(family.fatherBirth || '')}"></label>
           </div>
           <div class="field-row two">
-            <label><span class="field-label">Mor</span><input class="field" id="set-mother-name" value="${esc(family.motherName || '')}"></label>
+            <label><span class="field-label">Vibeke Mejlvang</span><input class="field" id="set-mother-name" value="${esc(family.motherName || '')}"></label>
             <label><span class="field-label">Kælenavn</span><input class="field" id="set-mother-nick" value="${esc(family.motherNick || '')}"></label>
           </div>
           <div class="field-row two">
@@ -1427,6 +1427,7 @@ function sceneThumbs(){
         state.campsites.push(target);
         state.routes = state.routes.concat(routes);
       }
+      registerSiteMediaV21(target);
       saveState();
       toast(siteId ? 'Campingplads opdateret.' : 'Campingplads gemt.');
       navigate('detail/' + target.id);
@@ -1892,7 +1893,7 @@ ${trkpts}
   }
 
   function renderSettings(view){
-    const tab = currentRoute().id || 'overview-forside';
+    const tab = currentRoute().id || 'overblik';
     const title = V19_SETTING_TABS.find(item => item[0] === tab)?.[1] || 'Overblik & Forside';
     setHeader('Indstillinger', `${title} · samlet styring af appen`);
     view.innerHTML = `<div class="settings-shell-v19">
@@ -1920,8 +1921,8 @@ ${trkpts}
         <button class="primary-btn" id="save-countdown-settings">Gem nedtælling</button></div>
       <div class="form-section card"><h3>Familie og personligt præg</h3>
         <label><span class="field-label">Campingmotto</span><input class="field" id="set-family-motto" value="${esc(family.motto || '')}"></label>
-        <div class="field-row two"><label><span class="field-label">Far</span><input class="field" id="set-father-name" value="${esc(family.fatherName || '')}"></label><label><span class="field-label">Fødselsdag</span><input type="date" class="field" id="set-father-birth" value="${esc(family.fatherBirth || '')}"></label></div>
-        <div class="field-row two"><label><span class="field-label">Mor</span><input class="field" id="set-mother-name" value="${esc(family.motherName || '')}"></label><label><span class="field-label">Kælenavn</span><input class="field" id="set-mother-nick" value="${esc(family.motherNick || '')}"></label></div>
+        <div class="field-row two"><label><span class="field-label">Stener Sørensen</span><input class="field" id="set-father-name" value="${esc(family.fatherName || '')}"></label><label><span class="field-label">Fødselsdag</span><input type="date" class="field" id="set-father-birth" value="${esc(family.fatherBirth || '')}"></label></div>
+        <div class="field-row two"><label><span class="field-label">Vibeke Mejlvang</span><input class="field" id="set-mother-name" value="${esc(family.motherName || '')}"></label><label><span class="field-label">Kælenavn</span><input class="field" id="set-mother-nick" value="${esc(family.motherNick || '')}"></label></div>
         <div class="field-row two"><label><span class="field-label">Mors fødselsdag</span><input type="date" class="field" id="set-mother-birth" value="${esc(family.motherBirth || '')}"></label><label><span class="field-label">Hund</span><input class="field" id="set-dog-name" value="${esc(family.dogName || '')}"></label></div>
         <label><span class="field-label">Hundens år / fødselsdato</span><input class="field" id="set-dog-birth" value="${esc(family.dogBirth || '')}"></label>
         <label class="check-row"><input type="checkbox" id="set-use-nickname" ${family.useNickname!==false?'checked':''}> Brug kælenavn i appen</label>
@@ -2029,7 +2030,7 @@ ${trkpts}
   function syncStopDetailsV19(route,points){const old=route.stopDetails||[];route.stopDetails=(points||[]).map((p,i)=>({...old[i],id:old[i]?.id||uid(),pointIndex:i,label:old[i]?.label||p.label||(i===0?'Start':i===points.length-1?'Mål':`Stop ${i}`),note:old[i]?.note||'',images:Array.isArray(old[i]?.images)?old[i].images:[]}));return route.stopDetails;}
   function renderRouteMediaV19(route){return `<div class="route-media-grid">${(route.images||[]).map((src,i)=>`<figure><img src="${src}" alt="Rutebillede"><button type="button" data-remove-route-image="${i}">×</button></figure>`).join('')||'<div class="empty">Ingen rutebilleder endnu.</div>'}</div>`;}
   function renderStopEditorsV19(route){return (route.stopDetails||[]).map((stop,i)=>`<article class="stop-editor-card"><div class="section-head"><strong>${i===0?'Start':i===route.stopDetails.length-1?'Mål':`Stop ${i}`}</strong><span class="badge">${i+1}</span></div><input class="field" data-stop-label="${i}" value="${esc(stop.label||'')}"><textarea data-stop-note="${i}" placeholder="Noter til stoppet">${esc(stop.note||'')}</textarea><div class="stop-images">${(stop.images||[]).map((src,j)=>`<figure><img src="${src}"><button type="button" data-remove-stop-image="${i}:${j}">×</button></figure>`).join('')}</div><label class="ghost-btn small-upload">Tilføj billede<input hidden type="file" accept="image/*" data-stop-image="${i}"></label></article>`).join('');}
-  function bikeSelectionV19(route){return state.bikes.map(bike=>{const checked=route.bikeIds.includes(bike.id);const range=route.ebikeRanges[bike.id]||{startMin:state.settings.routeDefaults.defaultRangeStartMin||180,endMin:state.settings.routeDefaults.defaultRangeEndMin||60};return `<article class="bike-select-card ${checked?'selected':''}"><label class="check-row"><input type="checkbox" data-route-bike="${bike.id}" ${checked?'checked':''}><strong>${bike.type==='Elcykel'?'⚡':'🚲'} ${esc(bike.name)}</strong><span>${esc(bike.type)}</span></label>${bike.type==='Elcykel'?`<div class="field-row two"><label><span class="field-label">Rækkevidde ved start</span><select class="field" data-bike-start="${bike.id}">${rangeOptionsV19(range.startMin)}</select></label><label><span class="field-label">Rækkevidde ved slut</span><select class="field" data-bike-end="${bike.id}">${rangeOptionsV19(range.endMin)}</select></label></div>`:''}</article>`;}).join('')||'<div class="empty">Opret cykler under Indstillinger → Oprettelser & Tilføjelser.</div>';}
+  function bikeSelectionV19(route){return state.bikes.map(bike=>{const checked=route.bikeIds.includes(bike.id);const range=route.ebikeRanges[bike.id]||{startMin:state.settings.routeDefaults.defaultRangeStartMin||180,endMin:state.settings.routeDefaults.defaultRangeEndMin||60};return `<article class="bike-select-card ${checked?'selected':''}"><label class="check-row"><input type="checkbox" data-route-bike="${bike.id}" ${checked?'checked':''}><strong>${bike.type==='Elcykel'?'⚡':'🚲'} ${esc(bike.name)}</strong><span>${esc(bike.type)}</span></label>${bike.type==='Elcykel'?`<div class="field-row two"><label><span class="field-label">Rækkevidde ved start</span><select class="field" data-bike-start="${bike.id}">${rangeOptionsV19(range.startMin)}</select></label><label><span class="field-label">Rækkevidde ved slut</span><select class="field" data-bike-end="${bike.id}">${rangeOptionsV19(range.endMin)}</select></label></div>`:''}</article>`;}).join('')||'<div class="empty">Opret cykler under Indstillinger → Overblik.</div>';}
 
   function renderAdvancedRouteEditor(view,id,siteIdParam=''){
     const isNew=id==='new'||!getRoute(id);const original=isNew?null:getRoute(id);const route=ensureRouteV19(original?structuredClone(original):{id:uid(),siteId:siteIdParam||state.campsites[0]?.id||'',name:'Ny cykelrute',date:new Date().toISOString().slice(0,10),start:'',end:'',waypoints:[],points:[],profile:state.settings.routeDefaults.profile||'cycling-regular',difficulty:'Let',description:'',distanceKm:'',durationMin:'',ascentM:'',descentM:'',googleMapsUrl:'',geojson:null,isochrone:null,surface:state.settings.routeDefaults.surface||'Blandet',routeType:state.settings.routeDefaults.routeType||'Rundtur',pauseMin:state.settings.routeDefaults.pauseMin||20,roundTrip:true,preferScenic:true,avoidTraffic:false,notes:'',highlights:[],images:[],bikeIds:[],participantIds:[],ebikeRanges:{},stopDetails:[]});
@@ -2056,7 +2057,7 @@ ${trkpts}
     qs('#route-range-btn').onclick=async()=>{const pts=activeRouteEditor.getPoints();if(pts.length<2)return toast('Ruten mangler start og mål.');collectBikeRangesV19(route);const ebikes=state.bikes.filter(b=>route.bikeIds.includes(b.id)&&b.type==='Elcykel');if(!ebikes.length)return toast('Vælg mindst én elcykel.');const start=Math.min(...ebikes.map(b=>route.ebikeRanges[b.id]?.startMin||0));const end=Math.min(...ebikes.map(b=>route.ebikeRanges[b.id]?.endMin||0));try{const profile='cycling-electric';const a=await ors.isochrones([[pts[0].lng,pts[0].lat]],profile,[start*60]);const b=await ors.isochrones([[pts.at(-1).lng,pts.at(-1).lat]],profile,[end*60],{locationType:'destination'});window.VCMaps.upsertGeoJSONFill(activeRouteEditor.map,'ebike-start-range',a);window.VCMaps.upsertGeoJSONFill(activeRouteEditor.map,'ebike-end-range',b);toast(`Fælles sikker rækkevidde: start ${start} min · slut ${end} min.`);}catch(err){handleOrsError(err);}};
     qs('#route-matrix-btn').onclick=async()=>{const pts=activeRouteEditor.getPoints();if(pts.length<2)return;try{const matrix=await ors.matrix(pts.map(p=>[+p.lng,+p.lat]),qs('#route-profile').value);qs('#route-tool-results').innerHTML=`<div class="panel"><h3>Stopmatrix</h3><p>${pts.length} punkter · ${matrix.durations?.length||0} rækker beregnet.</p></div>`;}catch(err){handleOrsError(err);}};
     qs('#route-optimize-btn').onclick=async()=>{const pts=activeRouteEditor.getPoints();if(pts.length<4)return toast('Der skal være mindst to mellempunkter.');try{const matrix=await ors.matrix(pts.map(p=>[+p.lng,+p.lat]),qs('#route-profile').value);const order=greedyStopOrderV19(matrix.durations||[],pts.length);activeRouteEditor.setPoints(order.map(i=>pts[i]));toast('Mellempunkterne er sorteret efter korteste næste strækning.');}catch(err){handleOrsError(err);}};
-    qs('#save-route-btn').onclick=()=>{route.date=qs('#route-date').value;route.siteId=qs('#route-site').value;route.name=qs('#route-name').value.trim()||'Ny cykelrute';route.profile=qs('#route-profile').value;route.difficulty=qs('#route-difficulty').value;route.routeType=qs('#route-type').value;route.start=qs('#route-start').value.trim();route.end=qs('#route-end').value.trim();route.description=qs('#route-description').value.trim();route.notes=qs('#route-notes').value.trim();route.googleMapsUrl=qs('#route-google').value.trim();route.points=activeRouteEditor.getPoints();route.participantIds=qsa('[data-route-person]:checked').map(el=>el.dataset.routePerson);route.bikeIds=qsa('[data-route-bike]:checked').map(el=>el.dataset.routeBike);collectBikeRangesV19(route);collectStopFieldsV19(route);state.campsites.forEach(c=>c.routeIds=(c.routeIds||[]).filter(rid=>rid!==route.id));if(original)Object.assign(original,route);else state.routes.push(route);if(route.siteId){const s=getSite(route.siteId);if(s&&!s.routeIds.includes(route.id))s.routeIds.push(route.id);}saveState();toast('Ruten er gemt.');navigate('route/'+route.id);};
+    qs('#save-route-btn').onclick=()=>{route.date=qs('#route-date').value;route.siteId=qs('#route-site').value;route.name=qs('#route-name').value.trim()||'Ny cykelrute';route.profile=qs('#route-profile').value;route.difficulty=qs('#route-difficulty').value;route.routeType=qs('#route-type').value;route.start=qs('#route-start').value.trim();route.end=qs('#route-end').value.trim();route.description=qs('#route-description').value.trim();route.notes=qs('#route-notes').value.trim();route.googleMapsUrl=qs('#route-google').value.trim();route.points=activeRouteEditor.getPoints();route.participantIds=qsa('[data-route-person]:checked').map(el=>el.dataset.routePerson);route.bikeIds=qsa('[data-route-bike]:checked').map(el=>el.dataset.routeBike);collectBikeRangesV19(route);collectStopFieldsV19(route);state.campsites.forEach(c=>c.routeIds=(c.routeIds||[]).filter(rid=>rid!==route.id));if(original)Object.assign(original,route);else state.routes.push(route);if(route.siteId){const s=getSite(route.siteId);if(s&&!s.routeIds.includes(route.id))s.routeIds.push(route.id);}registerRouteMediaV21(route);saveState();toast('Ruten er gemt.');navigate('route/'+route.id);};
     qs('#route-export-gpx-btn').onclick=()=>{route.points=activeRouteEditor.getPoints();downloadRouteGpx(route);};if(original)qs('#delete-route-btn').onclick=async()=>{if(await confirmAction('Slet rute','Ruten fjernes permanent.')){state.routes=state.routes.filter(r=>r.id!==route.id);saveState();navigate('overview');}};
   }
 
@@ -2089,7 +2090,7 @@ ${trkpts}
   } catch (_) {}
 
   if (!NAV_ITEMS.some(item => item[0] === 'album')) {
-    NAV_ITEMS.splice(Math.max(0, NAV_ITEMS.length - 1), 0, ['album', 'Ferie Albummet', '📚']);
+    NAV_ITEMS.splice(Math.max(0, NAV_ITEMS.length - 1), 0, ['album', 'Ferie Album', '📚']);
   }
   state.version = 20.1;
   state.settings = state.settings || {};
@@ -2149,7 +2150,7 @@ ${trkpts}
       const view = qs('#view');
       document.body.dataset.route = route.name;
       state.ui.lastRoute = route.name;
-      setHeader('Ferie Albummet', 'Alle feriebilleder samlet og systematiseret');
+      setHeader('Ferie Album', 'Alle feriebilleder samlet og systematiseret');
       renderHolidayAlbumV20(view);
       try { renderQuickDock(); } catch (_) {}
       window.requestAnimationFrame(updateLiveInfoDisplays);
@@ -2192,7 +2193,7 @@ ${trkpts}
         <div class="side-quick-list">${actions.map(sidebarQuickButtonV20).join('')}</div>
         <div class="vacation-toggle-box ${vg.active ? 'is-active' : ''}">
           <button class="primary-btn ${vg.active ? 'light' : ''}" id="toggle-vacation-guard-side">${vg.active ? 'Ferie-Vagt er aktiv' : 'Aktivér Ferie-Vagt'}</button>
-          <button class="ghost-btn" data-nav="album">Åbn Ferie Albummet</button>
+          <button class="ghost-btn" data-nav="album">Åbn Ferie Album</button>
         </div>
       </div>
       <div class="sidebar-card sidebar-mini countdown-sidebar-card-v20">
@@ -2271,7 +2272,7 @@ ${trkpts}
       box.innerHTML = `
         <div class="hero-action-strip-v20__buttons">
           <button class="primary-btn" id="toggle-vacation-guard-main">${active ? 'Ferie-Vagt aktiv' : 'Aktivér Ferie-Vagt'}</button>
-          <button class="secondary-btn" data-nav="album">Ferie Albummet</button>
+          <button class="secondary-btn" data-nav="album">Ferie Album</button>
         </div>
         <div class="hero-action-strip-v20__note">Når Ferie-Vagten er aktiv, samler appen billeder i feriealbummet og viser små lokale ferie-tip.</div>`;
       hero.appendChild(box);
@@ -2348,7 +2349,7 @@ ${trkpts}
         src: await compressImage(file, 1600, .82),
         title: file.name.replace(/\.[^.]+$/,''),
         date: new Date().toISOString().slice(0,10),
-        source: 'Ferie Albummet',
+        source: 'Ferie Album',
         note: ''
       });
     }
@@ -2362,7 +2363,7 @@ ${trkpts}
     view.innerHTML = `<div class="view-grid holiday-album-page-v20">
       <section class="card holiday-album-hero-v20">
         <div>
-          <span class="eyebrow dark">Ferie Albummet</span>
+          <span class="eyebrow dark">Ferie Album</span>
           <h2>Alle minder samlet i 100% system</h2>
           <p class="subtle">Ferie-Vagten hjælper med at samle billeder fra campingpladser, cykelruter, stop og egne uploads.</p>
         </div>
@@ -2403,7 +2404,7 @@ ${trkpts}
     if (tab === 'cykelruter') return renderSettingsPanelBaseV19('cykel-oplevelser');
     if (tab === 'oplevelser') {
       const vg = state.settings.vacationGuard || {};
-      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Oplevelser & Ferie-Vagt</h3><label><span class="field-label">Ferienavn</span><input class="field" id="set-vg-trip-label" value="${esc(vg.tripLabel || state.settings.nextTripName || '')}"></label><label class="check-row"><input type="checkbox" id="set-vg-active" ${vg.active?'checked':''}> Ferie-Vagten er aktiv</label><label class="check-row"><input type="checkbox" id="set-vg-auto" ${vg.autoCollect!==false?'checked':''}> Saml automatisk billeder til feriealbummet</label><label class="check-row"><input type="checkbox" id="set-vg-tips" ${vg.showLocalTips!==false?'checked':''}> Vis små tips og forslag i området</label><div class="panel">Albummet samler billeder fra feriealbumuploads, campingpladser, cykelruter og stop.</div><div class="action-row"><button class="primary-btn" id="save-vg-settings">Gem Ferie-Vagt</button><button class="ghost-btn" data-nav="album">Åbn Ferie Albummet</button></div></div></div>`;
+      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Oplevelser & Ferie-Vagt</h3><label><span class="field-label">Ferienavn</span><input class="field" id="set-vg-trip-label" value="${esc(vg.tripLabel || state.settings.nextTripName || '')}"></label><label class="check-row"><input type="checkbox" id="set-vg-active" ${vg.active?'checked':''}> Ferie-Vagten er aktiv</label><label class="check-row"><input type="checkbox" id="set-vg-auto" ${vg.autoCollect!==false?'checked':''}> Saml automatisk billeder til feriealbummet</label><label class="check-row"><input type="checkbox" id="set-vg-tips" ${vg.showLocalTips!==false?'checked':''}> Vis små tips og forslag i området</label><div class="panel">Albummet samler billeder fra feriealbumuploads, campingpladser, cykelruter og stop.</div><div class="action-row"><button class="primary-btn" id="save-vg-settings">Gem Ferie-Vagt</button><button class="ghost-btn" data-nav="album">Åbn Ferie Album</button></div></div></div>`;
     }
     if (tab === 'illustrationer') {
       const quicks = ['search','addVisited','addWish','addRoute','bigMap','settings'];
@@ -2531,7 +2532,7 @@ ${trkpts}
       if (!meta.tripId && active && state.settings.vacationGuard?.active && state.settings.vacationGuard?.autoCollect !== false) {
         const itemDay = albumDayKeyV201(item.date || meta.addedAt || '');
         const startDay = albumDayKeyV201(active.startedAt || '');
-        if (item.source === 'Ferie Albummet' || itemDay >= startDay) meta.tripId = active.id;
+        if (item.source === 'Ferie Album' || itemDay >= startDay) meta.tripId = active.id;
       }
       const day = albumDayKeyV201(item.date || meta.addedAt || '');
       return {
@@ -2580,7 +2581,7 @@ ${trkpts}
         src: await compressImage(file, 1600, .82),
         title: file.name.replace(/\.[^.]+$/,''),
         date: new Date().toISOString().slice(0,10),
-        source: 'Ferie Albummet',
+        source: 'Ferie Album',
         note: '',
         createdAt: new Date().toISOString()
       });
@@ -2659,7 +2660,7 @@ ${trkpts}
     view.innerHTML = `<div class="view-grid holiday-album-page-v201">
       <section class="card holiday-album-hero-v201">
         <div class="holiday-album-hero-v201__copy">
-          <span class="eyebrow dark">Ferie Albummet · version 20.1</span>
+          <span class="eyebrow dark">Ferie Album · version 21</span>
           <h2>${esc(activeVacation?.name || 'Alle jeres campingminder')}</h2>
           <p class="subtle">Billeder organiseres automatisk efter ferie, dag, sted, rute og stop.</p>
           <div class="album-trip-chips-v201">${vacations.map(v=>`<button class="chip ${v.status==='active'?'visit':''}" data-album-trip-filter="${v.id}">${esc(v.name)} · ${formatDate(v.startedAt)}</button>`).join('') || '<span class="chip">Ingen afsluttede ferier endnu</span>'}</div>
@@ -2758,7 +2759,7 @@ ${trkpts}
   renderSettingsPanelV19 = function(tab){
     if(tab==='oplevelser'){
       const vg=state.settings.vacationGuard||{}, album=state.settings.album||{};
-      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Intelligent Ferie-Vagt</h3><label><span class="field-label">Navn på ferie</span><input class="field" id="set-vg-trip-label" value="${esc(vg.tripLabel||state.settings.nextTripName||'')}"></label><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-vg-active" ${vg.active?'checked':''}> Ferie-Vagten er aktiv</label><label class="check-row"><input type="checkbox" id="set-vg-auto" ${vg.autoCollect!==false?'checked':''}> Saml billeder automatisk</label><label class="check-row"><input type="checkbox" id="set-vg-tips" ${vg.showLocalTips!==false?'checked':''}> Vis lokale forslag</label><label class="check-row"><input type="checkbox" id="set-vg-daily" ${vg.dailySummary!==false?'checked':''}> Vis dagligt ferieoverblik</label></div><div class="panel">Når Ferie-Vagten starter, oprettes automatisk en ferie. Billeder grupperes efter dag, sted, rute og stop. Når vagten afsluttes, gemmes ferien som et afsluttet album.</div><div class="action-row"><button class="primary-btn" id="save-vg-settings-v201">Gem Ferie-Vagt</button><button class="ghost-btn" data-nav="album">Åbn Ferie Albummet</button></div></div><div class="form-section card full-span"><h3>Automatisk feriealbum</h3><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-album-group-day" ${album.autoGroupByDay!==false?'checked':''}> Gruppér efter dag</label><label class="check-row"><input type="checkbox" id="set-album-captions" ${album.showCaptions!==false?'checked':''}> Vis billedtekster</label><label class="check-row"><input type="checkbox" id="set-album-campsites" ${album.includeCampsiteImages!==false?'checked':''}> Medtag campingpladsbilleder</label><label class="check-row"><input type="checkbox" id="set-album-routes" ${album.includeRouteImages!==false?'checked':''}> Medtag rutebilleder</label><label class="check-row"><input type="checkbox" id="set-album-stops" ${album.includeStopImages!==false?'checked':''}> Medtag billeder fra stop</label><label class="check-row"><input type="checkbox" id="set-album-compact" ${album.compactCards!==false?'checked':''}> Kompakt albumlayout</label></div><button class="primary-btn" id="save-album-settings-v201">Gem albumindstillinger</button></div></div>`;
+      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Intelligent Ferie-Vagt</h3><label><span class="field-label">Navn på ferie</span><input class="field" id="set-vg-trip-label" value="${esc(vg.tripLabel||state.settings.nextTripName||'')}"></label><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-vg-active" ${vg.active?'checked':''}> Ferie-Vagten er aktiv</label><label class="check-row"><input type="checkbox" id="set-vg-auto" ${vg.autoCollect!==false?'checked':''}> Saml billeder automatisk</label><label class="check-row"><input type="checkbox" id="set-vg-tips" ${vg.showLocalTips!==false?'checked':''}> Vis lokale forslag</label><label class="check-row"><input type="checkbox" id="set-vg-daily" ${vg.dailySummary!==false?'checked':''}> Vis dagligt ferieoverblik</label></div><div class="panel">Når Ferie-Vagten starter, oprettes automatisk en ferie. Billeder grupperes efter dag, sted, rute og stop. Når vagten afsluttes, gemmes ferien som et afsluttet album.</div><div class="action-row"><button class="primary-btn" id="save-vg-settings-v201">Gem Ferie-Vagt</button><button class="ghost-btn" data-nav="album">Åbn Ferie Album</button></div></div><div class="form-section card full-span"><h3>Automatisk feriealbum</h3><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-album-group-day" ${album.autoGroupByDay!==false?'checked':''}> Gruppér efter dag</label><label class="check-row"><input type="checkbox" id="set-album-captions" ${album.showCaptions!==false?'checked':''}> Vis billedtekster</label><label class="check-row"><input type="checkbox" id="set-album-campsites" ${album.includeCampsiteImages!==false?'checked':''}> Medtag campingpladsbilleder</label><label class="check-row"><input type="checkbox" id="set-album-routes" ${album.includeRouteImages!==false?'checked':''}> Medtag rutebilleder</label><label class="check-row"><input type="checkbox" id="set-album-stops" ${album.includeStopImages!==false?'checked':''}> Medtag billeder fra stop</label><label class="check-row"><input type="checkbox" id="set-album-compact" ${album.compactCards!==false?'checked':''}> Kompakt albumlayout</label></div><button class="primary-btn" id="save-album-settings-v201">Gem albumindstillinger</button></div></div>`;
     }
     return renderSettingsPanelV201Base(tab);
   };
@@ -2791,6 +2792,485 @@ ${trkpts}
     };
   };
 
+  renderRoute();
+
+  // ===== Version 21: separat Ferie Album og Ferie Vagten, kompakt layout og samlet indstillingscenter =====
+  state.version = 21;
+  PRESET_IMAGES.logo = 'assets/logo-main-v21.png';
+  PRESET_IMAGES.logoLarge = 'assets/logo-main-v21.png';
+  state.settings.logo = 'assets/logo-main-v21.png';
+  state.settings.actionIcons = state.settings.actionIcons || {};
+  state.settings.ratingIcons = state.settings.ratingIcons || { star: 'assets/rating-star-v21.svg' };
+  state.settings.mapIcons = state.settings.mapIcons || {
+    visited: 'assets/map-visited-v21.svg',
+    wish: 'assets/map-wish-v21.svg',
+    start: 'assets/route-start-v21.svg',
+    via: 'assets/route-via-v21.svg',
+    end: 'assets/route-end-v21.svg'
+  };
+  state.settings.menuOrder = Array.isArray(state.settings.menuOrder) ? state.settings.menuOrder : ['overview','visited','map','top','wishlist','album','vacation-guard','settings'];
+  state.settings.menuHidden = Array.isArray(state.settings.menuHidden) ? state.settings.menuHidden : [];
+  state.settings.ui = {
+    cardRadius: 20,
+    pageGap: 14,
+    cardPadding: 16,
+    sidebarWidth: 352,
+    panelShadow: 'soft',
+    panelBorder: true,
+    compactPages: true,
+    ...(state.settings.ui || {})
+  };
+  state.settings.cover = {
+    position: 'center',
+    showClock: true,
+    showWeather: true,
+    showTips: true,
+    ...(state.settings.cover || {})
+  };
+  state.settings.moodPlacements = state.settings.moodPlacements || {};
+  state.settings.pageSections = state.settings.pageSections || {};
+  state.settings.family = state.settings.family || {};
+  state.settings.family.fatherName = state.settings.family.fatherName || 'Stener Sørensen';
+  state.settings.family.motherName = state.settings.family.motherName || 'Vibeke Mejlvang';
+  state.settings.family.motherNick = state.settings.family.motherNick || 'Vibse';
+  state.settings.family.dogName = state.settings.family.dogName || 'Sisi';
+  saveState(false);
+
+  window.VC_MAP_ICONS = { ...state.settings.mapIcons };
+
+  NAV_ITEMS.length = 0;
+  NAV_ITEMS.push(
+    ['overview','Overblik','🏕️'],
+    ['visited','Besøgte','📍'],
+    ['map','Kort','🗺️'],
+    ['top','Bedst bedømte','🏆'],
+    ['wishlist','Vil besøge','💛'],
+    ['album','Ferie Album','📚'],
+    ['vacation-guard','Ferie Vagten','🛡️'],
+    ['settings','Indstillinger','⚙️']
+  );
+
+  V19_SETTING_TABS.length = 0;
+  V19_SETTING_TABS.push(
+    ['overblik','Overblik','⌂'],
+    ['kort','Kort','⌖'],
+    ['ruteplanlaegning','Ruteplanlægning','↝'],
+    ['campingpladser','Campingpladser','⛺'],
+    ['cykelruter','Cykelruter','🚲'],
+    ['besoeg','Besøg','✓'],
+    ['oensker','Ønsker','♥'],
+    ['stjerner','Stjerner vurdering','★'],
+    ['bedoemmelse','Bedømmelse','🏆'],
+    ['ferie-vagt','Ferie-Vagt','🛡️'],
+    ['ferie-album','Ferie Album','📚'],
+    ['udseende','Udseende','◐'],
+    ['skalering','Skalering','↔'],
+    ['sektioner','Sektioner','▦'],
+    ['menu','Menu','☰'],
+    ['bokse','Bokse','▢'],
+    ['paneler','Paneler','▤'],
+    ['cover','Cover','▧'],
+    ['elementer','Elementer','＋'],
+    ['ur','Ur','◷'],
+    ['ikoner','Ikoner','✦'],
+    ['illustrationer','Illustrationer','🎨'],
+    ['billeder','Billeder','🖼️']
+  );
+
+
+  function allMenuItemsV21(){
+    const byKey = Object.fromEntries(NAV_ITEMS.map(item => [item[0], item]));
+    const order = [...state.settings.menuOrder, ...NAV_ITEMS.map(item => item[0])];
+    const seen = new Set();
+    return order.filter(key => byKey[key] && !seen.has(key) && seen.add(key)).map(key => byKey[key]);
+  }
+
+  function orderedNavItemsV21(){
+    const byKey = Object.fromEntries(NAV_ITEMS.map(item => [item[0], item]));
+    const order = [...state.settings.menuOrder, ...NAV_ITEMS.map(item => item[0])];
+    const seen = new Set();
+    return order.filter(key => byKey[key] && !seen.has(key) && !state.settings.menuHidden.includes(key) && seen.add(key)).map(key => byKey[key]);
+  }
+
+  function familyMemberCard(kind, name, birth, icon, yearOnly=false){
+    const age = yearOnly ? '' : ageFromBirth(birth);
+    const birthLabel = birth ? (yearOnly ? `Født ${String(birth).slice(0,4)}` : birthdayText(birth,false)) : '';
+    return `<div class="family-member family-member--${kind}"><span class="family-member-icon">${icon}</span><div><strong>${esc(name)}</strong><span>${esc(birthLabel)}${age!=='' ? ` · ${age} år` : ''}</span></div></div>`;
+  }
+
+  const renderRouteV21Base = renderRoute;
+  renderRoute = function(){
+    const route = currentRoute();
+    if (route.name === 'vacation-guard') {
+      clearError(); cleanupActiveMaps(); renderNav(); renderBottomNav();
+      const view = qs('#view');
+      document.body.dataset.route = route.name;
+      setHeader('Ferie Vagten', 'Aktiv ferie, billeder, forslag og dagligt overblik');
+      renderVacationGuardV21(view);
+      try { renderQuickDock(); } catch (_) {}
+      window.requestAnimationFrame(updateLiveInfoDisplays);
+      return;
+    }
+    if (route.name === 'album') {
+      clearError(); cleanupActiveMaps(); renderNav(); renderBottomNav();
+      const view = qs('#view');
+      document.body.dataset.route = route.name;
+      setHeader('Ferie Album', 'Alle ferieminder samlet i ét system');
+      renderHolidayAlbumV20(view);
+      try { renderQuickDock(); } catch (_) {}
+      window.requestAnimationFrame(updateLiveInfoDisplays);
+      return;
+    }
+    renderRouteV21Base();
+  };
+
+  function renderTopbarNavV20(){
+    const current = currentRoute().name;
+    const host = qs('.topbar-actions');
+    if (!host) return;
+    host.innerHTML = `<nav class="top-main-nav">${orderedNavItemsV21().map(([key,label,icon]) => `<button class="top-main-nav__btn ${current===key?'active':''}" data-nav="${key}"><span>${icon}</span><span>${label}</span></button>`).join('')}</nav>`;
+  }
+
+  function renderNav(){
+    const current = currentRoute().name;
+    const family = state.settings.family || {};
+    const next = countdownInfo();
+    const actions = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+    const guard = state.settings.vacationGuard || {};
+    qs('#sidebar').innerHTML = `
+      <div class="sidebar-card brand-card brand-card-v21">
+        <div class="brand-logo brand-logo--isolated"><img src="${state.settings.logo || PRESET_IMAGES.logo}" alt="Vores Camping-logo"></div>
+        <div class="brand-copy">
+          <span class="brand-kicker">${esc(state.settings.tagline || 'Vores Camping')}</span>
+          <h2>${esc(state.settings.appName || 'Vores Camping')}</h2>
+          <p class="brand-sub">“${esc(family.motto || 'Vores ture, vores frihed, vores minder')}”</p>
+        </div>
+        <div class="family-chip-row">
+          <span class="family-chip family-chip--stener">${esc(family.fatherName || 'Stener Sørensen')}</span>
+          <span class="family-chip family-chip--vibse">${esc(family.motherNick || family.motherName || 'Vibse')}</span>
+          <span class="family-chip family-chip--sisi">🐾 ${esc(family.dogName || 'Sisi')}</span>
+        </div>
+      </div>
+      <div class="sidebar-card sidebar-mini side-quick-panel">
+        <div class="sidebar-section-title"><span>Hurtig-handlinger</span><span>⚡</span></div>
+        <div class="side-quick-list">${actions.map(sidebarQuickButtonV21).join('')}</div>
+        <button class="vacation-main-button ${guard.active?'is-active':''}" id="vacation-main-button-v21"><span>☀️</span><span><strong>${guard.active?'Ferie-Vagten er aktiv':'Start Ferie'}</strong><small>${guard.active?'Tryk for at åbne Ferie Vagten':'Aktivér automatisk ferieoverblik'}</small></span></button>
+      </div>
+      <div class="sidebar-card sidebar-mini countdown-sidebar-card-v21">
+        <div class="sidebar-section-title"><span>Næste campingtur</span><span>🏕️</span></div>
+        <div class="count-grid count-grid-v21">${countdownCells(next)}</div>
+        <div class="subtle small">${esc(state.settings.nextTripName || 'Næste tur')} · ${formatDate(state.settings.nextTripDate)}</div>
+      </div>
+      <div class="sidebar-card sidebar-mini side-nav-panel">
+        <div class="sidebar-section-title"><span>Hovedsider</span><span>☰</span></div>
+        <div class="nav-list">${orderedNavItemsV21().map(([key,label,icon]) => `<button class="nav-item ${current===key?'active':''}" data-nav="${key}"><span class="icon">${icon}</span><span>${label}</span></button>`).join('')}</div>
+      </div>`;
+    if (state.settings.showSidebarQuick === false) qs('.side-quick-panel')?.remove();
+    const vacationBtn = qs('#vacation-main-button-v21');
+    if (vacationBtn) vacationBtn.onclick = () => {
+      if (state.settings.vacationGuard?.active) navigate('vacation-guard');
+      else { toggleVacationGuardV20(); navigate('vacation-guard'); }
+    };
+  }
+
+  function sidebarQuickButtonV21(action){
+    const meta = QUICK_ACTION_META[action] || { label: action, asset: 'assets/action-settings-v18.svg' };
+    const icon = state.settings.actionIcons?.[action] || meta.asset;
+    return `<button class="side-quick-btn ${quickActionIsActive(action)?'is-active':''}" data-quick="${action}"><span class="side-quick-btn__icon"><img src="${icon}" alt=""></span><span class="side-quick-btn__text"><strong>${esc(meta.label)}</strong><small>${sideQuickDescriptionV20(action)}</small></span></button>`;
+  }
+
+  function renderBottomNav(){
+    const current = currentRoute().name;
+    qs('#bottom-nav').innerHTML = orderedNavItemsV21().map(([key,label,icon]) => `<button class="${current===key?'active':''}" data-nav="${key}">${icon} ${label}</button>`).join('');
+  }
+
+  function renderQuickDock(){
+    const dock = qs('#quick-dock');
+    if (!dock) return;
+    const actions = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+    dock.innerHTML = actions.map(action => quickDockButton(action)).join('');
+  }
+
+  function quickDockButton(action){
+    const meta = QUICK_ACTION_META[action] || { label:action, asset:'assets/action-settings-v18.svg' };
+    const icon = state.settings.actionIcons?.[action] || meta.asset;
+    return `<button class="quick-dock-btn quick-dock-btn--${action}${quickActionIsActive(action)?' is-active':''}" data-quick="${action}" title="${esc(meta.label)}"><span class="quick-dock-icon"><img src="${icon}" alt=""></span><span class="quick-dock-label">${esc(meta.label)}</span></button>`;
+  }
+
+  const renderOverviewV21Base = renderOverview;
+  renderOverview = function(view){
+    renderOverviewV21Base(view);
+    enhanceOverviewV21(view);
+  };
+
+  function enhanceOverviewV21(view){
+    if (state.settings.showFamilyStrip === false) view.querySelector('.family-story-strip')?.remove();
+    if (state.settings.showPulse === false) view.querySelector('.overview-pulse')?.remove();
+    const hero = view.querySelector('.dashboard-hero-image');
+    if (!hero) return;
+    hero.style.backgroundPosition = state.settings.cover?.position || 'center';
+    let welcome = hero.querySelector('.dashboard-welcome');
+    if (welcome && !welcome.querySelector('.vacation-hero-controls-v21')) {
+      const controls = document.createElement('div');
+      controls.className = 'vacation-hero-controls-v21';
+      controls.innerHTML = `<button class="vacation-hero-button ${state.settings.vacationGuard?.active?'is-active':''}" id="vacation-hero-button-v21"><span>☀️</span><span><strong>${state.settings.vacationGuard?.active?'Ferie-Vagten er aktiv':'Aktivér Ferie-Vagt'}</strong><small>Billeder, oplevelser og minder i system</small></span></button><button class="glass-btn" data-nav="album">Åbn Ferie Album</button>`;
+      welcome.appendChild(controls);
+      const b = qs('#vacation-hero-button-v21');
+      if (b) b.onclick = () => { if (!state.settings.vacationGuard?.active) toggleVacationGuardV20(); navigate('vacation-guard'); };
+    }
+    if (state.settings.cover?.showTips !== false && !hero.querySelector('.hero-local-tips-v21')) {
+      const tips = document.createElement('aside');
+      tips.className = 'hero-local-tips-v21';
+      const items = buildHolidayTipsV20().slice(0,3);
+      tips.innerHTML = `<span class="eyebrow">I nærheden</span><h3>Små forslag lige nu</h3>${items.map(item => `<div class="hero-tip-row"><span>✦</span><div><strong>${esc(item.title)}</strong><small>${esc(item.text)}</small></div></div>`).join('')}<button class="ghost-btn compact-ghost" data-nav="vacation-guard">Flere ferie-tip</button>`;
+      hero.appendChild(tips);
+    }
+  }
+
+  function renderVacationGuardV21(view){
+    const guard = state.settings.vacationGuard || {};
+    const active = activeVacationV201();
+    const summary = albumSummaryV201();
+    const albumItems = collectHolidayAlbumItemsV20();
+    const tips = vacationDailyAdviceV201();
+    view.innerHTML = `<div class="view-grid vacation-guard-page-v21">
+      <section class="card vacation-guard-hero-v21 ${guard.active?'is-active':''}">
+        <div>
+          <span class="eyebrow dark">Ferie Vagten</span>
+          <h2>${guard.active ? `Aktiv: ${esc(active?.name || guard.tripLabel || 'Ferie')}` : 'Klar til næste ferie'}</h2>
+          <p>${guard.active ? 'Alle nye feriebilleder, rutebilleder og stopbilleder samles automatisk i det aktive feriealbum.' : 'Start Ferie-Vagten ved afgang. Så holder appen styr på billeder, aktiviteter og feriedage.'}</p>
+        </div>
+        <div class="vacation-guard-hero-actions-v21">
+          <button class="vacation-big-button-v21 ${guard.active?'is-active':''}" id="toggle-vacation-guard-v21"><span>☀️</span><strong>${guard.active?'Afslut Ferie-Vagt':'Start Ferie'}</strong></button>
+          <button class="ghost-btn" data-nav="album">Ferie Album</button>
+        </div>
+      </section>
+      <section class="stats-row refined-stats">
+        ${statCard(summary.today,'Fotos i dag','📷')}
+        ${statCard(summary.days,'Feriedage','📅')}
+        ${statCard(summary.favorites,'Favoritter','♥')}
+        ${statCard(summary.active,'Fotos på ferien','🖼️')}
+      </section>
+      <section class="grid-2 vacation-guard-grid-v21">
+        <div class="card-section card">
+          <div class="section-head"><div><h3>Dagens ferieoverblik</h3><p class="subtle">Ferie-Vagten følger med under hele turen.</p></div><span class="badge">${guard.active?'Aktiv':'Standby'}</span></div>
+          <div class="vacation-advice-list-v21">${tips.map((text,index)=>`<article><span>${index+1}</span><p>${esc(text)}</p></article>`).join('')}</div>
+          <button class="ghost-btn" id="refresh-local-vacation-tips-v21">Find lokale forslag</button>
+        </div>
+        <div class="card-section card" id="local-vacation-tips-host-v21">
+          <div class="section-head"><div><h3>Seværdigheder og oplevelser</h3><p class="subtle">Forslag ud fra den aktuelle placering og gemte steder.</p></div></div>
+          <div class="holiday-tips-grid">${buildHolidayTipsV20().map(t => `<article class="holiday-tip"><strong>${esc(t.title)}</strong><p>${esc(t.text)}</p></article>`).join('')}</div>
+        </div>
+      </section>
+      <section class="card-section card">
+        <div class="section-head"><div><h3>Seneste billeder under ferien</h3><p class="subtle">Automatisk samlet fra album, campingpladser og cykelruter.</p></div><button class="ghost-btn" data-nav="album">Se hele albummet</button></div>
+        <div class="vacation-recent-images-v21">${albumItems.slice(0,8).map(item => `<article><img src="${item.src}" alt="${esc(item.title)}"><span>${esc(item.title)}</span><small>${formatDate(item.date) || 'I dag'}</small></article>`).join('') || '<div class="empty">Ingen feriebilleder endnu.</div>'}</div>
+      </section>
+    </div>`;
+    const toggle = qs('#toggle-vacation-guard-v21'); if (toggle) toggle.onclick = () => toggleVacationGuardV20();
+    const local = qs('#refresh-local-vacation-tips-v21'); if (local) local.onclick = () => refreshLocalVacationTipsV201(qs('#local-vacation-tips-host-v21'));
+  }
+
+  const renderHolidayAlbumV21Base = renderHolidayAlbumV20;
+  renderHolidayAlbumV20 = function(view){
+    renderHolidayAlbumV21Base(view);
+    view.querySelectorAll('h2,h3,.eyebrow').forEach(node => {
+      node.textContent = node.textContent.replace(/Ferie Album/g,'Ferie Album');
+    });
+  };
+
+  function stars(avg){
+    const r = Math.round(avg || 0);
+    const src = state.settings.ratingIcons?.star || 'assets/rating-star-v21.svg';
+    return `<span class="rating rating-images-v21">${[1,2,3,4,5].map(i => `<img class="${i<=r?'on':'off'}" src="${src}" alt="${i<=r?'Fyldt stjerne':'Tom stjerne'}">`).join('')}</span>`;
+  }
+
+  function starInput(catId, value){
+    const src = state.settings.ratingIcons?.star || 'assets/rating-star-v21.svg';
+    return `<div class="stars stars-images-v21" data-star-group="${catId}">${[1,2,3,4,5].map(v => `<button type="button" class="star-btn ${v<=Math.round(value)?'on':''}" data-star="${catId}" data-value="${v}"><img src="${src}" alt="${v} stjerner"></button>`).join('')}<input type="hidden" name="rating_${catId}" value="${value || 0}"></div>`;
+  }
+
+  const renderSettingsPanelV21Base = renderSettingsPanelV19;
+  renderSettingsPanelV19 = function(tab){
+    const family = state.settings.family || {};
+    const ui = state.settings.ui || {};
+    const guard = state.settings.vacationGuard || {};
+    const album = state.settings.album || {};
+    const cover = state.settings.cover || {};
+    if (tab === 'overblik') return `<div class="settings-grid compact-settings">
+      <div class="form-section card"><h3>App og personlige tekster</h3><label><span class="field-label">Appnavn</span><input class="field" id="set-app-name" value="${esc(state.settings.appName)}"></label><label><span class="field-label">Undertitel</span><input class="field" id="set-tagline" value="${esc(state.settings.tagline)}"></label><label><span class="field-label">Forsidetekst</span><input class="field" id="set-intro" value="${esc(state.settings.intro)}"></label><label><span class="field-label">Campingmotto</span><input class="field" id="set-family-motto" value="${esc(family.motto || '')}"></label><button class="primary-btn" id="save-overview-v21">Gem overblik</button></div>
+      <div class="form-section card"><h3>Stener Sørensen</h3><label><span class="field-label">Navn</span><input class="field" id="set-father-name" value="${esc(family.fatherName || '')}"></label><label><span class="field-label">Fødselsdato</span><input type="date" class="field" id="set-father-birth" value="${esc(family.fatherBirth || '')}"></label><h3>Vibeke Mejlvang</h3><label><span class="field-label">Navn</span><input class="field" id="set-mother-name" value="${esc(family.motherName || '')}"></label><label><span class="field-label">Kælenavn</span><input class="field" id="set-mother-nick" value="${esc(family.motherNick || '')}"></label><label><span class="field-label">Fødselsdato</span><input type="date" class="field" id="set-mother-birth" value="${esc(family.motherBirth || '')}"></label><button class="primary-btn" id="save-family-v21">Gem navne</button></div>
+      <div class="form-section card full-span"><div class="section-head"><div><h3>Personer og dyr</h3><p class="subtle">Opret og redigér campister, familie, gæster, andre campister, kæledyr og ejere.</p></div><span class="badge">${state.people.length} profiler</span></div>${renderPeopleEditorV21()}<div class="field-row four"><input class="field" id="new-person-name" placeholder="Navn"><select class="field" id="new-person-kind"><option value="person">Person</option><option value="animal">Dyr</option></select><select class="field" id="new-person-role">${roleOptionsV19()}</select><input class="field" id="new-person-birth" placeholder="Fødselsdato eller år"></div><div class="field-row two"><select class="field" id="new-person-owner"><option value="">Ingen ejer</option>${state.people.filter(p=>p.kind==='person').map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select><button class="primary-btn" id="add-person-btn">Opret person eller dyr</button></div></div>
+    </div>`;
+    if (tab === 'kort') return renderMapSettingsV21();
+    if (tab === 'ruteplanlaegning') return renderRoutePlanningSettingsV21();
+    if (tab === 'campingpladser') return renderCampingSettingsV21();
+    if (tab === 'cykelruter') return renderCyclingSettingsV21();
+    if (tab === 'besoeg') return renderVisitSettingsV21('visited');
+    if (tab === 'oensker') return renderVisitSettingsV21('wish');
+    if (tab === 'stjerner') return renderStarSettingsV21();
+    if (tab === 'bedoemmelse') return renderAssessmentSettingsV21();
+    if (tab === 'ferie-vagt') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Ferie Vagten</h3><label><span class="field-label">Navn på ferie</span><input class="field" id="set-vg-trip-label" value="${esc(guard.tripLabel || state.settings.nextTripName || '')}"></label><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-vg-active" ${guard.active?'checked':''}> Ferie-Vagten er aktiv</label><label class="check-row"><input type="checkbox" id="set-vg-auto" ${guard.autoCollect!==false?'checked':''}> Saml nye billeder automatisk</label><label class="check-row"><input type="checkbox" id="set-vg-tips" ${guard.showLocalTips!==false?'checked':''}> Vis lokale forslag</label><label class="check-row"><input type="checkbox" id="set-vg-daily" ${guard.dailySummary!==false?'checked':''}> Vis dagligt ferieoverblik</label></div><div class="action-row"><button class="primary-btn" id="save-vg-settings-v21">Gem Ferie-Vagt</button><button class="ghost-btn" data-nav="vacation-guard">Åbn Ferie Vagten</button></div></div></div>`;
+    if (tab === 'ferie-album') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Ferie Album</h3><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-album-group-day" ${album.autoGroupByDay!==false?'checked':''}> Gruppér efter dag</label><label class="check-row"><input type="checkbox" id="set-album-captions" ${album.showCaptions!==false?'checked':''}> Vis billedtekster</label><label class="check-row"><input type="checkbox" id="set-album-campsites" ${album.includeCampsiteImages!==false?'checked':''}> Medtag campingpladsbilleder</label><label class="check-row"><input type="checkbox" id="set-album-routes" ${album.includeRouteImages!==false?'checked':''}> Medtag rutebilleder</label><label class="check-row"><input type="checkbox" id="set-album-stops" ${album.includeStopImages!==false?'checked':''}> Medtag stopbilleder</label><label class="check-row"><input type="checkbox" id="set-album-compact" ${album.compactCards!==false?'checked':''}> Kompakt albumlayout</label></div><div class="action-row"><button class="primary-btn" id="save-album-settings-v21">Gem Ferie Album</button><button class="ghost-btn" data-nav="album">Åbn Ferie Album</button></div></div></div>`;
+    if (tab === 'udseende') return renderAppearanceSettingsV21();
+    if (tab === 'skalering') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Skalering</h3><label><span class="field-label">Tekst og elementer</span><input type="range" min="0.88" max="1.18" step="0.01" id="set-scale" value="${state.settings.fontScale || 1}"></label><label><span class="field-label">Venstremenuens bredde</span><input type="range" min="300" max="430" step="5" id="set-sidebar-width-v21" value="${ui.sidebarWidth || 352}"></label><label><span class="field-label">Afstand mellem sektioner</span><input type="range" min="8" max="28" step="1" id="set-page-gap-v21" value="${ui.pageGap || 14}"></label><button class="primary-btn" id="save-scaling-v21">Gem skalering</button></div></div>`;
+    if (tab === 'sektioner') return renderSectionsSettingsV21();
+    if (tab === 'menu') return renderMenuSettingsV21();
+    if (tab === 'bokse') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Bokse</h3><label><span class="field-label">Hjørner</span><input type="range" min="8" max="32" step="1" id="set-card-radius-v21" value="${ui.cardRadius || 20}"></label><label><span class="field-label">Indvendig luft</span><input type="range" min="10" max="28" step="1" id="set-card-padding-v21" value="${ui.cardPadding || 16}"></label><label class="check-row"><input type="checkbox" id="set-compact-pages-v21" ${ui.compactPages!==false?'checked':''}> Brug kompakte bokse og lister</label><button class="primary-btn" id="save-boxes-v21">Gem bokse</button></div></div>`;
+    if (tab === 'paneler') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Paneler</h3><label><span class="field-label">Skygge</span><select class="field" id="set-panel-shadow-v21"><option value="none" ${ui.panelShadow==='none'?'selected':''}>Ingen</option><option value="soft" ${ui.panelShadow==='soft'?'selected':''}>Blød</option><option value="strong" ${ui.panelShadow==='strong'?'selected':''}>Tydelig</option></select></label><label class="check-row"><input type="checkbox" id="set-panel-border-v21" ${ui.panelBorder!==false?'checked':''}> Vis diskret kant</label><button class="primary-btn" id="save-panels-v21">Gem paneler</button></div></div>`;
+    if (tab === 'cover') return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Cover</h3><div class="image-setting-preview wide"><img src="${state.settings.coverImage}"></div><button class="ghost-btn" id="upload-cover-btn">Skift coverbillede</button><input type="file" class="hidden-file" id="upload-cover" accept="image/*"><label><span class="field-label">Billedplacering</span><select class="field" id="set-cover-position-v21"><option value="center" ${cover.position==='center'?'selected':''}>Centreret</option><option value="left" ${cover.position==='left'?'selected':''}>Venstre</option><option value="right" ${cover.position==='right'?'selected':''}>Højre</option></select></label><label class="check-row"><input type="checkbox" id="set-cover-clock-v21" ${cover.showClock!==false?'checked':''}> Vis ur og fuld dato</label><label class="check-row"><input type="checkbox" id="set-cover-weather-v21" ${cover.showWeather!==false?'checked':''}> Vis vejret</label><label class="check-row"><input type="checkbox" id="set-cover-tips-v21" ${cover.showTips!==false?'checked':''}> Vis tips ved siden af</label><button class="primary-btn" id="save-cover-v21">Gem cover</button></div></div>`;
+    if (tab === 'elementer') return renderElementsSettingsV21();
+    if (tab === 'ur') return renderClockSettingsV21();
+    if (tab === 'ikoner') return renderIconSettingsV21();
+    if (tab === 'illustrationer') return renderIllustrationSettingsV21();
+    if (tab === 'billeder') return renderImageSettingsV21();
+    return renderSettingsPanelV21Base(tab);
+  };
+
+  function renderPeopleEditorV21(){
+    return `<div class="people-editor-v21">${state.people.map(person => `<article class="person-edit-card-v21" data-person-card="${person.id}"><div class="entity-avatar">${entityImageV19(person)}</div><div class="person-edit-fields-v21"><input class="field" data-edit-person-name="${person.id}" value="${esc(person.name)}"><select class="field" data-edit-person-role="${person.id}">${roleOptionsV19(person.role)}</select><input class="field" data-edit-person-birth="${person.id}" value="${esc(person.birthDate || '')}" placeholder="Fødselsdato/år"><select class="field" data-edit-person-owner="${person.id}"><option value="">Ingen ejer</option>${state.people.filter(p=>p.kind==='person'&&p.id!==person.id).map(p=>`<option value="${p.id}" ${person.ownerId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div><div class="person-edit-actions-v21"><button class="mini-btn" data-save-person="${person.id}">Gem</button><label class="mini-btn">Billede<input type="file" hidden accept="image/*" data-person-image="${person.id}"></label><button class="mini-btn danger" data-remove-person="${person.id}">Fjern</button></div></article>`).join('') || '<div class="empty">Ingen profiler endnu.</div>'}</div>`;
+  }
+
+  function renderMapSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Kortvisning</h3><label><span class="field-label">Kortstil</span><select id="set-map-style" class="field">${Object.entries(window.VCMaps.styles).map(([k,v]) => `<option value="${k}" ${state.settings.mapStyle===k?'selected':''}>${esc(v.label)}</option>`).join('')}</select></label><label><span class="field-label">Startvisning</span><select id="set-map-scope" class="field"><option value="europe" ${state.settings.mapScope==='europe'?'selected':''}>Europa</option><option value="world" ${state.settings.mapScope==='world'?'selected':''}>Verden</option></select></label><button class="primary-btn" id="save-map-prefs">Gem kort</button></div><div class="form-section card"><h3>Markører og ruteikoner</h3>${iconUploadCardV21('visited','Besøgt markør',state.settings.mapIcons.visited)}${iconUploadCardV21('wish','Ønskemarkør',state.settings.mapIcons.wish)}${iconUploadCardV21('start','Rutestart',state.settings.mapIcons.start)}${iconUploadCardV21('via','Rutestop',state.settings.mapIcons.via)}${iconUploadCardV21('end','Rutemål',state.settings.mapIcons.end)}</div></div>`;
+  }
+
+  function renderRoutePlanningSettingsV21(){
+    const r = state.settings.routeDefaults || {};
+    return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Openrouteservice</h3><label><span class="field-label">ORS API-nøgle</span><input class="field" id="set-ors-key" value="${esc(secrets.orsKey || '')}"></label><label><span class="field-label">Google Maps API-nøgle</span><input class="field" id="set-google-key" value="${esc(secrets.googleMapsKey || '')}"></label><div class="action-row"><button class="primary-btn" id="save-api-settings">Gem nøgler</button><button class="ghost-btn" id="test-ors-btn">Test forbindelse</button></div></div><div class="form-section card"><h3>Rute-standarder</h3><label><span class="field-label">Profil</span><select id="set-route-profile" class="field">${routeProfileOptionsV19(r.profile)}</select></label><label><span class="field-label">Rutetype</span><select id="set-route-type" class="field"><option ${r.routeType==='Rundtur'?'selected':''}>Rundtur</option><option ${r.routeType==='Tur/retur'?'selected':''}>Tur/retur</option><option ${r.routeType==='Fra A til B'?'selected':''}>Fra A til B</option></select></label><label><span class="field-label">Underlag</span><select id="set-route-surface" class="field"><option ${r.surface==='Asfalt'?'selected':''}>Asfalt</option><option ${r.surface==='Grus'?'selected':''}>Grus</option><option ${r.surface==='Blandet'?'selected':''}>Blandet</option><option ${r.surface==='Skovsti'?'selected':''}>Skovsti</option></select></label><div class="field-row two"><label><span class="field-label">Elcykel start</span><select id="set-route-range-start" class="field">${rangeOptionsV19(r.defaultRangeStartMin || 180)}</select></label><label><span class="field-label">Elcykel slut</span><select id="set-route-range-end" class="field">${rangeOptionsV19(r.defaultRangeEndMin || 60)}</select></label></div><button class="primary-btn" id="save-route-defaults">Gem rute-standarder</button></div></div>`;
+  }
+
+  function renderCampingSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Campingpladser</h3><div class="stats-row">${statCard(state.campsites.length,'I alt','⛺')}${statCard(state.campsites.filter(s=>s.status==='visited').length,'Besøgte','✓')}${statCard(state.campsites.filter(s=>s.status==='wish').length,'Ønsker','♥')}${statCard(state.campsites.filter(s=>s.coords?.lat&&s.coords?.lng).length,'Med koordinater','⌖')}</div><label class="check-row"><input type="checkbox" id="set-compact-pages" ${state.settings.compactPages!==false?'checked':''}> Brug kompakte lister og formularer</label><button class="primary-btn" id="save-campsite-settings">Gem campingpladser</button></div></div>`;
+  }
+
+  function renderCyclingSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><div class="section-head"><div><h3>Cykelruter</h3><p class="subtle">Dato, elcykel, flere cykler, rækkevidde i fem-minutters intervaller og billeder ved rute og stop.</p></div><button class="primary-btn" data-nav="route-edit/new">Ny cykelrute</button></div><div class="table-list">${state.routes.map(r=>`<div class="table-row"><span>${esc(r.name)}</span><span>${formatDate(r.date)||'Ingen dato'}</span><span>${(r.bikeIds||[]).length} cykler · ${(r.images||[]).length} billeder</span><button class="mini-btn" data-nav="route-edit/${r.id}">Redigér</button></div>`).join('') || '<div class="empty">Ingen ruter endnu.</div>'}</div></div></div>`;
+  }
+
+  function renderVisitSettingsV21(status){
+    const items = state.campsites.filter(s=>s.status===status);
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><div class="section-head"><div><h3>${status==='visited'?'Besøg':'Ønsker'}</h3><p class="subtle">${status==='visited'?'Alle registrerede campingbesøg.':'Alle gemte ønskesteder.'}</p></div><span class="badge">${items.length}</span></div><div class="table-list">${items.map(site=>`<div class="table-row"><span>${esc(site.name)}</span><span>${esc(countryLine(site))}</span><span>${formatDate(status==='visited'?site.latestVisit:site.plannedDate)||'Ingen dato'}</span><button class="mini-btn" data-nav="detail/${site.id}">Åbn</button></div>`).join('') || '<div class="empty">Ingen elementer endnu.</div>'}</div></div></div>`;
+  }
+
+  function renderStarSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Stjerneikon</h3><div class="rating-icon-preview-v21">${stars(5)}</div>${iconUploadCardV21('rating-star','Skift stjerneikon',state.settings.ratingIcons.star)}</div><div class="form-section card"><h3>Forhåndsvisning</h3><p class="subtle">Det valgte stjerneikon bruges på campingkort, ranglister og i vurderingsformularer.</p>${stars(4)}</div></div>`;
+  }
+
+  function renderAssessmentSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Bedømmelseskategorier</h3><div id="category-list" class="table-list">${state.categories.map(cat=>`<div class="table-row"><input class="field" value="${esc(cat.name)}" data-cat-name="${cat.id}"><input class="field" value="${esc(cat.icon)}" data-cat-icon="${cat.id}"><span></span><button class="mini-btn" data-remove-category="${cat.id}">Fjern</button></div>`).join('')}</div><div class="field-row two"><input class="field" id="new-cat-name" placeholder="Ny kategori"><input class="field" id="new-cat-icon" placeholder="Ikon"></div><div class="action-row"><button class="ghost-btn" id="add-category-btn">Tilføj kategori</button><button class="primary-btn" id="save-categories-btn">Gem bedømmelse</button></div></div></div>`;
+  }
+
+  function renderAppearanceSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Udseende</h3><label><span class="field-label">Primær farve</span><input type="color" id="set-accent" value="${state.settings.accent || '#1f5f3c'}"></label><label class="check-row"><input type="checkbox" id="set-compact" ${state.settings.compact?'checked':''}> Kompakt forside</label><button class="primary-btn" id="save-style-settings">Gem udseende</button></div></div>`;
+  }
+
+  function renderSectionsSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Sektioner</h3>${pageOrderEditorV19('overview','Overblik')}${pageOrderEditorV19('detail','Campingpladsens detalje')}${pageOrderEditorV19('route','Cykelrute')}</div><div class="form-section card full-span"><h3>Stemningsbilleder</h3><div class="mood-placement-grid">${['overview','visited','map','top','wishlist','detail','route','album','vacation-guard'].map(page=>`<label><span class="field-label">${pageLabelV21(page)}</span><select class="field" data-mood-page="${page}">${['off','top','bottom','side'].map(value=>`<option value="${value}" ${state.settings.moodPlacements?.[page]===value?'selected':''}>${({off:'Skjult',top:'Øverst',bottom:'Nederst',side:'Side/hjørne'})[value]}</option>`).join('')}</select></label>`).join('')}</div><button class="primary-btn" id="save-section-settings">Gem sektioner</button></div></div>`;
+  }
+
+  function renderMenuSettingsV21(){
+    const items = allMenuItemsV21();
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Menu</h3><p class="subtle">Flyt hovedsiderne op og ned eller skjul dem. Overblik og Indstillinger kan ikke skjules.</p><div class="menu-order-v21">${items.map(([key,label,icon],index)=>`<div class="menu-order-row-v21"><span>${icon}</span><strong>${label}</strong><label class="check-row"><input type="checkbox" data-menu-visible="${key}" ${!state.settings.menuHidden.includes(key)?'checked':''} ${['overview','settings'].includes(key)?'disabled':''}> Vis</label><div><button class="mini-btn" data-menu-up="${key}" ${index===0?'disabled':''}>↑</button><button class="mini-btn" data-menu-down="${key}" ${index===items.length-1?'disabled':''}>↓</button></div></div>`).join('')}</div><button class="primary-btn" id="save-menu-v21">Gem menu</button></div></div>`;
+  }
+
+  function renderElementsSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Elementer</h3><p class="subtle">Personer, dyr og cykler kan redigeres under Overblik. Her styres generelle elementvalg.</p><label class="check-row"><input type="checkbox" id="set-show-family-strip-v21" ${state.settings.showFamilyStrip!==false?'checked':''}> Vis familieafsnit på forsiden</label><label class="check-row"><input type="checkbox" id="set-show-pulse-v21" ${state.settings.showPulse!==false?'checked':''}> Vis campingpulsen</label><label class="check-row"><input type="checkbox" id="set-show-quick-v21" ${state.settings.showSidebarQuick!==false?'checked':''}> Vis hurtig-handlinger i venstremenuen</label><button class="primary-btn" id="save-elements-v21">Gem elementer</button></div></div>`;
+  }
+
+  function renderClockSettingsV21(){
+    const h = state.settings.heroClock || {};
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Ur, dato og vejr</h3><label><span class="field-label">Titel</span><input class="field" id="set-clock-title" value="${esc(h.title || 'Lokal tid og vejr')}"></label><label><span class="field-label">Placeringstekst</span><input class="field" id="set-clock-subtitle" value="${esc(h.subtitle || 'Aktuel placering')}"></label><label class="check-row"><input type="checkbox" id="set-clock-enabled" ${h.enabled!==false?'checked':''}> Vis ur på coveret</label><label class="check-row"><input type="checkbox" id="set-clock-date-enabled" ${h.showDate!==false?'checked':''}> Vis fuld dato</label><label class="check-row"><input type="checkbox" id="set-clock-weather-enabled" ${h.showWeather!==false?'checked':''}> Vis vejret</label><label class="check-row"><input type="checkbox" id="set-clock-location-enabled" ${h.useCurrentLocation!==false?'checked':''}> Brug aktuel placering</label><button class="primary-btn" id="save-hero-clock-settings">Gem ur</button></div></div>`;
+  }
+
+  function iconUploadCardV21(key,label,src){
+    return `<div class="icon-upload-row-v21"><img src="${src}" alt=""><div><strong>${esc(label)}</strong><small>Upload PNG, JPG, WebP eller SVG</small></div><button class="mini-btn" data-trigger-v21-icon="${key}">Skift</button><input type="file" hidden accept="image/*,.svg" data-v21-icon-input="${key}"></div>`;
+  }
+
+  function renderIconSettingsV21(){
+    const quicks = ['search','addVisited','addWish','addRoute','bigMap','settings'];
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Hurtig-handlinger</h3>${quicks.map(action=>iconUploadCardV21(`quick-${action}`,QUICK_ACTION_META[action].label,state.settings.actionIcons[action]||QUICK_ACTION_META[action].asset)).join('')}</div><div class="form-section card"><h3>Stjernevurdering</h3>${iconUploadCardV21('rating-star','Stjerneikon',state.settings.ratingIcons.star)}</div><div class="form-section card"><h3>Kort og ruter</h3>${['visited','wish','start','via','end'].map(key=>iconUploadCardV21(key,({visited:'Besøgt',wish:'Vil besøge',start:'Rutestart',via:'Rutestop',end:'Rutemål'})[key],state.settings.mapIcons[key])).join('')}</div></div>`;
+  }
+
+  function renderIllustrationSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card"><h3>Primært logo</h3><div class="image-setting-preview isolated-logo-preview-v21"><img src="${state.settings.logo || PRESET_IMAGES.logo}"></div><button class="ghost-btn" id="upload-logo-btn">Skift logo</button><input type="file" hidden id="upload-logo" accept="image/*"></div><div class="form-section card"><h3>Stemningsillustration</h3><div class="image-setting-preview"><img src="${state.settings.cornerImage}"></div><button class="ghost-btn" id="upload-corner-btn">Skift illustration</button><input type="file" hidden id="upload-corner" accept="image/*"></div></div>`;
+  }
+
+  function renderImageSettingsV21(){
+    return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Billeder og placeringer</h3><p class="subtle">Vælg hvor stemningsbilleder må vises og hold billederne kompakte.</p><div class="mood-placement-grid">${['overview','visited','map','top','wishlist','detail','route','album','vacation-guard'].map(page=>`<label><span class="field-label">${pageLabelV21(page)}</span><select class="field" data-mood-page="${page}">${['off','top','bottom','side'].map(value=>`<option value="${value}" ${state.settings.moodPlacements?.[page]===value?'selected':''}>${({off:'Skjult',top:'Øverst',bottom:'Nederst',side:'Side/hjørne'})[value]}</option>`).join('')}</select></label>`).join('')}</div><button class="primary-btn" id="save-section-settings">Gem billedplaceringer</button></div></div>`;
+  }
+
+  function pageLabelV21(page){ return ({overview:'Overblik',visited:'Besøgte',map:'Kort',top:'Bedst bedømte',wishlist:'Ønsker',detail:'Campingplads',route:'Cykelrute',album:'Ferie Album','vacation-guard':'Ferie Vagten'})[page] || page; }
+
+  const bindSettingsHandlersV21Base = bindSettingsHandlers;
+  bindSettingsHandlers = function(){
+    bindSettingsHandlersV21Base();
+    const on=(id,fn)=>{const el=qs('#'+id);if(el)el.onclick=fn;};
+    on('save-overview-v21',()=>{state.settings.appName=qs('#set-app-name').value.trim()||'Vores Camping';state.settings.tagline=qs('#set-tagline').value.trim();state.settings.intro=qs('#set-intro').value.trim();state.settings.family.motto=qs('#set-family-motto').value.trim();saveState();toast('Overblik gemt.');renderRoute();});
+    on('save-family-v21',()=>{const f=state.settings.family;f.fatherName=qs('#set-father-name').value.trim();f.fatherBirth=qs('#set-father-birth').value;f.motherName=qs('#set-mother-name').value.trim();f.motherNick=qs('#set-mother-nick').value.trim();f.motherBirth=qs('#set-mother-birth').value;saveState();toast('Navne gemt.');renderRoute();});
+    qsa('[data-save-person]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.savePerson;const p=state.people.find(x=>x.id===id);if(!p)return;p.name=qs(`[data-edit-person-name="${id}"]`).value.trim();p.role=qs(`[data-edit-person-role="${id}"]`).value;p.birthDate=qs(`[data-edit-person-birth="${id}"]`).value.trim();p.ownerId=qs(`[data-edit-person-owner="${id}"]`).value;saveState();toast('Profil gemt.');renderRoute();});
+    on('save-vg-settings-v21',()=>{const vg=state.settings.vacationGuard;const activeWanted=!!qs('#set-vg-active')?.checked;vg.tripLabel=qs('#set-vg-trip-label').value.trim()||state.settings.nextTripName||'Ferie';vg.autoCollect=!!qs('#set-vg-auto')?.checked;vg.showLocalTips=!!qs('#set-vg-tips')?.checked;vg.dailySummary=!!qs('#set-vg-daily')?.checked;if(activeWanted&&!vg.active){vg.active=true;ensureActiveVacationV201();}if(!activeWanted&&vg.active){vg.active=false;closeActiveVacationV201();}saveState();toast('Ferie-Vagten gemt.');renderRoute();});
+    on('save-album-settings-v21',()=>{const a=state.settings.album;a.autoGroupByDay=!!qs('#set-album-group-day')?.checked;a.showCaptions=!!qs('#set-album-captions')?.checked;a.includeCampsiteImages=!!qs('#set-album-campsites')?.checked;a.includeRouteImages=!!qs('#set-album-routes')?.checked;a.includeStopImages=!!qs('#set-album-stops')?.checked;a.compactCards=!!qs('#set-album-compact')?.checked;saveState();toast('Ferie Album gemt.');renderRoute();});
+    on('save-scaling-v21',()=>{state.settings.fontScale=Number(qs('#set-scale').value);state.settings.ui.sidebarWidth=Number(qs('#set-sidebar-width-v21').value);state.settings.ui.pageGap=Number(qs('#set-page-gap-v21').value);saveState();toast('Skalering gemt.');renderRoute();});
+    on('save-boxes-v21',()=>{state.settings.ui.cardRadius=Number(qs('#set-card-radius-v21').value);state.settings.ui.cardPadding=Number(qs('#set-card-padding-v21').value);state.settings.ui.compactPages=!!qs('#set-compact-pages-v21').checked;saveState();toast('Bokse gemt.');renderRoute();});
+    on('save-panels-v21',()=>{state.settings.ui.panelShadow=qs('#set-panel-shadow-v21').value;state.settings.ui.panelBorder=!!qs('#set-panel-border-v21').checked;saveState();toast('Paneler gemt.');renderRoute();});
+    on('save-cover-v21',()=>{const c=state.settings.cover;c.position=qs('#set-cover-position-v21').value;c.showClock=!!qs('#set-cover-clock-v21').checked;c.showWeather=!!qs('#set-cover-weather-v21').checked;c.showTips=!!qs('#set-cover-tips-v21').checked;saveState();toast('Cover gemt.');renderRoute();});
+    on('save-elements-v21',()=>{state.settings.showFamilyStrip=!!qs('#set-show-family-strip-v21').checked;state.settings.showPulse=!!qs('#set-show-pulse-v21').checked;state.settings.showSidebarQuick=!!qs('#set-show-quick-v21').checked;saveState();toast('Elementer gemt.');renderRoute();});
+    qsa('[data-menu-up],[data-menu-down]').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.menuUp||btn.dataset.menuDown;const arr=state.settings.menuOrder;const i=arr.indexOf(key);const j=i+(btn.dataset.menuUp?-1:1);if(i>=0&&j>=0&&j<arr.length){[arr[i],arr[j]]=[arr[j],arr[i]];saveState(false);renderRoute();}});
+    on('save-menu-v21',()=>{state.settings.menuHidden=qsa('[data-menu-visible]').filter(el=>!el.checked&&!['overview','settings'].includes(el.dataset.menuVisible)).map(el=>el.dataset.menuVisible);saveState();toast('Menu gemt.');renderRoute();});
+    qsa('[data-trigger-v21-icon]').forEach(btn=>btn.onclick=()=>qs(`[data-v21-icon-input="${btn.dataset.triggerV21Icon}"]`)?.click());
+    qsa('[data-v21-icon-input]').forEach(input=>input.onchange=async e=>{const f=e.target.files?.[0];if(!f)return;const key=input.dataset.v21IconInput;const data=await iconFileDataV21(f);if(key.startsWith('quick-'))state.settings.actionIcons[key.slice(6)]=data;else if(key==='rating-star')state.settings.ratingIcons.star=data;else state.settings.mapIcons[key]=data;window.VC_MAP_ICONS={...state.settings.mapIcons};saveState();toast('Ikon opdateret.');renderRoute();});
+  };
+
+
+  function registerSiteMediaV21(site){
+    if (!state.settings.vacationGuard?.active || state.settings.vacationGuard?.autoCollect === false) return;
+    const vacation = ensureActiveVacationV201();
+    const now = new Date().toISOString();
+    (site.images || []).forEach((src,index) => {
+      const id = `site-${site.id}-${index}`;
+      state.albumMeta[id] = { ...(state.albumMeta[id] || {}), tripId: vacation.id, addedAt: state.albumMeta[id]?.addedAt || now };
+    });
+  }
+
+  function registerRouteMediaV21(route){
+    if (!state.settings.vacationGuard?.active || state.settings.vacationGuard?.autoCollect === false) return;
+    const vacation = ensureActiveVacationV201();
+    const now = new Date().toISOString();
+    (route.images || []).forEach((src,index) => {
+      const id = `route-${route.id}-${index}`;
+      state.albumMeta[id] = { ...(state.albumMeta[id] || {}), tripId: vacation.id, addedAt: state.albumMeta[id]?.addedAt || now };
+    });
+    (route.stopDetails || []).forEach((stop,stopIndex) => (stop.images || []).forEach((src,imgIndex) => {
+      const id = `stop-${route.id}-${stopIndex}-${imgIndex}`;
+      state.albumMeta[id] = { ...(state.albumMeta[id] || {}), tripId: vacation.id, addedAt: state.albumMeta[id]?.addedAt || now };
+    }));
+  }
+
+  async function iconFileDataV21(file){
+    if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) return fileToDataUrlV21(file);
+    return compressImage(file, 320, .88);
+  }
+
+  function fileToDataUrlV21(file){
+    return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});
+  }
+
+  const applyThemeVarsV21Base = applyThemeVars;
+  applyThemeVars = function(){
+    applyThemeVarsV21Base();
+    const ui=state.settings.ui||{};
+    document.documentElement.style.setProperty('--sidebar-width-v21',`${ui.sidebarWidth||352}px`);
+    document.documentElement.style.setProperty('--page-gap-v21',`${ui.pageGap||14}px`);
+    document.documentElement.style.setProperty('--card-radius-v21',`${ui.cardRadius||20}px`);
+    document.documentElement.style.setProperty('--card-padding-v21',`${ui.cardPadding||16}px`);
+    document.body.dataset.panelShadow=ui.panelShadow||'soft';
+    document.body.dataset.panelBorder=ui.panelBorder===false?'off':'on';
+    document.body.dataset.compact=ui.compactPages===false?'off':'on';
+    window.VC_MAP_ICONS={...state.settings.mapIcons};
+  };
+
+  applyThemeVars();
   renderRoute();
 
 })();

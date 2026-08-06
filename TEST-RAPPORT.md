@@ -1,15 +1,29 @@
-# TEST-RAPPORT – Vores Camping v20.1
+# Testrapport – Vores Camping v21
 
 ## Beståede kontroller
 
-- JavaScript-syntaks kontrolleret med Node.js.
-- Manifest valideret som gyldig JSON.
-- Alle lokale filer i `index.html` findes.
-- Openrouteservice-ZIP testet uden komprimeringsfejl.
-- Ferie-Vagt, albumfiltre, favoritter, billedtekster, lightbox og albumeksport findes i koden.
-- Versionsstyret cache-reference opdateret til v20.1.
-- Tidligere browserdata fra v20, v19 og ældre forsøges automatisk indlæst.
+- `docs/app.js`: JavaScript-syntaks godkendt med Node.
+- `docs/maps.js`: JavaScript-syntaks godkendt med Node.
+- `docs/ors.js`: JavaScript-syntaks godkendt med Node.
+- `docs/manifest.webmanifest`: gyldig JSON.
+- Nye logo- og ikonfiler findes.
+- Logoets alfakanal indeholder gennemsigtighed.
+- Nye stjerne-, kort- og ruteikoner findes.
+- Openrouteservice-pakken er inkluderet.
+- Indeksfilen bruger versionsnummer 21 på CSS og JavaScript.
+- Manifestet peger på v21-appikonerne.
+- ZIP-strukturen kan udlæses uden fejl.
+
+## Funktioner kontrolleret statisk
+
+- Selvstændige ruter til Ferie Album og Ferie Vagten.
+- Ferieknap på forside og i venstremenu.
+- Automatisk tilknytning af campingplads-, rute- og stopbilleder til aktiv ferie.
+- Redigering af personer og dyr.
+- Upload af hurtig-handlingsikoner, stjerneikon, kortmarkører og ruteikoner.
+- Cykelrutedato, flere cykler, elcykelvalg, fem-minutters rækkevidde og billeder.
+- Alle 23 ønskede indstillingsfaner er oprettet.
 
 ## Begrænsning
 
-Det isolerede Chromium-miljø afsluttede ikke en stabil visuel renderingstest. Live kort, geoplacering, vejret og Openrouteservice skal derfor slutkontrolleres efter upload til GitHub Pages. JavaScript-syntaks og filstrukturen er kontrolleret lokalt.
+Det tilgængelige Chromium-program afsluttede ikke stabilt i det isolerede miljø, selv på en tom testside. Derfor er der ikke vedlagt en påstået visuel browsertest. Live kort, lokation, vejr og Openrouteservice bør slutkontrolleres efter upload til GitHub Pages.

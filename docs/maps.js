@@ -107,7 +107,9 @@
     button.className = `map-pin ${status === 'wish' ? 'wish' : 'visited'}`;
     button.title = title;
     button.setAttribute('aria-label', title || 'Kortmarkør');
-    button.innerHTML = status === 'wish' ? '<span>♥</span>' : '<span>✓</span>';
+    const icons = window.VC_MAP_ICONS || {};
+    const src = status === 'wish' ? icons.wish : icons.visited;
+    button.innerHTML = src ? `<img src="${src}" alt="">` : (status === 'wish' ? '<span>♥</span>' : '<span>✓</span>');
     return button;
   }
 
@@ -334,8 +336,11 @@
       editorMarkers = points.map((point, index) => {
         const element = document.createElement('button');
         element.type = 'button';
-        element.className = `route-point ${index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'via'}`;
-        element.textContent = index === 0 ? 'S' : index === points.length - 1 ? 'M' : String(index);
+        const type = index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'via';
+        element.className = `route-point ${type}`;
+        const routeIcons = window.VC_MAP_ICONS || {};
+        const src = routeIcons[type];
+        element.innerHTML = src ? `<img src="${src}" alt="">` : (index === 0 ? 'S' : index === points.length - 1 ? 'M' : String(index));
         element.title = index === 0 ? 'Startpunkt' : index === points.length - 1 ? 'Slutpunkt' : `Mellempunkt ${index}`;
         element.addEventListener('click', (event) => event.stopPropagation());
         const marker = new maplibregl.Marker({ element, draggable: true })

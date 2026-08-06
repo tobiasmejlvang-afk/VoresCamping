@@ -1,26 +1,26 @@
 {
   "name": "Vores Camping",
   "short_name": "Vores Camping",
-  "description": "Stener, Vibse og Sisis personlige campingdagbog, rejsekort og cykelrute-app",
+  "description": "Stener, Vibeke og Sisis personlige campingdagbog med Ferie Vagten, Ferie Album, kort og cykelruter",
   "start_url": "./index.html#overview",
   "display": "standalone",
   "background_color": "#f7f1e3",
   "theme_color": "#f7f1e3",
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "assets/icon-192-v21.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "assets/icon-512-v21.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "assets/icon-512-v21.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

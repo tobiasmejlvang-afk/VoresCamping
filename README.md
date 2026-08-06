@@ -1,19 +1,34 @@
-# Vores Camping v20.1
+# Vores Camping v21
 
-Personlig campingdagbog, ruteplanlægger og feriealbum til Stener, Vibeke og Sisi.
+En personlig dansk campingdagbog til Stener, Vibeke og Sisi. Appen er en statisk webapp, som kan udgives direkte fra `main`-branchens `/docs`-mappe på GitHub Pages.
 
-## Vigtigste funktioner
+## Centrale funktioner
 
-- Campingpladser, besøg, ønsker og vurderinger.
-- OpenFreeMap/MapLibre-kort.
-- Openrouteservice til søgning og cykelruter.
-- Flere cykler og elcykler pr. rute.
-- Dato, billeder og stopbilleder på cykelruter.
-- Intelligent Ferie-Vagt.
-- Automatisk Ferie Album med tidslinje, filtre, favoritter og eksport.
-- Fast topmenu og bred venstremenu på computer.
-- Kompakt responsivt layout på tablet.
+- Campingpladser, besøg, ønsker og ranglister
+- MapLibre/OpenFreeMap-kort
+- Openrouteservice-ruteplanlægning
+- Cykelruter med flere cykler, elcykler og batterirækkevidde
+- Ferie Vagten
+- Ferie Album med automatisk organisering
+- Personer, gæster, campister, dyr og ejere
+- Lokale billeder og sikkerhedskopier
+- Omfattende indstillingscenter
 
 ## Udgivelse på GitHub Pages
 
-Upload projektet til repositoryets `main`-branch og vælg `/docs` som GitHub Pages-kilde. Der kræves ikke npm, build-trin eller GitHub Action.
+1. Pak ZIP-filen ud.
+2. Upload indholdet af projektmappen til dit repository.
+3. Sørg for, at `docs/index.html` ligger i `main`-branchens `/docs`-mappe.
+4. Åbn **Settings → Pages** på GitHub.
+5. Vælg **Deploy from a branch**, `main` og `/docs`.
+6. Gem og vent på udgivelsen.
+
+Der kræves ingen npm-installation, intet build-trin og ingen brugeroprettet GitHub Action.
+
+## Nyt app-ikon på tablet
+
+Hvis appen allerede er installeret på tabletten, kan det gamle ikon være gemt i enhedens cache. Fjern den installerede genvej/app og installer den igen fra GitHub Pages, så `icon-192-v21.png` og `icon-512-v21.png` bliver brugt.
+
+## API-nøgle
+
+Openrouteservice-nøglen indtastes under **Indstillinger → Ruteplanlægning**. Nøglen gemmes kun lokalt og fjernes fra eksporterede sikkerhedskopier.
