@@ -1,19 +1,19 @@
-# Vores Camping v20
+# Vores Camping v20.1
 
-Personlig campingapp klar til GitHub Pages fra `/docs`.
+Personlig campingdagbog, ruteplanlægger og feriealbum til Stener, Vibeke og Sisi.
 
-## Indhold
+## Vigtigste funktioner
 
-- Personlig forside med ur, dato og vejrudsigtskort på coveret.
-- Topmenu med hovedsider.
-- Bred venstreside med hurtig-handlinger og nedtælling.
-- Campingpladser, ønsker, kort og cykelruter.
-- Ferie Albummet og Ferie-Vagt.
-- Openrouteservice integrationspakke med udvidelser.
+- Campingpladser, besøg, ønsker og vurderinger.
+- OpenFreeMap/MapLibre-kort.
+- Openrouteservice til søgning og cykelruter.
+- Flere cykler og elcykler pr. rute.
+- Dato, billeder og stopbilleder på cykelruter.
+- Intelligent Ferie-Vagt.
+- Automatisk Ferie Album med tidslinje, filtre, favoritter og eksport.
+- Fast topmenu og bred venstremenu på computer.
+- Kompakt responsivt layout på tablet.
 
-## Udgivelse
+## Udgivelse på GitHub Pages
 
-1. Pak ZIP-filen ud.
-2. Upload indholdet til dit GitHub-repository.
-3. Behold `docs/` som publiceringsmappe.
-4. Aktivér GitHub Pages fra `main` branch og `/docs`.
+Upload projektet til repositoryets `main`-branch og vælg `/docs` som GitHub Pages-kilde. Der kræves ikke npm, build-trin eller GitHub Action.

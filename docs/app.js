@@ -1,8 +1,8 @@
 
 (() => {
-  const STORAGE_KEY = 'voresCampingState_v19';
-  const LEGACY_STORAGE_KEYS = ['voresCampingState_v18','voresCampingState_v17','voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
-  const CURRENT_VERSION = 19;
+  const STORAGE_KEY = 'voresCampingState_v201';
+  const LEGACY_STORAGE_KEYS = ['voresCampingState_v20','voresCampingState_v19','voresCampingState_v18','voresCampingState_v17','voresCampingState_v16','voresCampingState_v15', 'voresCampingState_v14', 'voresCampingState_v13', 'voresCampingState_v12', 'voresCampingState'];
+  const CURRENT_VERSION = 20.1;
   const PRESET_IMAGES = {
     logo: 'assets/logo-main-v18.png',
     logoLarge: 'assets/logo-main-v18.png',
@@ -89,7 +89,7 @@
 
   function loadSecrets(){
     try {
-      return JSON.parse(localStorage.getItem('voresCampingSecrets_v19') || localStorage.getItem('voresCampingSecrets_v18') || localStorage.getItem('voresCampingSecrets_v17') || localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
+      return JSON.parse(localStorage.getItem('voresCampingSecrets_v201') || localStorage.getItem('voresCampingSecrets_v20') || localStorage.getItem('voresCampingSecrets_v19') || localStorage.getItem('voresCampingSecrets_v18') || localStorage.getItem('voresCampingSecrets_v17') || localStorage.getItem('voresCampingSecrets_v16') || localStorage.getItem('voresCampingSecrets_v15') || localStorage.getItem('voresCampingSecrets_v14') || '{}');
     } catch (_) {
       return {};
     }
@@ -97,7 +97,7 @@
 
   function saveSecrets(){
     try {
-      localStorage.setItem('voresCampingSecrets_v19', JSON.stringify(secrets));
+      localStorage.setItem('voresCampingSecrets_v201', JSON.stringify(secrets));
     } catch (err) {
       console.warn('API-nøgler kunne ikke gemmes lokalt.', err);
     }
@@ -2091,7 +2091,7 @@ ${trkpts}
   if (!NAV_ITEMS.some(item => item[0] === 'album')) {
     NAV_ITEMS.splice(Math.max(0, NAV_ITEMS.length - 1), 0, ['album', 'Ferie Albummet', '📚']);
   }
-  state.version = 20;
+  state.version = 20.1;
   state.settings = state.settings || {};
   state.settings.logo = PRESET_IMAGES.logo;
   state.settings.heroImage = state.settings.heroImage || PRESET_IMAGES.cover;
@@ -2434,6 +2434,360 @@ ${trkpts}
       vg.autoCollect = !!qs('#set-vg-auto')?.checked;
       vg.showLocalTips = !!qs('#set-vg-tips')?.checked;
       saveState(); toast('Ferie-Vagten er gemt.'); renderRoute();
+    };
+  };
+
+  renderRoute();
+
+
+  // ===== Version 20.1: intelligent Ferie-Vagt, automatisk album og kompakt layout =====
+  state.version = 20.1;
+  state.vacations = Array.isArray(state.vacations) ? state.vacations : [];
+  state.albumMeta = state.albumMeta && typeof state.albumMeta === 'object' ? state.albumMeta : {};
+  state.settings.album = {
+    autoGroupByDay: true,
+    showCaptions: true,
+    compactCards: true,
+    includeCampsiteImages: true,
+    includeRouteImages: true,
+    includeStopImages: true,
+    ...(state.settings.album || {})
+  };
+  state.settings.vacationGuard = {
+    active: false,
+    tripLabel: state.settings.nextTripName || 'Næste ferie',
+    autoCollect: true,
+    showLocalTips: true,
+    dailySummary: true,
+    activeVacationId: '',
+    startedAt: '',
+    endedAt: '',
+    ...(state.settings.vacationGuard || {})
+  };
+  saveState(false);
+
+  function activeVacationV201(){
+    const id = state.settings.vacationGuard?.activeVacationId;
+    return state.vacations.find(v => v.id === id && v.status === 'active') || state.vacations.find(v => v.status === 'active') || null;
+  }
+
+  function ensureActiveVacationV201(){
+    let vacation = activeVacationV201();
+    if (vacation) return vacation;
+    const now = new Date().toISOString();
+    vacation = {
+      id: uid(),
+      name: state.settings.vacationGuard?.tripLabel || state.settings.nextTripName || 'Ferie',
+      status: 'active',
+      startedAt: now,
+      endedAt: '',
+      coverItemId: '',
+      notes: '',
+      createdAt: now
+    };
+    state.vacations.push(vacation);
+    state.settings.vacationGuard.activeVacationId = vacation.id;
+    state.settings.vacationGuard.startedAt = now;
+    return vacation;
+  }
+
+  function closeActiveVacationV201(){
+    const vacation = activeVacationV201();
+    if (!vacation) return;
+    const now = new Date().toISOString();
+    vacation.status = 'finished';
+    vacation.endedAt = now;
+    state.settings.vacationGuard.endedAt = now;
+  }
+
+  toggleVacationGuardV20 = function(){
+    const vg = state.settings.vacationGuard || (state.settings.vacationGuard = {});
+    if (!vg.active) {
+      vg.active = true;
+      const vacation = ensureActiveVacationV201();
+      vg.lastActivatedAt = new Date().toISOString();
+      toast(`Ferie-Vagten er aktiv: ${vacation.name}.`);
+    } else {
+      vg.active = false;
+      closeActiveVacationV201();
+      toast('Ferie-Vagten er afsluttet, og ferien er gemt i albummet.');
+    }
+    saveState(false);
+    renderRoute();
+  };
+
+  const collectHolidayAlbumItemsV20Base = collectHolidayAlbumItemsV20;
+  collectHolidayAlbumItemsV20 = function(){
+    const active = activeVacationV201();
+    const albumSettings = state.settings.album || {};
+    const baseItems = collectHolidayAlbumItemsV20Base().filter(item => {
+      if (item.source === 'Campingplads' && albumSettings.includeCampsiteImages === false) return false;
+      if (item.source === 'Cykelrute' && albumSettings.includeRouteImages === false) return false;
+      if (item.source === 'Stop' && albumSettings.includeStopImages === false) return false;
+      return true;
+    });
+    return baseItems.map(item => {
+      const meta = state.albumMeta[item.id] || (state.albumMeta[item.id] = {});
+      if (!meta.tripId && active && state.settings.vacationGuard?.active && state.settings.vacationGuard?.autoCollect !== false) {
+        const itemDay = albumDayKeyV201(item.date || meta.addedAt || '');
+        const startDay = albumDayKeyV201(active.startedAt || '');
+        if (item.source === 'Ferie Albummet' || itemDay >= startDay) meta.tripId = active.id;
+      }
+      const day = albumDayKeyV201(item.date || meta.addedAt || '');
+      return {
+        ...item,
+        caption: meta.caption ?? item.note ?? '',
+        favorite: !!meta.favorite,
+        tags: Array.isArray(meta.tags) ? meta.tags : [],
+        tripId: meta.tripId || '',
+        day,
+        isCover: !!meta.isCover
+      };
+    });
+  };
+
+  function albumDayKeyV201(value){
+    const d = value ? new Date(value) : new Date();
+    if (Number.isNaN(+d)) return 'Uden dato';
+    return d.toISOString().slice(0,10);
+  }
+
+  function albumDayLabelV201(key){
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return key;
+    return new Date(`${key}T12:00:00`).toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  }
+
+  function albumSummaryV201(items = collectHolidayAlbumItemsV20()){
+    const today = new Date().toISOString().slice(0,10);
+    const active = activeVacationV201();
+    const activeItems = active ? items.filter(i => i.tripId === active.id) : items;
+    return {
+      total: items.length,
+      active: activeItems.length,
+      today: items.filter(i => i.day === today).length,
+      favorites: items.filter(i => i.favorite).length,
+      days: new Set(activeItems.map(i => i.day)).size,
+      routes: state.routes.filter(r => !active || albumDayKeyV201(r.date) >= albumDayKeyV201(active.startedAt)).length
+    };
+  }
+
+  addAlbumUploadsV20 = async function(fileList){
+    const vacation = state.settings.vacationGuard?.active ? ensureActiveVacationV201() : null;
+    for (const file of [...fileList]) {
+      const id = uid();
+      state.holidayAlbum.push({
+        id,
+        src: await compressImage(file, 1600, .82),
+        title: file.name.replace(/\.[^.]+$/,''),
+        date: new Date().toISOString().slice(0,10),
+        source: 'Ferie Albummet',
+        note: '',
+        createdAt: new Date().toISOString()
+      });
+      state.albumMeta[id] = { tripId: vacation?.id || '', caption: '', favorite:false, tags:[], addedAt:new Date().toISOString() };
+    }
+    saveState(false);
+    toast(`${fileList.length} billede(r) tilføjet og organiseret.`);
+    renderRoute();
+  };
+
+  function vacationDailyAdviceV201(){
+    const summary = albumSummaryV201();
+    const active = activeVacationV201();
+    const advice = [];
+    if (!active) advice.push('Aktivér Ferie-Vagten, når turen begynder. Så bliver billeder og oplevelser samlet automatisk.');
+    else if (summary.today === 0) advice.push('Der er endnu ingen billeder fra i dag. Tag et stemningsbillede, så dagen får sin egen side i albummet.');
+    else advice.push(`${summary.today} billede(r) er allerede samlet fra i dag.`);
+    if (!state.routes.some(r => albumDayKeyV201(r.date) === new Date().toISOString().slice(0,10))) advice.push('Ingen cykelrute er registreret i dag. En kort aftentur kan være nok til et nyt minde.');
+    if (!summary.favorites) advice.push('Markér de bedste billeder med et hjerte, så de automatisk bliver albummets højdepunkter.');
+    return advice.slice(0,3);
+  }
+
+  const enhanceOverviewV20Base = enhanceOverviewV20;
+  enhanceOverviewV20 = function(view){
+    enhanceOverviewV20Base(view);
+    if (!state.settings.vacationGuard?.active) return;
+    const summary = albumSummaryV201();
+    const tips = view.querySelector('.holiday-tips-card-v20');
+    if (!tips) return;
+    const advice = vacationDailyAdviceV201();
+    tips.classList.add('holiday-tips-card-v201');
+    tips.insertAdjacentHTML('afterbegin', `<div class="vacation-smart-summary-v201"><div><span>Fotos i dag</span><strong>${summary.today}</strong></div><div><span>Feriedage</span><strong>${summary.days}</strong></div><div><span>Favoritter</span><strong>${summary.favorites}</strong></div><div><span>Album i alt</span><strong>${summary.total}</strong></div></div>`);
+    const grid = tips.querySelector('.holiday-tips-grid');
+    if (grid) grid.insertAdjacentHTML('afterbegin', advice.map((text,i)=>`<article class="holiday-tip holiday-tip--smart"><strong>${['Dagens overblik','God albumskik','Næste lille oplevelse'][i] || 'Ferie-tip'}</strong><p>${esc(text)}</p></article>`).join(''));
+    const head = tips.querySelector('.section-head');
+    if (head && !head.querySelector('[data-smart-local-tips]')) head.insertAdjacentHTML('beforeend', `<button class="ghost-btn" data-smart-local-tips>Find lokale forslag</button>`);
+    const localBtn = tips.querySelector('[data-smart-local-tips]');
+    if (localBtn) localBtn.onclick = () => refreshLocalVacationTipsV201(tips);
+  };
+
+  async function refreshLocalVacationTipsV201(host){
+    const grid = host?.querySelector('.holiday-tips-grid');
+    if (!grid) return;
+    const btn = host.querySelector('[data-smart-local-tips]');
+    setBusy(btn,true,'Finder…');
+    try {
+      const loc = await getCurrentPosition();
+      if (!loc) throw new Error('Placering kunne ikke hentes');
+      let suggestions = [];
+      if (secrets.orsKey) {
+        try {
+          const response = await ors.poisAround(loc.lng, loc.lat, 2000, {});
+          const features = response?.features || response?.pois || [];
+          suggestions = features.slice(0,4).map(feature => ({
+            title: feature.properties?.osm_tags?.name || feature.properties?.name || feature.properties?.category_name || 'Oplevelse i nærheden',
+            text: feature.properties?.category_name || feature.properties?.osm_tags?.tourism || 'Fundet tæt på jeres aktuelle placering.'
+          }));
+        } catch (_) {}
+      }
+      if (!suggestions.length) suggestions = buildHolidayTipsV20();
+      grid.innerHTML = suggestions.map(t => `<article class="holiday-tip holiday-tip--local"><strong>${esc(t.title)}</strong><p>${esc(t.text)}</p></article>`).join('');
+      toast('Lokale forslag er opdateret.');
+    } catch (err) {
+      toast(err.message || 'Kunne ikke hente lokale forslag.');
+    } finally {
+      setBusy(btn,false,'Find lokale forslag');
+    }
+  }
+
+  renderHolidayAlbumV20 = function(view){
+    const allItems = collectHolidayAlbumItemsV20();
+    const activeVacation = activeVacationV201();
+    const active = !!state.settings.vacationGuard?.active;
+    const summary = albumSummaryV201(allItems);
+    const vacations = state.vacations.slice().sort((a,b)=>String(b.startedAt).localeCompare(String(a.startedAt)));
+    view.innerHTML = `<div class="view-grid holiday-album-page-v201">
+      <section class="card holiday-album-hero-v201">
+        <div class="holiday-album-hero-v201__copy">
+          <span class="eyebrow dark">Ferie Albummet · version 20.1</span>
+          <h2>${esc(activeVacation?.name || 'Alle jeres campingminder')}</h2>
+          <p class="subtle">Billeder organiseres automatisk efter ferie, dag, sted, rute og stop.</p>
+          <div class="album-trip-chips-v201">${vacations.map(v=>`<button class="chip ${v.status==='active'?'visit':''}" data-album-trip-filter="${v.id}">${esc(v.name)} · ${formatDate(v.startedAt)}</button>`).join('') || '<span class="chip">Ingen afsluttede ferier endnu</span>'}</div>
+        </div>
+        <div class="holiday-album-hero-v201__actions">
+          <button class="primary-btn" id="toggle-vacation-guard-album">${active ? 'Afslut Ferie-Vagt' : 'Start Ferie-Vagt'}</button>
+          <button class="ghost-btn" id="album-upload-trigger">Tilføj billeder</button>
+          <button class="ghost-btn" id="album-export-html">Eksportér album</button>
+          <input type="file" multiple accept="image/*" id="album-upload-input" class="hidden-file">
+        </div>
+      </section>
+      <section class="vacation-smart-summary-v201 vacation-smart-summary-v201--album">
+        <div><span>Alle fotos</span><strong>${summary.total}</strong></div>
+        <div><span>Aktuel ferie</span><strong>${summary.active}</strong></div>
+        <div><span>I dag</span><strong>${summary.today}</strong></div>
+        <div><span>Favoritter</span><strong>${summary.favorites}</strong></div>
+        <div><span>Feriedage</span><strong>${summary.days}</strong></div>
+      </section>
+      <section class="card album-toolbar-v201">
+        <input class="field" id="album-search-v201" placeholder="Søg i titel, sted, tekst eller kilde…">
+        <select class="field" id="album-source-v201"><option value="all">Alle kilder</option>${[...new Set(allItems.map(i=>i.source))].map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}</select>
+        <select class="field" id="album-trip-v201"><option value="all">Alle ferier</option>${vacations.map(v=>`<option value="${v.id}">${esc(v.name)}</option>`).join('')}</select>
+        <label class="check-row album-favorite-filter-v201"><input type="checkbox" id="album-favorites-v201"> Kun favoritter</label>
+      </section>
+      <section class="album-timeline-v201" id="album-timeline-v201"></section>
+      <dialog class="album-lightbox-v201" id="album-lightbox-v201"><form method="dialog"><button class="album-lightbox-v201__close" value="close">×</button><img id="album-lightbox-image-v201" alt=""><div><strong id="album-lightbox-title-v201"></strong><p id="album-lightbox-caption-v201"></p></div></form></dialog>
+    </div>`;
+
+    let tripFilter = activeVacation?.id || 'all';
+    const renderTimeline = () => {
+      const query = (qs('#album-search-v201')?.value || '').trim().toLowerCase();
+      const source = qs('#album-source-v201')?.value || 'all';
+      tripFilter = qs('#album-trip-v201')?.value || tripFilter || 'all';
+      const favoritesOnly = !!qs('#album-favorites-v201')?.checked;
+      const items = collectHolidayAlbumItemsV20().filter(item => {
+        const hay = `${item.title} ${item.caption} ${item.location} ${item.source}`.toLowerCase();
+        return (!query || hay.includes(query)) && (source==='all' || item.source===source) && (tripFilter==='all' || item.tripId===tripFilter) && (!favoritesOnly || item.favorite);
+      });
+      const groups = Object.groupBy ? Object.groupBy(items,item=>item.day) : items.reduce((acc,item)=>((acc[item.day] ||= []).push(item),acc),{});
+      const timeline = qs('#album-timeline-v201');
+      timeline.innerHTML = Object.keys(groups).sort().reverse().map(day => `<section class="card album-day-section-v201"><div class="album-day-heading-v201"><div><span class="eyebrow dark">${esc(albumDayLabelV201(day))}</span><h3>${groups[day].length} billede(r)</h3></div></div><div class="holiday-album-grid holiday-album-grid-v201">${groups[day].map(renderAlbumCardV201).join('')}</div></section>`).join('') || '<div class="empty card">Ingen billeder matcher filtrene.</div>';
+      bindAlbumCardHandlersV201(renderTimeline);
+    };
+
+    const upBtn = qs('#album-upload-trigger'), upInput = qs('#album-upload-input');
+    if (upBtn && upInput) upBtn.onclick=()=>upInput.click();
+    if (upInput) upInput.onchange=e=>addAlbumUploadsV20(e.target.files||[]);
+    qs('#toggle-vacation-guard-album').onclick=()=>toggleVacationGuardV20();
+    qs('#album-export-html').onclick=()=>exportHolidayAlbumV201();
+    ['#album-search-v201','#album-source-v201','#album-trip-v201','#album-favorites-v201'].forEach(sel=>{const el=qs(sel);if(el)el.oninput=renderTimeline;});
+    qsa('[data-album-trip-filter]').forEach(btn=>btn.onclick=()=>{const select=qs('#album-trip-v201');if(select){select.value=btn.dataset.albumTripFilter;renderTimeline();}});
+    renderTimeline();
+  };
+
+  function renderAlbumCardV201(item){
+    return `<article class="album-photo-card album-photo-card-v201 ${item.favorite?'is-favorite':''}">
+      <button class="album-photo-open-v201" data-album-open="${item.id}"><img src="${item.src}" alt="${esc(item.title)}"></button>
+      <div class="album-photo-card__body">
+        <div class="album-photo-card-v201__title"><strong>${esc(item.title)}</strong><button class="album-favorite-btn-v201" data-album-favorite="${item.id}" title="Favorit">${item.favorite?'♥':'♡'}</button></div>
+        <span>${esc(item.source)}${item.location?` · ${esc(item.location)}`:''}</span>
+        ${state.settings.album?.showCaptions!==false?`<p>${esc(item.caption || 'Ingen billedtekst endnu.')}</p>`:''}
+        <div class="action-row"><button class="mini-btn" data-album-caption="${item.id}">Billedtekst</button><button class="mini-btn" data-album-cover="${item.id}">Albumcover</button></div>
+      </div>
+    </article>`;
+  }
+
+  function bindAlbumCardHandlersV201(refresh){
+    const items = collectHolidayAlbumItemsV20();
+    qsa('[data-album-favorite]').forEach(btn=>btn.onclick=()=>{
+      const id=btn.dataset.albumFavorite; const meta=state.albumMeta[id] || (state.albumMeta[id]={}); meta.favorite=!meta.favorite; saveState(false); refresh();
+    });
+    qsa('[data-album-caption]').forEach(btn=>btn.onclick=()=>{
+      const id=btn.dataset.albumCaption; const item=items.find(i=>i.id===id); const value=window.prompt('Skriv billedtekst:', item?.caption || '');
+      if(value===null)return; const meta=state.albumMeta[id] || (state.albumMeta[id]={}); meta.caption=value.trim(); saveState(false); refresh();
+    });
+    qsa('[data-album-cover]').forEach(btn=>btn.onclick=()=>{
+      const id=btn.dataset.albumCover; const vacation=activeVacationV201() || state.vacations[0]; if(vacation) vacation.coverItemId=id;
+      Object.values(state.albumMeta).forEach(meta=>meta.isCover=false); (state.albumMeta[id]||(state.albumMeta[id]={})).isCover=true; saveState(false); toast('Billedet er valgt som albumcover.'); refresh();
+    });
+    qsa('[data-album-open]').forEach(btn=>btn.onclick=()=>{
+      const item=items.find(i=>i.id===btn.dataset.albumOpen); if(!item)return; qs('#album-lightbox-image-v201').src=item.src; qs('#album-lightbox-title-v201').textContent=item.title; qs('#album-lightbox-caption-v201').textContent=item.caption||item.location||''; qs('#album-lightbox-v201').showModal();
+    });
+  }
+
+  function exportHolidayAlbumV201(){
+    const items=collectHolidayAlbumItemsV20();
+    const vacation=activeVacationV201() || state.vacations[0];
+    const title=vacation?.name || 'Vores Camping – Feriealbum';
+    const groups=items.reduce((acc,item)=>((acc[item.day] ||= []).push(item),acc),{});
+    const body=Object.keys(groups).sort().map(day=>`<section><h2>${esc(albumDayLabelV201(day))}</h2><div class="grid">${groups[day].map(item=>`<figure><img src="${item.src}"><figcaption><strong>${esc(item.title)}</strong><br>${esc(item.caption||item.location||'')}</figcaption></figure>`).join('')}</div></section>`).join('');
+    const html=`<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${esc(title)}</title><style>body{font-family:system-ui;background:#f7f1e3;color:#223126;margin:0;padding:32px}main{max-width:1200px;margin:auto}h1,h2{color:#1f5f3c}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}figure{margin:0;background:white;border-radius:18px;overflow:hidden;box-shadow:0 10px 24px #0001}img{width:100%;aspect-ratio:1.25;object-fit:cover}figcaption{padding:14px}</style><main><h1>${esc(title)}</h1>${body}</main></html>`;
+    const blob=new Blob([html],{type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${slugify(title)}.html`; a.click(); URL.revokeObjectURL(a.href); toast('Feriealbummet er eksporteret.');
+  }
+
+  const renderSettingsPanelV201Base = renderSettingsPanelV19;
+  renderSettingsPanelV19 = function(tab){
+    if(tab==='oplevelser'){
+      const vg=state.settings.vacationGuard||{}, album=state.settings.album||{};
+      return `<div class="settings-grid compact-settings"><div class="form-section card full-span"><h3>Intelligent Ferie-Vagt</h3><label><span class="field-label">Navn på ferie</span><input class="field" id="set-vg-trip-label" value="${esc(vg.tripLabel||state.settings.nextTripName||'')}"></label><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-vg-active" ${vg.active?'checked':''}> Ferie-Vagten er aktiv</label><label class="check-row"><input type="checkbox" id="set-vg-auto" ${vg.autoCollect!==false?'checked':''}> Saml billeder automatisk</label><label class="check-row"><input type="checkbox" id="set-vg-tips" ${vg.showLocalTips!==false?'checked':''}> Vis lokale forslag</label><label class="check-row"><input type="checkbox" id="set-vg-daily" ${vg.dailySummary!==false?'checked':''}> Vis dagligt ferieoverblik</label></div><div class="panel">Når Ferie-Vagten starter, oprettes automatisk en ferie. Billeder grupperes efter dag, sted, rute og stop. Når vagten afsluttes, gemmes ferien som et afsluttet album.</div><div class="action-row"><button class="primary-btn" id="save-vg-settings-v201">Gem Ferie-Vagt</button><button class="ghost-btn" data-nav="album">Åbn Ferie Albummet</button></div></div><div class="form-section card full-span"><h3>Automatisk feriealbum</h3><div class="grid-2"><label class="check-row"><input type="checkbox" id="set-album-group-day" ${album.autoGroupByDay!==false?'checked':''}> Gruppér efter dag</label><label class="check-row"><input type="checkbox" id="set-album-captions" ${album.showCaptions!==false?'checked':''}> Vis billedtekster</label><label class="check-row"><input type="checkbox" id="set-album-campsites" ${album.includeCampsiteImages!==false?'checked':''}> Medtag campingpladsbilleder</label><label class="check-row"><input type="checkbox" id="set-album-routes" ${album.includeRouteImages!==false?'checked':''}> Medtag rutebilleder</label><label class="check-row"><input type="checkbox" id="set-album-stops" ${album.includeStopImages!==false?'checked':''}> Medtag billeder fra stop</label><label class="check-row"><input type="checkbox" id="set-album-compact" ${album.compactCards!==false?'checked':''}> Kompakt albumlayout</label></div><button class="primary-btn" id="save-album-settings-v201">Gem albumindstillinger</button></div></div>`;
+    }
+    return renderSettingsPanelV201Base(tab);
+  };
+
+  const bindSettingsHandlersV201Base = bindSettingsHandlers;
+  bindSettingsHandlers = function(){
+    bindSettingsHandlersV201Base();
+    const saveGuard=qs('#save-vg-settings-v201');
+    if(saveGuard)saveGuard.onclick=()=>{
+      const vg=state.settings.vacationGuard;
+      const shouldBeActive=!!qs('#set-vg-active')?.checked;
+      vg.tripLabel=qs('#set-vg-trip-label')?.value.trim()||state.settings.nextTripName||'Ferie';
+      vg.autoCollect=!!qs('#set-vg-auto')?.checked;
+      vg.showLocalTips=!!qs('#set-vg-tips')?.checked;
+      vg.dailySummary=!!qs('#set-vg-daily')?.checked;
+      if(shouldBeActive&&!vg.active){vg.active=true;ensureActiveVacationV201();}
+      if(!shouldBeActive&&vg.active){vg.active=false;closeActiveVacationV201();}
+      saveState(false);toast('Den intelligente Ferie-Vagt er gemt.');renderRoute();
+    };
+    const saveAlbum=qs('#save-album-settings-v201');
+    if(saveAlbum)saveAlbum.onclick=()=>{
+      const album=state.settings.album;
+      album.autoGroupByDay=!!qs('#set-album-group-day')?.checked;
+      album.showCaptions=!!qs('#set-album-captions')?.checked;
+      album.includeCampsiteImages=!!qs('#set-album-campsites')?.checked;
+      album.includeRouteImages=!!qs('#set-album-routes')?.checked;
+      album.includeStopImages=!!qs('#set-album-stops')?.checked;
+      album.compactCards=!!qs('#set-album-compact')?.checked;
+      saveState(false);toast('Albumindstillinger gemt.');renderRoute();
     };
   };
 

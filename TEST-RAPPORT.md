@@ -1,14 +1,15 @@
-# TEST-RAPPORT – Vores Camping v20
+# TEST-RAPPORT – Vores Camping v20.1
 
-## Gennemført
+## Beståede kontroller
 
-- ZIP-struktur verificeret.
-- `openrouteservice.zip` opdateret.
-- `docs/app.js` syntax-checket.
-- `docs/index.html` referencekontrol udført.
-- Nye billedaktiver oprettet og tilknyttet.
-- V20-layout CSS tilføjet.
+- JavaScript-syntaks kontrolleret med Node.js.
+- Manifest valideret som gyldig JSON.
+- Alle lokale filer i `index.html` findes.
+- Openrouteservice-ZIP testet uden komprimeringsfejl.
+- Ferie-Vagt, albumfiltre, favoritter, billedtekster, lightbox og albumeksport findes i koden.
+- Versionsstyret cache-reference opdateret til v20.1.
+- Tidligere browserdata fra v20, v19 og ældre forsøges automatisk indlæst.
 
-## Bemærkning
+## Begrænsning
 
-Appen er fortsat en statisk GitHub Pages-app. Live vejr, lokation og Openrouteservice kræver netværk/adgang og eventuelt egen API-nøgle.
+Det isolerede Chromium-miljø afsluttede ikke en stabil visuel renderingstest. Live kort, geoplacering, vejret og Openrouteservice skal derfor slutkontrolleres efter upload til GitHub Pages. JavaScript-syntaks og filstrukturen er kontrolleret lokalt.

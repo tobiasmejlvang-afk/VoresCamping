@@ -971,3 +971,109 @@ body:not([data-route="settings"]) [data-map-style] { display:none; }
   .top-main-nav { justify-content:flex-start; }
   .holiday-tips-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== Version 20.1: intelligent Ferie-Vagt, flot album og tættere layout ===== */
+:root {
+  --content-max: 1480px;
+  --radius-xl: 22px;
+  --radius-lg: 18px;
+  --shadow: 0 10px 24px rgba(54,72,48,.085);
+}
+.view { padding-top: 10px; }
+.view-grid { gap: 13px; }
+.card-section, .list-card, .panel, .sidebar-mini { padding: 15px; }
+.dashboard-content-grid, .overview-bottom-grid, .settings-grid, .detail-grid, .form-grid { gap: 13px; }
+.dashboard-hero-image { min-height: 335px; }
+.family-story-strip { gap: 10px; padding: 13px 16px; }
+.stats-row { gap: 10px; }
+.stat-card { padding: 13px; }
+.card-grid { gap: 13px; }
+.camp-card .cover { height: 158px; }
+.camp-card .body { padding: 14px; }
+.sidebar { scrollbar-width: thin; }
+.side-quick-list { gap: 8px; }
+.side-quick-btn { padding: 10px; border-radius: 16px; }
+.countdown-sidebar-card-v20 { padding-bottom: 14px; }
+.top-main-nav { gap: 7px; }
+.top-main-nav__btn { padding: 8px 12px; font-size: .86rem; }
+
+.vacation-smart-summary-v201 {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  padding:12px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#edf6e7,#fff5d8);
+  border:1px solid rgba(31,95,60,.1);
+}
+.vacation-smart-summary-v201 > div {
+  display:grid;
+  gap:3px;
+  text-align:center;
+  padding:10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.76);
+}
+.vacation-smart-summary-v201 span { color:var(--muted); font-size:.78rem; }
+.vacation-smart-summary-v201 strong { color:var(--green); font-size:1.45rem; }
+.vacation-smart-summary-v201--album { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.holiday-tip--smart { background:linear-gradient(180deg,#fffef8,#f6f0df); }
+.holiday-tip--local { background:linear-gradient(180deg,#edf6e7,#fff); }
+
+.holiday-album-page-v201 { gap:13px; }
+.holiday-album-hero-v201 {
+  padding:20px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:18px;
+  align-items:center;
+  background:linear-gradient(135deg,#fffdf7,#f0f6e9);
+}
+.holiday-album-hero-v201__copy { display:grid; gap:7px; }
+.holiday-album-hero-v201__copy h2 { margin:0; }
+.holiday-album-hero-v201__actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.album-trip-chips-v201 { display:flex; gap:7px; flex-wrap:wrap; margin-top:4px; }
+.album-toolbar-v201 {
+  padding:12px;
+  display:grid;
+  grid-template-columns:minmax(220px,1.5fr) minmax(150px,.8fr) minmax(150px,.8fr) auto;
+  gap:9px;
+  align-items:center;
+  position:sticky;
+  top:86px;
+  z-index:8;
+}
+.album-favorite-filter-v201 { white-space:nowrap; padding:0 8px; }
+.album-timeline-v201 { display:grid; gap:13px; }
+.album-day-section-v201 { padding:15px; display:grid; gap:12px; }
+.album-day-heading-v201 { display:flex; justify-content:space-between; align-items:center; }
+.album-day-heading-v201 h3 { margin:3px 0 0; }
+.holiday-album-grid-v201 { grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:11px; }
+.album-photo-card-v201 { border-radius:16px; }
+.album-photo-card-v201.is-favorite { box-shadow:0 0 0 2px rgba(213,138,49,.28),var(--shadow); }
+.album-photo-open-v201 { border:0; padding:0; background:transparent; cursor:zoom-in; }
+.album-photo-open-v201 img { aspect-ratio:1.18/1; }
+.album-photo-card-v201__title { display:flex; gap:8px; justify-content:space-between; align-items:start; }
+.album-photo-card-v201 p { margin:3px 0; color:var(--muted); font-size:.88rem; line-height:1.35; }
+.album-favorite-btn-v201 { border:0; background:transparent; color:#d58a31; font-size:1.5rem; cursor:pointer; padding:0; line-height:1; }
+.album-lightbox-v201 { border:0; border-radius:22px; padding:0; width:min(900px,92vw); background:#fffdf8; box-shadow:0 30px 80px #0005; }
+.album-lightbox-v201::backdrop { background:#13271dcf; backdrop-filter:blur(5px); }
+.album-lightbox-v201 form { margin:0; display:grid; }
+.album-lightbox-v201 img { width:100%; max-height:72vh; object-fit:contain; background:#1a241d; }
+.album-lightbox-v201 form > div { padding:16px 18px 20px; }
+.album-lightbox-v201__close { position:absolute; top:10px; right:10px; width:40px; height:40px; border:0; border-radius:50%; background:#fff; font-size:1.7rem; cursor:pointer; box-shadow:0 8px 18px #0003; }
+
+@media (max-width:1100px) {
+  .vacation-smart-summary-v201--album { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .album-toolbar-v201 { top:0; grid-template-columns:1fr 1fr; }
+}
+@media (max-width:760px) {
+  .holiday-album-hero-v201 { grid-template-columns:1fr; }
+  .holiday-album-hero-v201__actions { justify-content:flex-start; }
+  .vacation-smart-summary-v201,.vacation-smart-summary-v201--album { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .album-toolbar-v201 { position:static; grid-template-columns:1fr; }
+  .holiday-album-grid-v201 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:520px) {
+  .holiday-album-grid-v201 { grid-template-columns:1fr; }
+}
